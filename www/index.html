@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>我的悠嘍訓練機</title>
+
+    <script src="www/js/jquery.min.js"></script>
+    <script src="www/js/myphp.js"></script>
+    <script src="www/js/mybox.js"></script>
+    <script src="www/js/jquery.imgareaselect-0.9.8/scripts/jquery.imgareaselect.pack.js"></script>
+    <script src="www/js/include.js"></script>
+    <link rel="stylesheet" href="www/css/reset.css" />
+    <link rel="stylesheet" href="www/css/style.css" />
+    <link rel="stylesheet" href="www/js/jquery.imgareaselect-0.9.8/css/imgareaselect-default.css" />
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+</head>
+<body class="container mt-5">
+    <!-- 右上，新增專案 -->
+    <div class="d-flex justify-content-end">
+        <button type="button" reqc="btnAddProject" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProjectModal">
+            新增專案
+        </button>
+    </div>
+
+    <div class="form-group">
+        <label for="project_name">選擇專案：</label>
+        <select id="project_name" class="form-control">
+            <option value="">請選擇</option>
+            <!-- 這裡可以動態填充選項 -->
+        </select>
+    </div>
+    <hr class="my-4" style="border-color: red;" />
+</body>
+<script>
+    var APP = {
+        method: {
+            "ui_init": function () {
+                //列出專案
+                APP.method.projects.project_list();
+                //新增專案
+                $("button[reqc='btnAddProject']").off().click(function () {
+                    dialogMyBoxOn("請稍候", true, function () { });
+                });
+            },
+            "projects": {
+                "project_list": function () {
+                    // 列出專案
+                    myAjax_async_json("/api?mode=project_list", "", function (jd) {
+                        var m = [];
+                        var d = `<option value="">請選擇</option>`;
+                        m.push(d);
+                        jd.data.map(function (v) {
+                            var d = `<option value="${v}">${v}</option>`;
+                            m.push(d);
+                        });
+                        $("#project_name").html(m.join(""));
+                    });
+                }
+            },
+            "init": function () {
+                APP.method.ui_init();
+            }
+        }
+    };
+    APP.method.init();
+</script>
+</html>

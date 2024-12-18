@@ -1,0 +1,10 @@
+opencv-python==4.10.0.84
+scipy==1.14.0
+moviepy==1.0.3
+pydub==0.25.1
+pywin32==306
+pywin32-ctypes==0.2.2
+pyinstaller==6.9.0
+keyboard==0.13.5
+flask==3.0.3
+jsonify==0.5
