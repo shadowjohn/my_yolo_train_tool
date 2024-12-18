@@ -20,4 +20,5 @@ c:\python312_64\scripts\pyinstaller -F --onefile --icon="pic\icon.ico" --version
 --exclude-module=av ^
 --exclude-module=setuptools ^
 --exclude-module=PIL ^
+--add-data=www:www ^
 my_yolo_train_tool.py
