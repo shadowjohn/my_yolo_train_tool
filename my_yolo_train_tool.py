@@ -385,7 +385,7 @@ if os.path.isfile(GDATA["pwd"] + "\\tmp_icon.ico"):
 # 計算窗口位置
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
-window_width = 580  # 假設窗口寬度為 450
+window_width = 420  # 假設窗口寬度為 450
 window_height = 140  # 假設窗口高度為  140
 
 # 計算窗口位置: 右下角150px，距離底部30%
@@ -402,12 +402,31 @@ root.title(f"我的悠嘍訓練機 - V{GDATA["VERSION"]} By 羽山秋人 (https:
 
 # 使用Frame將按鈕排成一行
 # 第一列
-GDATA["UI"]["button_frame"] = tk.Frame(root)
-GDATA["UI"]["button_frame"].pack(pady=10)
+GDATA["UI"]["first_frame"] = tk.Frame(root)
+GDATA["UI"]["first_frame"].pack(padx=5,pady=10, fill=tk.X)
+
+GDATA["UI"]["exit_button"] = tk.Button(
+    GDATA["UI"]["first_frame"], text="離開程式", command=on_closing
+)
+GDATA["UI"]["exit_button"].pack(side=tk.RIGHT, padx=5)
+
+GDATA["UI"]["info_button"] = tk.Button(
+    GDATA["UI"]["first_frame"], text="說明", command=on_message
+)
+GDATA["UI"]["info_button"].pack(side=tk.RIGHT, padx=5)
+
+
+
+
+# 以下放到第二行
+# 第二列
+
+GDATA["UI"]["second_frame"] = tk.Frame(root)
+GDATA["UI"]["second_frame"].pack(padx=5,fill=tk.X)
 
 # 新增專案檔，按到會出現 prompt 讓使用者輸入專案檔名稱
 GDATA["UI"]["new_project_button"] = tk.Button(
-    GDATA["UI"]["button_frame"], text="新增專案檔", command=new_project
+    GDATA["UI"]["second_frame"], text="新增專案檔", command=new_project
 )
 GDATA["UI"]["new_project_button"].pack(side=tk.LEFT, padx=5)
 
@@ -415,7 +434,7 @@ GDATA["UI"]["new_project_button"].pack(side=tk.LEFT, padx=5)
 GDATA["UI"]["select_project_selected"] = tk.StringVar()
 GDATA["UI"]["select_project_selected"].set("選擇專案檔")
 GDATA["UI"]["select_project_selected_menu"] = tk.OptionMenu(
-    GDATA["UI"]["button_frame"], GDATA["UI"]["select_project_selected"], "選擇專案檔"
+    GDATA["UI"]["second_frame"], GDATA["UI"]["select_project_selected"], "選擇專案檔"
 )
 # 更新下拉選單，重新取得專案檔列表 並且設定選擇的專案檔
 GDATA["UI"]["select_project_selected_menu"]["menu"].delete(0, "end")
@@ -431,58 +450,52 @@ GDATA["UI"]["select_project_selected_menu"].pack(side=tk.LEFT, padx=5)
 # 選到專案檔後，才能選擇錄影範圍
 GDATA["UI"]["select_project_selected"].trace("w", project_selected)
 
+GDATA["UI"]["execute_folder_button"] = tk.Button(
+    GDATA["UI"]["second_frame"], text="編輯訓練檔", command=browser_folder,
+    state=tk.DISABLED
+)
+GDATA["UI"]["execute_folder_button"].pack(side=tk.LEFT, padx=5)
+
+GDATA["UI"]["open_folder_button"] = tk.Button(
+    GDATA["UI"]["second_frame"], text="資料夾", command=open_folder
+)
+GDATA["UI"]["open_folder_button"].pack(side=tk.LEFT, padx=5)
+
+
+# 第三列
+GDATA["UI"]["third_frame"] = tk.Frame(root)
+GDATA["UI"]["third_frame"].pack(padx=5,pady=10,fill=tk.X)
 
 
 # 選擇錄影範圍 必需有專案檔才能選擇
 GDATA["UI"]["select_area_button"] = tk.Button(
-    GDATA["UI"]["button_frame"],
+    GDATA["UI"]["third_frame"],
     text="選擇錄影範圍",
     command=select_area,
-    state=tk.DISABLED,
+    state=tk.DISABLED
 )
 GDATA["UI"]["select_area_button"].pack(side=tk.LEFT, padx=5)
 
 GDATA["UI"]["start_button"] = tk.Button(
-    GDATA["UI"]["button_frame"], text="開始錄影", command=start_recording
+    GDATA["UI"]["third_frame"], text="開始錄影", command=start_recording
 )
 GDATA["UI"]["start_button"].pack(side=tk.LEFT, padx=5)
 
 GDATA["UI"]["stop_button"] = tk.Button(
-    GDATA["UI"]["button_frame"],
+    GDATA["UI"]["third_frame"],
     text="停止錄影",
     command=stop_recording,
     state=tk.DISABLED,
 )
 GDATA["UI"]["stop_button"].pack(side=tk.LEFT, padx=5)
 
-GDATA["UI"]["execute_folder_button"] = tk.Button(
-    GDATA["UI"]["button_frame"], text="編輯訓練檔", command=browser_folder
-)
-GDATA["UI"]["execute_folder_button"].pack(side=tk.LEFT, padx=5)
 
-GDATA["UI"]["open_folder_button"] = tk.Button(
-    GDATA["UI"]["button_frame"], text="資料夾", command=open_folder
-)
-GDATA["UI"]["open_folder_button"].pack(side=tk.LEFT, padx=5)
 
-GDATA["UI"]["info_button"] = tk.Button(
-    GDATA["UI"]["button_frame"], text="說明", command=on_message
-)
-GDATA["UI"]["info_button"].pack(side=tk.LEFT, padx=5)
 
-GDATA["UI"]["exit_button"] = tk.Button(
-    GDATA["UI"]["button_frame"], text="離開程式", command=on_closing
-)
-GDATA["UI"]["exit_button"].pack(side=tk.LEFT, padx=5)
 
-# 第二列
 
-GDATA["UI"]["checkbox_frame"] = tk.Frame(root)
-GDATA["UI"]["checkbox_frame"].pack()
 
-# 第三列
-GDATA["UI"]["third_frame"] = tk.Frame(root)
-GDATA["UI"]["third_frame"].pack()
+
 
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
@@ -536,7 +549,7 @@ def run_flask():
 
         return output
 
-    app.run(debug=True, port=9487, threaded=True, use_reloader=False)
+    app.run(debug=True, host='127.0.0.1', port=9487, threaded=True, use_reloader=False)
 
 
 threading.Thread(target=run_flask).start()

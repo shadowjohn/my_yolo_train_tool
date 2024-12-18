@@ -8,3 +8,4 @@ pyinstaller==6.9.0
 keyboard==0.13.5
 flask==3.0.3
 jsonify==0.5
+ultralytics==8.3.49
