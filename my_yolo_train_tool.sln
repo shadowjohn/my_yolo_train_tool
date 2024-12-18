@@ -7,20 +7,21 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "my_yolo_train_tool", ".", "
 	ProjectSection(WebsiteProperties) = preProject
 		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
 		Debug.AspNetCompiler.VirtualPath = "/localhost_7978"
-		Debug.AspNetCompiler.PhysicalPath = "..\..\..\OneDrive\Desktop\my_yolo_train_tool\"
+		Debug.AspNetCompiler.PhysicalPath = "..\my_yolo_train_tool\"
 		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_7978\"
 		Debug.AspNetCompiler.Updateable = "true"
 		Debug.AspNetCompiler.ForceOverwrite = "true"
 		Debug.AspNetCompiler.FixedNames = "false"
 		Debug.AspNetCompiler.Debug = "True"
 		Release.AspNetCompiler.VirtualPath = "/localhost_7978"
-		Release.AspNetCompiler.PhysicalPath = "..\..\..\OneDrive\Desktop\my_yolo_train_tool\"
+		Release.AspNetCompiler.PhysicalPath = "..\my_yolo_train_tool\"
 		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_7978\"
 		Release.AspNetCompiler.Updateable = "true"
 		Release.AspNetCompiler.ForceOverwrite = "true"
 		Release.AspNetCompiler.FixedNames = "false"
 		Release.AspNetCompiler.Debug = "False"
 		VWDPort = "7978"
+		SlnRelativePath = "..\my_yolo_train_tool\"
 	EndProjectSection
 EndProject
 Global
