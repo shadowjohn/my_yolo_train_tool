@@ -59,6 +59,18 @@ class kit:
         # Return timestamp   
         import time 
         return int(time.time())
+    def microtime(self, get_as_float=False):
+        import time
+        current_time = time.time()
+        
+        if not get_as_float:
+            # 將時間拆分為秒和微秒，類似 PHP 的 (microseconds seconds) 格式
+            seconds = int(current_time)
+            microseconds = current_time - seconds
+            return f"{microseconds:.6f} {seconds}"
+        else:
+            # 直接返回浮點數時間戳
+            return current_time
     def date(self,*args):
         # Argv(0) for output struct
         # Argv(1) for timestamp
@@ -458,7 +470,7 @@ class kit:
     def urlencode(self,data):
         if self.python_version() == 3:
           import urllib.parse
-          return urllib.parse.quote(data);
+          return urllib.parse.quote(data, safe="")
         else:
           import urllib
-          return urllib.quote(data);
+          return urllib.quote(data, safe="")

@@ -18,6 +18,37 @@ import mss
 import php
 import keyboard
 from flask import Flask, render_template, jsonify, request
+from ctypes import windll, byref, sizeof, c_int, wintypes
+from ctypes.wintypes import HWND, LONG, RECT
+
+# Windows 專用功能：設置窗口滑鼠穿透
+def set_window_exclude(window_id):
+    return
+    hwnd = wintypes.HWND(window_id)
+    # 獲取當前窗口屬性
+    exstyle = windll.user32.GetWindowLongW(hwnd, -20)  # GWL_EXSTYLE = -20
+    # 添加透明與滑鼠穿透屬性
+    exstyle |= 0x20  # WS_EX_TRANSPARENT
+    exstyle |= 0x80000  # WS_EX_LAYERED
+    windll.user32.SetWindowLongW(hwnd, -20, exstyle)
+    # 設置窗口完全透明 (僅顯示繪製的內容)
+    windll.user32.SetLayeredWindowAttributes(hwnd, 0, 255, 0x2)  # LWA_ALPHA = 0x2
+# 畫框用的透明窗口
+def create_overlay_window(x1, y1, x2, y2):        
+    overlay = tk.Toplevel()
+    overlay.attributes("-fullscreen", True)
+    overlay.attributes("-topmost", True)
+    overlay.attributes("-transparentcolor", "black")  # 透明背景顏色
+    overlay.configure(background="black")
+
+    canvas = tk.Canvas(overlay, bg="black", highlightthickness=0)
+    canvas.pack(fill="both", expand=True)
+
+    # 繪製矩形框
+    canvas.create_rectangle(x1, y1, x2, y2, outline="red", width=1)
+    #hwnd = int(overlay.winfo_id())
+    #set_window_exclude(hwnd)  # 設置滑鼠穿透
+    return overlay
 
 my = php.kit()
 pwd = os.path.dirname(os.path.realpath(sys.argv[0]))  # 取得 exe 檔案的目錄路徑
@@ -57,7 +88,7 @@ except:
 
 
 MESSAGE = f"""
-我的悠嘍訓練機
+我的 yolo 訓練機
 
 版本: {GDATA["VERSION"]}
 作者: 羽山 (https://3wa.tw)  
@@ -68,17 +99,21 @@ icon_b64 = "AAABAAEAWFgAAAEAIABIfQAAFgAAACgAAABYAAAAsAAAAAEAIAAAAAAAAHkAAMEOAADB
 
 def select_area():
     global GDATA
+    if "overlay" in GDATA and GDATA["overlay"] != None:
+        GDATA["overlay"].destroy()
+        GDATA["overlay"] = None
     GDATA["record_area"] = tk.Toplevel()
     GDATA["record_area"].attributes("-fullscreen", True)
-    GDATA["record_area"].attributes("-alpha", 0.3)
+    GDATA["record_area"].attributes("-topmost", True)  # 確保在最上層
     GDATA["record_area"].configure(background="black")
+    GDATA["record_area"].attributes("-alpha", 0.3)
 
     instruction = tk.Label(
         GDATA["record_area"], text="用滑鼠框選訓練畫面範圍", bg="white"
     )
     instruction.pack()
 
-    canvas = tk.Canvas(GDATA["record_area"], cursor="cross")
+    canvas = tk.Canvas(GDATA["record_area"], cursor="cross", bg="black")
     canvas.pack(fill="both", expand=True)
 
     GDATA["rect"] = None
@@ -96,8 +131,33 @@ def select_area():
         canvas.coords(GDATA["rect"], GDATA["x1"], GDATA["y1"], GDATA["x2"], GDATA["y2"])
 
     def on_button_release(event):
-        GDATA["record_area"].grab_release()  # 釋放滑鼠事件
-        GDATA["record_area"].destroy()
+        GDATA["record_area"].grab_release()  # 釋放滑鼠事件        
+        GDATA["record_area"].destroy()        
+        #hwnd = int(GDATA["record_area"].winfo_id())  # 獲取窗口句柄
+        #set_window_exclude(hwnd)  # 設置穿透
+        #GDATA["record_area"].attributes("-alpha", 0.1)  # 隱藏背景
+        #canvas.unbind("<ButtonPress-1>")
+        #canvas.unbind("<B1-Motion>")
+        #canvas.unbind("<ButtonRelease-1>")
+        # 儲存框選範圍
+        x1, y1, x2, y2 = GDATA["x1"], GDATA["y1"] + 22, event.x, event.y + 22
+
+        GDATA["x1"], GDATA["y1"], GDATA["x2"], GDATA["y2"] = x1, y1, x2, y2
+
+        # 建立透明窗口繪製細框
+        GDATA["overlay"] = create_overlay_window(x1, y1 , x2, y2 )    
+        
+        # 儲存框選範圍到專案檔 rect.txt
+        _OUTPUT_RECT_FILE = os.path.join(GDATA["project_folder"], "rect.txt")
+        my.file_put_contents(_OUTPUT_RECT_FILE, my.json_encode({
+            "x1": x1,
+            "y1": y1,
+            "x2": x2,
+            "y2": y2
+        }).encode('UTF-8'))
+
+        GDATA["UI"]["start_button"].config(state=tk.NORMAL) # 啟用開始按鈕
+        GDATA["UI"]["show_hide_rect_button"].config(state=tk.NORMAL) # 啟用開始按鈕
 
     canvas.bind("<ButtonPress-1>", on_button_press)
     canvas.bind("<B1-Motion>", on_move_press)
@@ -105,7 +165,42 @@ def select_area():
 
     GDATA["record_area"].grab_set_global()  # 捕獲滑鼠事件
 
+def method_count_wait_process_files():
+    # 計算有多少待處理的檔案
+    global GDATA
+    GDATA["wait_process_files"] = 0
+    fp = my.glob(GDATA["project_folder"]+my.SP()+"*.png")
+    GDATA["wait_process_files"] = len(fp)
+    GDATA["UI"]["status_label"].config(text="待處理檔案數：%s" % GDATA["wait_process_files"])
 
+
+def start_cut_screen():
+    # 用 mss 截一張圖，放到 project_folder，檔名是 {t}.png
+    global GDATA
+
+    # 檢查是否有選擇範圍
+    # 原本可能是 0 or None
+    if GDATA["x1"] == GDATA["x2"] or GDATA["y1"] == GDATA["y2"]: 
+		#messagebox.showwarning("警告", "請先選擇拍照範圍！")
+        print("請先選擇專案，或先選擇拍照範圍！")
+        return
+
+    # Lock UI    
+    t = str(int(my.microtime(True)*1000.0))
+    #print(my.microtime())
+    GDATA["cut_screen_file"] = os.path.join(GDATA["project_folder"], t + ".png")
+    sct = mss.mss(with_cursor=False)
+    # monitor 為 GDATA 的 x1 ,x2, y1, y2
+
+    monitor = {"left": GDATA["x1"], "top": GDATA["y1"], "width": GDATA["x2"] - GDATA["x1"], "height": GDATA["y2"] - GDATA["y1"]}
+    frame = sct.grab(monitor)
+    mss.tools.to_png(frame.rgb, frame.size, output=GDATA["cut_screen_file"])
+    #sct.shot(output=GDATA["cut_screen_file"])
+
+    method_count_wait_process_files()
+
+
+'''
 def start_recording():
     global GDATA
     # Lock UI
@@ -119,7 +214,7 @@ def start_recording():
         messagebox.showwarning("警告", "錄影已經在進行中！")
         return
     if GDATA["x1"] == GDATA["x2"] or GDATA["y1"] == GDATA["y2"]:
-        messagebox.showwarning("警告", "請先選擇錄影範圍！")
+        messagebox.showwarning("警告", "請先選擇拍照範圍！")
         return
     GDATA["UI"]["progress_label"].config(text="影像截取中...")
     GDATA["recording"] = True
@@ -136,7 +231,7 @@ def start_recording():
 
     GDATA["UI"]["start_button"].config(state=tk.DISABLED)
     GDATA["UI"]["stop_button"].config(state=tk.NORMAL)
-
+'''
 
 def ui_enable_disable(bool_val):
     global GDATA
@@ -239,7 +334,7 @@ def record_video():
     # out.release()
     # cv2.destroyAllWindows()
 
-
+'''
 def stop_recording():
     global GDATA
 
@@ -258,7 +353,7 @@ def stop_recording():
     GDATA["UI"]["start_button"].config(state=tk.NORMAL)
     GDATA["UI"]["stop_button"].config(state=tk.DISABLED)
     messagebox.showinfo("提示", "錄影已停止")
-
+'''
 
 def open_folder():
     global GDATA
@@ -268,7 +363,8 @@ def open_folder():
 
 def browser_folder():
     # 用瀏覽器開啟 http://localhost:9487
-    webbrowser.open("http://localhost:9487")
+    global GDATA
+    webbrowser.open("http://localhost:9487/?project_name=" + my.urlencode(GDATA["project"])  )
 
 
 def on_message():
@@ -352,16 +448,47 @@ def new_project():
         )
         GDATA["UI"]["select_project_selected_menu"].pack(side=tk.LEFT, padx=5)
         GDATA["UI"]["select_area_button"].config(state=tk.NORMAL)
+        method_count_wait_process_files() # 計算有多少待處理的檔案
+
+def method_show_hide_rect_button():
+    # 顯示或隱藏細框
+	global GDATA
+	if GDATA["overlay"] == None:
+		return
+	if GDATA["overlay"].winfo_viewable():
+		GDATA["overlay"].withdraw()
+	else:
+		GDATA["overlay"].deiconify()
 
 def project_selected(self,a,b):
+    # 選到專案檔後，才能選擇拍照範圍
     global GDATA
     project = GDATA["UI"]["select_project_selected"].get()
     if project == "選擇專案檔":
         GDATA["UI"]["select_area_button"].config(state=tk.DISABLED)
+        GDATA["UI"]["execute_folder_button"].config(state=tk.DISABLED)
         return
-    GDATA["project"] = project
-    GDATA["UI"]["select_area_button"].config(state=tk.NORMAL)
+    GDATA["project"] = project # 設定選擇的專案檔名稱
+    GDATA["UI"]["select_area_button"].config(state=tk.NORMAL) # 選到專案檔後，才能選擇拍照範圍
+    GDATA["UI"]["execute_folder_button"].config(state=tk.NORMAL) # 選到專案檔後，才能選擇 編輯訓練檔
+    GDATA["project_folder"] = GDATA["pwd"] + my.SP() + "data" + my.SP() + "projects" + my.SP() + project
+    # 檢查是否有 rect.txt
+    _OUTPUT_RECT_FILE = os.path.join(GDATA["project_folder"], "rect.txt")
 
+    # 有選就重置
+    if "overlay" in GDATA and GDATA["overlay"] != None:
+        GDATA["overlay"].destroy()
+        GDATA["overlay"] = None
+
+    if my.is_file(_OUTPUT_RECT_FILE):		
+        jd = my.json_decode(my.file_get_contents(_OUTPUT_RECT_FILE))
+        GDATA["x1"], GDATA["y1"], GDATA["x2"], GDATA["y2"] = int(jd["x1"]), int(jd["y1"]), int(jd["x2"]), int(jd["y2"])
+		# 建立透明窗口繪製細框
+        GDATA["overlay"] = create_overlay_window(GDATA["x1"], GDATA["y1"], GDATA["x2"], GDATA["y2"])	
+        GDATA["UI"]["start_button"].config(state=tk.NORMAL) # 啟用開始按鈕
+        GDATA["UI"]["show_hide_rect_button"].config(state=tk.NORMAL) # 啟用開始按鈕
+    # 計算有多少待處理的檔案
+    method_count_wait_process_files()
 
 root = tk.Tk()
 
@@ -385,8 +512,8 @@ if os.path.isfile(GDATA["pwd"] + "\\tmp_icon.ico"):
 # 計算窗口位置
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
-window_width = 420  # 假設窗口寬度為 450
-window_height = 140  # 假設窗口高度為  140
+window_width = 420  # 假設窗口寬度為 420
+window_height = 160  # 假設窗口高度為  160
 
 # 計算窗口位置: 右下角150px，距離底部30%
 x = screen_width - window_width - 150
@@ -398,7 +525,7 @@ root.geometry(f"{window_width}x{window_height}+{x}+{y}")
 # 設置窗口不可縮放
 root.resizable(False, False)
 
-root.title(f"我的悠嘍訓練機 - V{GDATA["VERSION"]} By 羽山秋人 (https://3wa.tw)")
+root.title(f"我的 yolo 訓練機 - V{GDATA["VERSION"]} By 羽山秋人 (https://3wa.tw)")
 
 # 使用Frame將按鈕排成一行
 # 第一列
@@ -447,7 +574,7 @@ for project in project_get_list_all():
     GDATA["UI"]["select_project_selected_menu"].pack(side=tk.LEFT, padx=5)
     #GDATA["UI"]["select_area_button"].config(state=tk.NORMAL)
 GDATA["UI"]["select_project_selected_menu"].pack(side=tk.LEFT, padx=5)
-# 選到專案檔後，才能選擇錄影範圍
+# 選到專案檔後，才能選擇拍照範圍
 GDATA["UI"]["select_project_selected"].trace("w", project_selected)
 
 GDATA["UI"]["execute_folder_button"] = tk.Button(
@@ -467,20 +594,30 @@ GDATA["UI"]["third_frame"] = tk.Frame(root)
 GDATA["UI"]["third_frame"].pack(padx=5,pady=10,fill=tk.X)
 
 
-# 選擇錄影範圍 必需有專案檔才能選擇
+# 選擇拍照範圍 必需有專案檔才能選擇
 GDATA["UI"]["select_area_button"] = tk.Button(
     GDATA["UI"]["third_frame"],
-    text="選擇錄影範圍",
+    text="選擇拍照範圍",
     command=select_area,
     state=tk.DISABLED
 )
 GDATA["UI"]["select_area_button"].pack(side=tk.LEFT, padx=5)
 
 GDATA["UI"]["start_button"] = tk.Button(
-    GDATA["UI"]["third_frame"], text="開始錄影", command=start_recording
+    GDATA["UI"]["third_frame"], text="截圖(熱鍵)：CTRL + ALT + ~ ", 
+    command=start_cut_screen,
+    state=tk.DISABLED # 選擇拍照範圍後才能截圖 
 )
 GDATA["UI"]["start_button"].pack(side=tk.LEFT, padx=5)
 
+GDATA["UI"]["show_hide_rect_button"] = tk.Button(
+    GDATA["UI"]["third_frame"], text="隱藏圖框", 
+    command=method_show_hide_rect_button,
+    state=tk.DISABLED # 選擇拍照範圍後才能截圖 
+)
+GDATA["UI"]["show_hide_rect_button"].pack(side=tk.LEFT, padx=5)
+
+'''
 GDATA["UI"]["stop_button"] = tk.Button(
     GDATA["UI"]["third_frame"],
     text="停止錄影",
@@ -488,9 +625,15 @@ GDATA["UI"]["stop_button"] = tk.Button(
     state=tk.DISABLED,
 )
 GDATA["UI"]["stop_button"].pack(side=tk.LEFT, padx=5)
+'''
 
 
+# 第四列，狀態列
+GDATA["UI"]["fourth_frame"] = tk.Frame(root)
+GDATA["UI"]["fourth_frame"].pack(padx=5,pady=5,fill=tk.X)
 
+GDATA["UI"]["status_label"] = tk.Label(GDATA["UI"]["fourth_frame"], text="")
+GDATA["UI"]["status_label"].pack(side=tk.LEFT, padx=5)
 
 
 
@@ -551,8 +694,11 @@ def run_flask():
 
     app.run(debug=True, host='127.0.0.1', port=9487, threaded=True, use_reloader=False)
 
-
 threading.Thread(target=run_flask).start()
+
+# 註冊熱鍵 CTRL + ALT + ` 或 CTRL + ALT + ~
+keyboard.add_hotkey('ctrl+alt+~', start_cut_screen)  # 設置全螢幕熱鍵
+#keyboard.add_hotkey('ctrl+alt+~', start_cut_screen)  # 設置全螢幕熱鍵
 
 
 root.mainloop()

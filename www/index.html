@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>我的悠嘍訓練機</title>
+    <title>我的 yolo 訓練機</title>
 
     <script src="www/js/jquery.min.js"></script>
     <script src="www/js/myphp.js"></script>
@@ -31,9 +31,23 @@
             <!-- 這裡可以動態填充選項 -->
         </select>
     </div>
+    <div id="divTop" class="d-flex justify-content-center align-items-center d-none" style="height: 55px; background-color: #f0f0f0;">
+        <!-- 可以放功能列-->
+        <a href="javascript:;" reqc="a物件清單" class="btn btn-primary mx-2">物件清單</a>
+        <a href="javascript:;" reqc="a圖框設定" class="btn btn-primary mx-2">圖框設定</a>
+    </div>
     <hr class="my-4" style="border-color: red;" />
 </body>
 <script>
+    var GETS = getGET();
+    if (GETS["project_name"] == undefined) {
+        GETS["project_name"] = "";
+        $("#divTop").removeClass('d-none');
+        $("#divTop").addClass('d-none');
+    }
+    else {
+        $("#divTop").removeClass('d-none');
+    }
     var APP = {
         method: {
             "ui_init": function () {
@@ -56,6 +70,15 @@
                             m.push(d);
                         });
                         $("#project_name").html(m.join(""));
+                        $("#project_name").val(GETS["project_name"]);
+                        $("#project_name").off().change(function () {
+                            var project_name = $(this).val();
+                            if (project_name == "") {
+                                return;
+                            }
+                            project_name = encodeURIComponent(project_name);
+                            location.href = `index.html?project_name=${project_name}`;
+                        });
                     });
                 }
             },
