@@ -21,6 +21,7 @@ from flask import Flask, render_template, jsonify, request
 from ctypes import windll, byref, sizeof, c_int, wintypes
 from ctypes.wintypes import HWND, LONG, RECT
 
+
 # Windows 專用功能：設置窗口滑鼠穿透
 def set_window_exclude(window_id):
     return
@@ -33,31 +34,36 @@ def set_window_exclude(window_id):
     windll.user32.SetWindowLongW(hwnd, -20, exstyle)
     # 設置窗口完全透明 (僅顯示繪製的內容)
     windll.user32.SetLayeredWindowAttributes(hwnd, 0, 255, 0x2)  # LWA_ALPHA = 0x2
+
+
 # 畫框用的透明窗口
-def create_overlay_window(x1, y1, x2, y2):        
+def create_overlay_window(x1, y1, x2, y2):
     overlay = tk.Toplevel()
     overlay.attributes("-fullscreen", True)
     overlay.attributes("-topmost", True)
     overlay.attributes("-alpha", 0.5)  # 透明度
     overlay.attributes("-transparentcolor", "black")  # 透明背景顏色
     overlay.configure(background="black")
-    #移除工作列圖示
+    # 移除工作列圖示
     overlay.overrideredirect(True)
     canvas = tk.Canvas(overlay, bg="black", highlightthickness=0)
     canvas.pack(fill="both", expand=True)
 
     # 繪製矩形框
     canvas.create_rectangle(x1, y1, x2, y2, outline="red", width=1)
-    #hwnd = int(overlay.winfo_id())
-    #set_window_exclude(hwnd)  # 設置滑鼠穿透
+    # hwnd = int(overlay.winfo_id())
+    # set_window_exclude(hwnd)  # 設置滑鼠穿透
     return overlay
+
 
 my = php.kit()
 pwd = os.path.dirname(os.path.realpath(sys.argv[0]))  # 取得 exe 檔案的目錄路徑
 if my.is_dir(pwd + my.SP() + "data") == False:
     my.mkdir(pwd + my.SP() + "data")
+    os.chmod(pwd + my.SP() + "data", 0o777)
 if my.is_dir(pwd + my.SP() + "data" + my.SP() + "projects") == False:
     my.mkdir(pwd + my.SP() + "data" + my.SP() + "projects")
+    os.chmod(pwd + my.SP() + "data" + my.SP() + "projects", 0o777)
 
 GDATA = {
     "VERSION": "0.01",
@@ -133,37 +139,34 @@ def select_area():
         canvas.coords(GDATA["rect"], GDATA["x1"], GDATA["y1"], GDATA["x2"], GDATA["y2"])
 
     def on_button_release(event):
-        GDATA["record_area"].grab_release()  # 釋放滑鼠事件        
-        GDATA["record_area"].destroy()        
-        #hwnd = int(GDATA["record_area"].winfo_id())  # 獲取窗口句柄
-        #set_window_exclude(hwnd)  # 設置穿透
-        #GDATA["record_area"].attributes("-alpha", 0.1)  # 隱藏背景
-        #canvas.unbind("<ButtonPress-1>")
-        #canvas.unbind("<B1-Motion>")
-        #canvas.unbind("<ButtonRelease-1>")
+        GDATA["record_area"].grab_release()  # 釋放滑鼠事件
+        GDATA["record_area"].destroy()
+        # hwnd = int(GDATA["record_area"].winfo_id())  # 獲取窗口句柄
+        # set_window_exclude(hwnd)  # 設置穿透
+        # GDATA["record_area"].attributes("-alpha", 0.1)  # 隱藏背景
+        # canvas.unbind("<ButtonPress-1>")
+        # canvas.unbind("<B1-Motion>")
+        # canvas.unbind("<ButtonRelease-1>")
         # 儲存框選範圍
         x1, y1, x2, y2 = GDATA["x1"], GDATA["y1"] + 22, event.x, event.y + 22
 
         GDATA["x1"], GDATA["y1"], GDATA["x2"], GDATA["y2"] = x1, y1, x2, y2
 
         # 建立透明窗口繪製細框
-        GDATA["overlay"] = create_overlay_window(x1, y1 , x2, y2 )    
-        
+        GDATA["overlay"] = create_overlay_window(x1, y1, x2, y2)
+
         # 儲存框選範圍到專案檔 rect.txt
         _OUTPUT_RECT_FILE = os.path.join(GDATA["project_folder"], "rect.txt")
-        my.file_put_contents(_OUTPUT_RECT_FILE, my.json_encode({
-            "x1": x1,
-            "y1": y1,
-            "x2": x2,
-            "y2": y2
-        }).encode('UTF-8'))
+        my.file_put_contents(
+            _OUTPUT_RECT_FILE,
+            my.json_encode({"x1": x1, "y1": y1, "x2": x2, "y2": y2}).encode("UTF-8"),
+        )
 
-        GDATA["UI"]["start_button"].config(state=tk.NORMAL) # 啟用開始按鈕
-        GDATA["UI"]["show_hide_rect_button"].config(state=tk.NORMAL) # 啟用開始按鈕
+        GDATA["UI"]["start_button"].config(state=tk.NORMAL)  # 啟用開始按鈕
+        GDATA["UI"]["show_hide_rect_button"].config(state=tk.NORMAL)  # 啟用開始按鈕
         # 按鈕加紅邊框
         if GDATA["UI"]["show_hide_rect_button"].cget("text") == "隱藏圖框":
             GDATA["UI"]["show_hide_rect_button"].config(highlightcolor="red")
-          
 
     canvas.bind("<ButtonPress-1>", on_button_press)
     canvas.bind("<B1-Motion>", on_move_press)
@@ -171,56 +174,67 @@ def select_area():
 
     GDATA["record_area"].grab_set_global()  # 捕獲滑鼠事件
 
+
 def method_count_wait_process_files():
     # 計算有多少待處理的檔案
     global GDATA
     GDATA["wait_process_files"] = 0
-    fp = my.glob(GDATA["project_folder"]+my.SP()+"*.png")
+    fp = my.glob(GDATA["project_folder"] + my.SP() + "*.jpg")
     GDATA["wait_process_files"] = len(fp)
-    GDATA["UI"]["status_label"].config(text="待處理檔案數：%s" % GDATA["wait_process_files"])
+    GDATA["UI"]["status_label"].config(
+        text="待處理檔案數：%s" % GDATA["wait_process_files"]
+    )
 
 
 def start_cut_screen():
-    # 用 mss 截一張圖，放到 project_folder，檔名是 {t}.png
+    # 用 mss 截一張圖，放到 project_folder，檔名是 {t}.jpg
     global GDATA
 
     # 檢查是否有選擇範圍
     # 原本可能是 0 or None
-    if GDATA["x1"] == GDATA["x2"] or GDATA["y1"] == GDATA["y2"]: 
-		#messagebox.showwarning("警告", "請先選擇拍照範圍！")
+    if GDATA["x1"] == GDATA["x2"] or GDATA["y1"] == GDATA["y2"]:
+        # messagebox.showwarning("警告", "請先選擇拍照範圍！")
         print("請先選擇專案，或先選擇拍照範圍！")
         return
 
-    # Lock UI    
-    t = str(int(my.microtime(True)*1000.0))
-    #print(my.microtime())
-    GDATA["cut_screen_file"] = os.path.join(GDATA["project_folder"], t + ".png")
+    # Lock UI
+    t = str(int(my.microtime(True) * 1000.0))
+    # print(my.microtime())
+    GDATA["cut_screen_file"] = os.path.join(GDATA["project_folder"], t + ".jpg")
     sct = mss.mss(with_cursor=False)
     # monitor 為 GDATA 的 x1 ,x2, y1, y2
 
-    monitor = {"left": GDATA["x1"], "top": GDATA["y1"], "width": GDATA["x2"] - GDATA["x1"], "height": GDATA["y2"] - GDATA["y1"]}
+    monitor = {
+        "left": GDATA["x1"],
+        "top": GDATA["y1"],
+        "width": GDATA["x2"] - GDATA["x1"],
+        "height": GDATA["y2"] - GDATA["y1"],
+    }
 
     # 藏掉細框
     # 有label == "隱藏圖框"，就是要隱藏，截完再後顯示
     NEED_SWITCH_RECT = False
-    if GDATA["UI"]["show_hide_rect_button"].cget("text") == "隱藏圖框" and "overlay" in GDATA and GDATA["overlay"] != None:
+    if (
+        GDATA["UI"]["show_hide_rect_button"].cget("text") == "隱藏圖框"
+        and "overlay" in GDATA
+        and GDATA["overlay"] != None
+    ):
         NEED_SWITCH_RECT = True
 
-    
-    if NEED_SWITCH_RECT == True: # 截之前先隱藏
+    if NEED_SWITCH_RECT == True:  # 截之前先隱藏
         do_show_hide_rect_button(False)
 
-    frame = sct.grab(monitor) # 截圖 
+    frame = sct.grab(monitor)  # 截圖
 
-    if NEED_SWITCH_RECT == True: # 截完再後顯示
+    if NEED_SWITCH_RECT == True:  # 截完再後顯示
         do_show_hide_rect_button(True)
-    mss.tools.to_png(frame.rgb, frame.size, output=GDATA["cut_screen_file"])
-    #sct.shot(output=GDATA["cut_screen_file"])
+    mss.tools.to_jpg(frame.rgb, frame.size, output=GDATA["cut_screen_file"])
+    # sct.shot(output=GDATA["cut_screen_file"])
 
     method_count_wait_process_files()
 
 
-'''
+"""
 def start_recording():
     global GDATA
     # Lock UI
@@ -251,7 +265,8 @@ def start_recording():
 
     GDATA["UI"]["start_button"].config(state=tk.DISABLED)
     GDATA["UI"]["stop_button"].config(state=tk.NORMAL)
-'''
+"""
+
 
 def ui_enable_disable(bool_val):
     global GDATA
@@ -354,7 +369,8 @@ def record_video():
     # out.release()
     # cv2.destroyAllWindows()
 
-'''
+
+"""
 def stop_recording():
     global GDATA
 
@@ -373,20 +389,27 @@ def stop_recording():
     GDATA["UI"]["start_button"].config(state=tk.NORMAL)
     GDATA["UI"]["stop_button"].config(state=tk.DISABLED)
     messagebox.showinfo("提示", "錄影已停止")
-'''
+"""
+
 
 def open_folder():
     global GDATA
     # 進到 projects 的專案裡
-    project_name = GDATE["project"]
-    folder_path = os.path.dirname(os.path.abspath("data" + my.SP() + "projects" + my.SP() + project_name))
+    if "project_folder" not in GDATA:
+        # alert 請先選擇專案
+        messagebox.showwarning("警告", "請先選擇專案檔！")
+        return
+    folder_path = GDATA["project_folder"]
+    print(folder_path)
     webbrowser.open(folder_path)
 
 
 def browser_folder():
     # 用瀏覽器開啟 http://localhost:9487
     global GDATA
-    webbrowser.open("http://localhost:9487/?project_name=" + my.urlencode(GDATA["project"])  )
+    webbrowser.open(
+        "http://localhost:9487/?project_name=" + my.urlencode(GDATA["project"])
+    )
 
 
 def on_message():
@@ -451,12 +474,56 @@ def new_project():
     my.mkdir(
         GDATA["pwd"] + my.SP() + "data" + my.SP() + "projects" + my.SP() + project_name
     )
+    os.chmod(
+        GDATA["pwd"] + my.SP() + "data" + my.SP() + "projects" + my.SP() + project_name,
+        0o777,
+    )
     # 繼續建立 dataset 與 my_dataset
     my.mkdir(
-        GDATA["pwd"] + my.SP() + "data" + my.SP() + "projects" + my.SP() + project_name + my.SP() + "dataset"
+        GDATA["pwd"]
+        + my.SP()
+        + "data"
+        + my.SP()
+        + "projects"
+        + my.SP()
+        + project_name
+        + my.SP()
+        + "dataset"
+    )
+    os.chmod(
+        GDATA["pwd"]
+        + my.SP()
+        + "data"
+        + my.SP()
+        + "projects"
+        + my.SP()
+        + project_name
+        + my.SP()
+        + "dataset",
+        0o777,
     )
     my.mkdir(
-        GDATA["pwd"] + my.SP() + "data" + my.SP() + "projects" + my.SP() + project_name + my.SP() + "my_dataset"
+        GDATA["pwd"]
+        + my.SP()
+        + "data"
+        + my.SP()
+        + "projects"
+        + my.SP()
+        + project_name
+        + my.SP()
+        + "my_dataset"
+    )
+    os.chmod(
+        GDATA["pwd"]
+        + my.SP()
+        + "data"
+        + my.SP()
+        + "projects"
+        + my.SP()
+        + project_name
+        + my.SP()
+        + "my_dataset",
+        0o777,
     )
     messagebox.showinfo("提示", "新增專案檔成功！")
 
@@ -470,40 +537,43 @@ def new_project():
         )
         GDATA["UI"]["select_project_selected_menu"].pack(side=tk.LEFT, padx=5)
         GDATA["UI"]["select_area_button"].config(state=tk.NORMAL)
-        method_count_wait_process_files() # 計算有多少待處理的檔案
+        method_count_wait_process_files()  # 計算有多少待處理的檔案
+
 
 def do_show_hide_rect_button(b):
-	# 顯示或隱藏細框
-	global GDATA
-	if GDATA["overlay"] == None:
-		return
-	if b == True:
-		# GDATA["overlay"] 顯示
-		#GDATA["overlay"].deiconify()
-		GDATA["overlay"].attributes("-alpha", 0.5)
-	else:        
-		#GDATA["overlay"].withdraw() 
-		GDATA["overlay"].attributes("-alpha", 0.0)
+    # 顯示或隱藏細框
+    global GDATA
+    if GDATA["overlay"] == None:
+        return
+    if b == True:
+        # GDATA["overlay"] 顯示
+        # GDATA["overlay"].deiconify()
+        GDATA["overlay"].attributes("-alpha", 0.5)
+    else:
+        # GDATA["overlay"].withdraw()
+        GDATA["overlay"].attributes("-alpha", 0.0)
+
 
 def method_show_hide_rect_button():
     # 顯示或隱藏細框
-	global GDATA
-	if GDATA["overlay"] == None:
-		return
-	if GDATA["overlay"].winfo_viewable():
-		GDATA["overlay"].withdraw()
+    global GDATA
+    if GDATA["overlay"] == None:
+        return
+    if GDATA["overlay"].winfo_viewable():
+        GDATA["overlay"].withdraw()
         # 調整 show_hide_rect_button 文字
-		GDATA["UI"]["show_hide_rect_button"].config(text="顯示圖框")
-		# 按鈕取消紅邊框
-		GDATA["UI"]["show_hide_rect_button"].config(highlightcolor="SystemButtonFace")
-	else:
-		GDATA["overlay"].deiconify()
+        GDATA["UI"]["show_hide_rect_button"].config(text="顯示圖框")
+        # 按鈕取消紅邊框
+        GDATA["UI"]["show_hide_rect_button"].config(highlightcolor="SystemButtonFace")
+    else:
+        GDATA["overlay"].deiconify()
         # 調整 show_hide_rect_button 文字
-		GDATA["UI"]["show_hide_rect_button"].config(text="隱藏圖框")
-		# 按鈕加紅邊框
-		GDATA["UI"]["show_hide_rect_button"].config(highlightcolor="red")
+        GDATA["UI"]["show_hide_rect_button"].config(text="隱藏圖框")
+        # 按鈕加紅邊框
+        GDATA["UI"]["show_hide_rect_button"].config(highlightcolor="red")
 
-def project_selected(self,a,b):
+
+def project_selected(self, a, b):
     # 選到專案檔後，才能選擇拍照範圍
     global GDATA
     project = GDATA["UI"]["select_project_selected"].get()
@@ -511,10 +581,16 @@ def project_selected(self,a,b):
         GDATA["UI"]["select_area_button"].config(state=tk.DISABLED)
         GDATA["UI"]["execute_folder_button"].config(state=tk.DISABLED)
         return
-    GDATA["project"] = project # 設定選擇的專案檔名稱
-    GDATA["UI"]["select_area_button"].config(state=tk.NORMAL) # 選到專案檔後，才能選擇拍照範圍
-    GDATA["UI"]["execute_folder_button"].config(state=tk.NORMAL) # 選到專案檔後，才能選擇 編輯訓練檔
-    GDATA["project_folder"] = GDATA["pwd"] + my.SP() + "data" + my.SP() + "projects" + my.SP() + project
+    GDATA["project"] = project  # 設定選擇的專案檔名稱
+    GDATA["UI"]["select_area_button"].config(
+        state=tk.NORMAL
+    )  # 選到專案檔後，才能選擇拍照範圍
+    GDATA["UI"]["execute_folder_button"].config(
+        state=tk.NORMAL
+    )  # 選到專案檔後，才能選擇 編輯訓練檔
+    GDATA["project_folder"] = (
+        GDATA["pwd"] + my.SP() + "data" + my.SP() + "projects" + my.SP() + project
+    )
     # 檢查是否有 rect.txt
     _OUTPUT_RECT_FILE = os.path.join(GDATA["project_folder"], "rect.txt")
 
@@ -523,18 +599,26 @@ def project_selected(self,a,b):
         GDATA["overlay"].destroy()
         GDATA["overlay"] = None
 
-    if my.is_file(_OUTPUT_RECT_FILE):		
+    if my.is_file(_OUTPUT_RECT_FILE):
         jd = my.json_decode(my.file_get_contents(_OUTPUT_RECT_FILE))
-        GDATA["x1"], GDATA["y1"], GDATA["x2"], GDATA["y2"] = int(jd["x1"]), int(jd["y1"]), int(jd["x2"]), int(jd["y2"])
-		# 建立透明窗口繪製細框
-        GDATA["overlay"] = create_overlay_window(GDATA["x1"], GDATA["y1"], GDATA["x2"], GDATA["y2"])	
-        GDATA["UI"]["start_button"].config(state=tk.NORMAL) # 啟用開始按鈕
-        GDATA["UI"]["show_hide_rect_button"].config(state=tk.NORMAL) # 啟用開始按鈕
+        GDATA["x1"], GDATA["y1"], GDATA["x2"], GDATA["y2"] = (
+            int(jd["x1"]),
+            int(jd["y1"]),
+            int(jd["x2"]),
+            int(jd["y2"]),
+        )
+        # 建立透明窗口繪製細框
+        GDATA["overlay"] = create_overlay_window(
+            GDATA["x1"], GDATA["y1"], GDATA["x2"], GDATA["y2"]
+        )
+        GDATA["UI"]["start_button"].config(state=tk.NORMAL)  # 啟用開始按鈕
+        GDATA["UI"]["show_hide_rect_button"].config(state=tk.NORMAL)  # 啟用開始按鈕
         # 按鈕加紅邊框
         if GDATA["UI"]["show_hide_rect_button"].cget("text") == "隱藏圖框":
             GDATA["UI"]["show_hide_rect_button"].config(highlightcolor="red")
     # 計算有多少待處理的檔案
     method_count_wait_process_files()
+
 
 root = tk.Tk()
 
@@ -576,7 +660,7 @@ root.title(f"我的 yolo 訓練機 - V{GDATA["VERSION"]} By 羽山秋人 (https:
 # 使用Frame將按鈕排成一行
 # 第一列
 GDATA["UI"]["first_frame"] = tk.Frame(root)
-GDATA["UI"]["first_frame"].pack(padx=5,pady=10, fill=tk.X)
+GDATA["UI"]["first_frame"].pack(padx=5, pady=10, fill=tk.X)
 
 GDATA["UI"]["exit_button"] = tk.Button(
     GDATA["UI"]["first_frame"], text="離開程式", command=on_closing
@@ -589,13 +673,11 @@ GDATA["UI"]["info_button"] = tk.Button(
 GDATA["UI"]["info_button"].pack(side=tk.RIGHT, padx=5)
 
 
-
-
 # 以下放到第二行
 # 第二列
 
 GDATA["UI"]["second_frame"] = tk.Frame(root)
-GDATA["UI"]["second_frame"].pack(padx=5,fill=tk.X)
+GDATA["UI"]["second_frame"].pack(padx=5, fill=tk.X)
 
 # 新增專案檔，按到會出現 prompt 讓使用者輸入專案檔名稱
 GDATA["UI"]["new_project_button"] = tk.Button(
@@ -618,14 +700,16 @@ for project in project_get_list_all():
         command=tk._setit(GDATA["UI"]["select_project_selected"], project),
     )
     GDATA["UI"]["select_project_selected_menu"].pack(side=tk.LEFT, padx=5)
-    #GDATA["UI"]["select_area_button"].config(state=tk.NORMAL)
+    # GDATA["UI"]["select_area_button"].config(state=tk.NORMAL)
 GDATA["UI"]["select_project_selected_menu"].pack(side=tk.LEFT, padx=5)
 # 選到專案檔後，才能選擇拍照範圍
 GDATA["UI"]["select_project_selected"].trace("w", project_selected)
 
 GDATA["UI"]["execute_folder_button"] = tk.Button(
-    GDATA["UI"]["second_frame"], text="編輯訓練檔", command=browser_folder,
-    state=tk.DISABLED
+    GDATA["UI"]["second_frame"],
+    text="編輯訓練檔",
+    command=browser_folder,
+    state=tk.DISABLED,
 )
 GDATA["UI"]["execute_folder_button"].pack(side=tk.LEFT, padx=5)
 
@@ -637,7 +721,7 @@ GDATA["UI"]["open_folder_button"].pack(side=tk.LEFT, padx=5)
 
 # 第三列
 GDATA["UI"]["third_frame"] = tk.Frame(root)
-GDATA["UI"]["third_frame"].pack(padx=5,pady=10,fill=tk.X)
+GDATA["UI"]["third_frame"].pack(padx=5, pady=10, fill=tk.X)
 
 
 # 選擇拍照範圍 必需有專案檔才能選擇
@@ -645,30 +729,32 @@ GDATA["UI"]["select_area_button"] = tk.Button(
     GDATA["UI"]["third_frame"],
     text="選擇拍照範圍",
     command=select_area,
-    state=tk.DISABLED
+    state=tk.DISABLED,
 )
 GDATA["UI"]["select_area_button"].pack(side=tk.LEFT, padx=5)
 
 GDATA["UI"]["start_button"] = tk.Button(
-    GDATA["UI"]["third_frame"], text="截圖(熱鍵)：CTRL + ALT + ~ ", 
+    GDATA["UI"]["third_frame"],
+    text="截圖(熱鍵)：CTRL + ALT + ~ ",
     command=start_cut_screen,
-    state=tk.DISABLED # 選擇拍照範圍後才能截圖 
+    state=tk.DISABLED,  # 選擇拍照範圍後才能截圖
 )
 GDATA["UI"]["start_button"].pack(side=tk.LEFT, padx=5)
 
 GDATA["UI"]["show_hide_rect_button"] = tk.Button(
-    GDATA["UI"]["third_frame"], text="隱藏圖框", 
+    GDATA["UI"]["third_frame"],
+    text="隱藏圖框",
     command=method_show_hide_rect_button,
     highlightthickness=1,
-    #fg="#ffffff",    
-    highlightcolor='SystemButtonFace', #'SystemButtonFace',
-    default='active',
-    state=tk.DISABLED # 選擇拍照範圍後才能截圖 
+    # fg="#ffffff",
+    highlightcolor="SystemButtonFace",  #'SystemButtonFace',
+    default="active",
+    state=tk.DISABLED,  # 選擇拍照範圍後才能截圖
 )
 GDATA["UI"]["show_hide_rect_button"].pack(side=tk.LEFT, padx=5)
 
 
-'''
+"""
 GDATA["UI"]["stop_button"] = tk.Button(
     GDATA["UI"]["third_frame"],
     text="停止錄影",
@@ -676,20 +762,15 @@ GDATA["UI"]["stop_button"] = tk.Button(
     state=tk.DISABLED,
 )
 GDATA["UI"]["stop_button"].pack(side=tk.LEFT, padx=5)
-'''
+"""
 
 
 # 第四列，狀態列
 GDATA["UI"]["fourth_frame"] = tk.Frame(root)
-GDATA["UI"]["fourth_frame"].pack(padx=5,pady=5,fill=tk.X)
+GDATA["UI"]["fourth_frame"].pack(padx=5, pady=5, fill=tk.X)
 
 GDATA["UI"]["status_label"] = tk.Label(GDATA["UI"]["fourth_frame"], text="")
 GDATA["UI"]["status_label"].pack(side=tk.LEFT, padx=5)
-
-
-
-
-
 
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
@@ -712,7 +793,7 @@ def run_flask():
     def home():
         return render_template("index.html")
 
-    @app.route("/api")
+    @app.route("/api", methods=["GET", "POST"])
     def api():
         GETS = request.args
         if "mode" in GETS:
@@ -724,6 +805,127 @@ def run_flask():
                 )
                 projects = [os.path.basename(p) for p in projects]
                 return jsonify({"status": "OK", "data": projects})
+            if mode == "getKindList":
+                # 從 my_dataset 資料夾取得所有的類別
+                # project_name 是 POST project_name
+
+                if "project_name" not in request.form:
+                    return (
+                        jsonify({"status": "NO", "reason": "Missing project_name"}),
+                        400,
+                    )
+                project_name = request.form["project_name"]
+                _PWD = os.getcwd()
+                _PROJECT_FOLDER = (
+                    _PWD
+                    + my.SP()
+                    + "data"
+                    + my.SP()
+                    + "projects"
+                    + my.SP()
+                    + project_name
+                )
+                _MY_DATASET_FOLDER = _PROJECT_FOLDER + my.SP() + "my_dataset"
+                _KINDS = my.glob_dirs(_MY_DATASET_FOLDER + my.SP() + "*")
+                OUTPUT = {"status": "OK", "data": {}}
+                for kind in _KINDS:
+                    _KIND = os.path.basename(kind)
+                    _KIND_FILES = len(my.glob(kind + my.SP() + "*.jpg"))
+                    OUTPUT["data"][_KIND] = {"數量": _KIND_FILES}
+
+                return jsonify(OUTPUT)
+            if mode == "addKind":
+                # 新增類別
+                # project_name 是 POST project_name
+                # kind 是 POST kind
+                if "project_name" not in request.form:
+                    return (
+                        jsonify({"status": "NO", "reason": "Missing project_name"}),
+                        400,
+                    )
+                if "kind_name" not in request.form:
+                    return jsonify({"status": "NO", "reason": "請輸入類別名稱"})
+                project_name = request.form["project_name"]
+                kind_name = request.form["kind_name"]
+                _PWD = os.getcwd()
+                _PROJECT_FOLDER = (
+                    _PWD
+                    + my.SP()
+                    + "data"
+                    + my.SP()
+                    + "projects"
+                    + my.SP()
+                    + project_name
+                )
+                _MY_DATASET_FOLDER = _PROJECT_FOLDER + my.SP() + "my_dataset"
+                _KIND_FOLDER = _MY_DATASET_FOLDER + my.SP() + kind_name
+                my.mkdir(_KIND_FOLDER)
+                os.chmod(_KIND_FOLDER, 0o777)
+                if my.is_dir(_KIND_FOLDER):
+                    return jsonify({"status": "OK"})
+                else:
+                    return jsonify(
+                        {"status": "NO", "reason": "目錄不存在，未建立成功..."}
+                    )
+            if mode == "delKind":
+                if "project_name" not in request.form:
+                    return (
+                        jsonify({"status": "NO", "reason": "Missing project_name"}),
+                        400,
+                    )
+                if "kind_name" not in request.form:
+                    return jsonify({"status": "NO", "reason": "請輸入類別名稱"})
+                project_name = request.form["project_name"]
+                kind_name = my.basename(request.form["kind_name"])
+                _PWD = os.getcwd()
+                _PROJECT_FOLDER = (
+                    _PWD
+                    + my.SP()
+                    + "data"
+                    + my.SP()
+                    + "projects"
+                    + my.SP()
+                    + project_name
+                )
+                _MY_DATASET_FOLDER = _PROJECT_FOLDER + my.SP() + "my_dataset"
+                _KIND_FOLDER = _MY_DATASET_FOLDER + my.SP() + kind_name
+                print("Del path: %s" % (_KIND_FOLDER))
+                # if my.is_dir(_KIND_FOLDER):
+                my.delete_directory_contents(_KIND_FOLDER)
+                return jsonify({"status": "OK"})
+            if mode == "editKind":
+                if "project_name" not in request.form:
+                    return (
+                        jsonify({"status": "NO", "reason": "Missing project_name"}),
+                        400,
+                    )
+                if "kind_name" not in request.form:
+                    return jsonify({"status": "NO", "reason": "請輸入類別名稱"})
+                if "new_kind_name" not in request.form:
+                    return jsonify({"status": "NO", "reason": "請輸入新類別名稱"})
+                project_name = request.form["project_name"]
+                kind_name = my.basename(request.form["kind_name"])
+                new_kind_name = my.basename(request.form["new_kind_name"])
+                _PWD = os.getcwd()
+                _PROJECT_FOLDER = (
+                    _PWD
+                    + my.SP()
+                    + "data"
+                    + my.SP()
+                    + "projects"
+                    + my.SP()
+                    + project_name
+                )
+                _MY_DATASET_FOLDER = _PROJECT_FOLDER + my.SP() + "my_dataset"
+                _KIND_FOLDER = _MY_DATASET_FOLDER + my.SP() + kind_name
+                _NEW_KIND_FOLDER = _MY_DATASET_FOLDER + my.SP() + new_kind_name
+                if my.is_dir(_KIND_FOLDER) == True and my.is_dir(_NEW_KIND_FOLDER) == False:
+                    os.rename(_KIND_FOLDER, _NEW_KIND_FOLDER)
+                elif my.is_dir(_KIND_FOLDER) == False:
+                    return jsonify({"status": "NO", "reason": "類別不存在"})
+                elif my.is_dir(_NEW_KIND_FOLDER) == True:
+                    return jsonify({"status": "NO", "reason": "新類別已存在"})
+                return jsonify({"status": "OK"})
         return jsonify({"status": "OK"})
 
     @app.route("/datetime", methods=["GET", "POST"])
@@ -743,13 +945,15 @@ def run_flask():
 
         return output
 
-    app.run(debug=True, host='127.0.0.1', port=9487, threaded=True, use_reloader=False)
+    app.run(debug=True, host="127.0.0.1", port=9487, threaded=True, use_reloader=False)
+
 
 threading.Thread(target=run_flask).start()
 
-# 註冊熱鍵 CTRL + ALT + ` 或 CTRL + ALT + ~
-keyboard.add_hotkey('ctrl+alt+~', start_cut_screen)  # 設置全螢幕熱鍵
-#keyboard.add_hotkey('ctrl+alt+~', start_cut_screen)  # 設置全螢幕熱鍵
+# 註冊熱鍵 CTRL + ALT + ` 或 CTRL + ALT + ~，或 CTRL + ALT + F1
+keyboard.add_hotkey("ctrl+alt+~", start_cut_screen)  # 設置螢幕熱鍵
+keyboard.add_hotkey("ctrl+alt+f1", start_cut_screen)  # 設置螢幕熱鍵
+# keyboard.add_hotkey('ctrl+alt+~', start_cut_screen)  # 設置螢幕熱鍵
 
 
 root.mainloop()

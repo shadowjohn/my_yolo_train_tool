@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ï»¿# -*- coding: utf-8 -*-
 ###########################################
 #  Auther:FeatherMountain(http://3wa.tw)  #
 #  Version: 1.4                           #
@@ -26,6 +26,31 @@ class kit:
     def deltree(self,path):
         import shutil
         shutil.rmtree(path);
+    def delete_directory_contents(self,path):
+        """
+        å®‰å…¨åˆªé™¤æŒ‡å®šç›®éŒ„çš„æ‰€æœ‰å…§å®¹ï¼ˆåƒ…ä¸€å±¤ï¼‰ã€‚
+        """
+        import os
+        if not os.path.exists(path):
+            print(f"The directory '{path}' does not exist.")
+            return
+
+        if not os.path.isdir(path):
+            print(f"The path '{path}' is not a directory.")
+            return
+        os.chmod(path, 0o777)
+        for item in os.listdir(path):
+            item_path = os.path.join(path, item)
+            try:
+                if os.path.isfile(item_path) or os.path.islink(item_path):
+                    os.unlink(item_path)  # åˆªé™¤æ–‡ä»¶æˆ–ç¬¦è™Ÿéˆæ¥
+                    print(f"Deleted file: {item_path}")
+                elif os.path.isdir(item_path):
+                    os.rmdir(item_path)  # åƒ…åˆªé™¤ç©ºç›®éŒ„
+                    print(f"Deleted empty directory: {item_path}")
+            except Exception as e:
+                print(f"Failed to delete {item_path}: {e}")
+        os.rmdir(path)  # åˆªé™¤ç›®éŒ„æœ¬èº«
     def math_round(self,data,step):
         import decimal
         a = decimal.Decimal(data);
@@ -64,12 +89,12 @@ class kit:
         current_time = time.time()
         
         if not get_as_float:
-            # ±N®É¶¡©î¤À¬°¬í©M·L¬í¡AÃş¦ü PHP ªº (microseconds seconds) ®æ¦¡
+            # å°‡æ™‚é–“æ‹†åˆ†ç‚ºç§’å’Œå¾®ç§’ï¼Œé¡ä¼¼ PHP çš„ (microseconds seconds) æ ¼å¼
             seconds = int(current_time)
             microseconds = current_time - seconds
             return f"{microseconds:.6f} {seconds}"
         else:
-            # ª½±µªğ¦^¯BÂI¼Æ®É¶¡ÂW
+            # ç›´æ¥è¿”å›æµ®é»æ•¸æ™‚é–“æˆ³
             return current_time
     def date(self,*args):
         # Argv(0) for output struct
@@ -156,9 +181,9 @@ class kit:
     def glob_dirs(self, pathdata):
         import glob
         import os
-        # ¨Ï¥Î glob ¤Ç°t©Ò¦³¶µ¥Ø
+        # ä½¿ç”¨ glob åŒ¹é…æ‰€æœ‰é …ç›®
         paths = glob.glob(pathdata)
-        # ¹LÂo¥X©Ò¦³¥Ø¿ı
+        # éæ¿¾å‡ºæ‰€æœ‰ç›®éŒ„
         return [path for path in paths if os.path.isdir(path)]
     def base64_encode(self,data):
         import base64

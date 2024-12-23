@@ -1,0 +1,127 @@
+﻿<!--
+類別設定
+    1. 新增類別
+    2. 刪除類別
+    3. 修改類別名稱
+    4. 類別排序
+-->
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>我的 yolo 訓練機</title>
+    <script src="/www/js/jquery.min.js"></script>
+    <script src="/www/js/myphp.js"></script>
+    <script src="/www/js/mybox.js"></script>
+    <script src="/www/js/jquery.imgareaselect-0.9.8/scripts/jquery.imgareaselect.pack.js"></script>
+    <script src="/www/js/include.js"></script>
+    <link rel="stylesheet" href="/www/css/reset.css" />
+    <link rel="stylesheet" href="/www/js/jquery.imgareaselect-0.9.8/css/imgareaselect-default.css" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="/www/css/style.css" />
+    <style>
+        .thetable {
+            width: 100%;
+        }
+
+            .thetable thead th[field='編號'] {
+                width: 80px;
+            }
+
+            .thetable thead th[field='功能'] {
+                width: 190px;
+            }
+
+            .thetable tbody td[field='編號'] {
+                text-align: center;
+            }
+
+            .thetable tbody td[field='功能'] {
+                text-align: center;
+            }
+    </style>
+</head>
+<body class="container mt-5">
+    <div align="right">
+        <a class="btn btn-primary mx-2" reqc="aAddEdit" reqk="add" href="javascript:;">新增類別</a>
+    </div>
+    <hr class="my-4" style="border-color: red;" />
+    <div id="divMain">
+        <!-- 這裡列出類別 -->
+    </div>
+</body>
+</html>
+<script>
+    // 按到新增類別
+    $(document).on("click", "[reqc='aAddEdit'][reqk='add']", function () {
+        var kind_name = prompt("請輸入類別名稱");
+        if (kind_name == null) return;
+        myAjax_async_json("/api?mode=addKind", { "project_name": getMemory("project_name"), "kind_name": kind_name }, function (jd) {
+            if (jd.status == 'OK') {
+                smallComment("新增成功...", 2000, false, {});
+                location.reload();
+            }
+            else {
+                //alert("新增失敗");
+                smallComment("新增失敗...", 2000, false, {});
+            }
+        });
+    });
+
+
+
+    myAjax_async_json("/api?mode=getKindList", { "project_name": getMemory("project_name") }, function (json) {
+        window['wtf'] = json.data;
+        var m = [];
+        var step = 0;
+        for (var k in json.data) {
+            m.push({
+                "編號": ++step,
+                "類別名稱": k,
+                "功能": `
+                    <a class='btn btn-secondary mx-2' reqc='aAddEdit' reqk='edit' req_kind_name="${k}" href='javascript:;'>修改</a>
+                    <a class='btn btn-danger mx-2' reqc='aAddEdit' reqk='del' req_kind_name="${k}" href='javascript:;'>刪除</a>
+                `
+            });
+        }
+
+        var html = print_table(m, "編號,類別名稱,功能", "編號,類別名稱,功能", "thetable");
+        $("#divMain").html(html);
+
+        // 按到修改
+        $("a[reqc='aAddEdit'][reqk='edit']").off().click(function () {
+            var kind_name = $(this).attr("req_kind_name");
+            var new_kind_name = prompt("請輸入新的類別名稱", kind_name);
+            if (new_kind_name == null) return;
+            myAjax_async_json("/api?mode=editKind", { "project_name": getMemory("project_name"), "kind_name": kind_name, "new_kind_name": new_kind_name }, function (jd) {
+                if (jd.status == 'OK') {
+                    smallComment("修改成功...", 2000, false, {});
+                    location.reload();
+                }
+                else {
+                    //alert("修改失敗");
+                    smallComment("修改失敗..." + jd.reason, 2000, false, {});
+                }
+            });
+        });
+
+        // 按到刪除
+        $("a[reqc='aAddEdit'][reqk='del']").off().click(function () {
+            var kind_name = $(this).attr("req_kind_name");
+            if (confirm("確定要刪除類別 " + kind_name + " 嗎?")) {
+                myAjax_async_json("/api?mode=delKind", { "project_name": getMemory("project_name"), "kind_name": kind_name }, function (jd) {
+                    if (jd.status == 'OK') {
+                        smallComment("刪除成功...", 2000, false, {});
+                        location.reload();
+                    }
+                    else {
+                        //alert("刪除失敗");
+                        smallComment("刪除失敗...", 2000, false, {});
+                    }
+                });
+            }
+        });
+
+    });
+</script>

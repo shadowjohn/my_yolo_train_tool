@@ -13,3 +13,31 @@
 .orange {
     color: orange;
 }
+
+.iframe_class {
+    width: 100%;
+    min-height: 550px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    border-width: 1px;
+}
+
+table, tbody, th, td, tfoot {
+    border: 1px solid black;
+    border-width: 1px;
+}
+
+th, td {
+    padding: 15px;
+    text-align: left;
+    border: 1px solid #000;
+}
+
+th {
+    background-color: orange;
+    color: #000;
+    text-align: center;
+}
