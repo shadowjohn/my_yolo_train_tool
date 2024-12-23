@@ -377,7 +377,9 @@ def stop_recording():
 
 def open_folder():
     global GDATA
-    folder_path = os.path.dirname(os.path.abspath("data" + my.SP() + "projects"))
+    # 進到 projects 的專案裡
+    project_name = GDATE["project"]
+    folder_path = os.path.dirname(os.path.abspath("data" + my.SP() + "projects" + my.SP() + project_name))
     webbrowser.open(folder_path)
 
 
