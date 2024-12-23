@@ -14,3 +14,5 @@
 /mss/__pycache__/tools.cpython-312.pyc
 /mss/__pycache__/windows.cpython-312.pyc
 /dist/lock.txt
+/Web.config
+data/projects
