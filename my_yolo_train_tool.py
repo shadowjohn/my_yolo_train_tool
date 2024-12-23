@@ -38,9 +38,11 @@ def create_overlay_window(x1, y1, x2, y2):
     overlay = tk.Toplevel()
     overlay.attributes("-fullscreen", True)
     overlay.attributes("-topmost", True)
+    overlay.attributes("-alpha", 0.5)  # 透明度
     overlay.attributes("-transparentcolor", "black")  # 透明背景顏色
     overlay.configure(background="black")
-
+    #移除工作列圖示
+    overlay.overrideredirect(True)
     canvas = tk.Canvas(overlay, bg="black", highlightthickness=0)
     canvas.pack(fill="both", expand=True)
 
@@ -475,9 +477,11 @@ def do_show_hide_rect_button(b):
 		return
 	if b == True:
 		# GDATA["overlay"] 顯示
-		GDATA["overlay"].deiconify()
+		#GDATA["overlay"].deiconify()
+		GDATA["overlay"].attributes("-alpha", 0.5)
 	else:        
-		GDATA["overlay"].withdraw() 
+		#GDATA["overlay"].withdraw() 
+		GDATA["overlay"].attributes("-alpha", 0.0)
 
 def method_show_hide_rect_button():
     # 顯示或隱藏細框
