@@ -158,6 +158,10 @@ def select_area():
 
         GDATA["UI"]["start_button"].config(state=tk.NORMAL) # 啟用開始按鈕
         GDATA["UI"]["show_hide_rect_button"].config(state=tk.NORMAL) # 啟用開始按鈕
+        # 按鈕加紅邊框
+        if GDATA["UI"]["show_hide_rect_button"].cget("text") == "隱藏圖框":
+            GDATA["UI"]["show_hide_rect_button"].config(highlightcolor="red")
+          
 
     canvas.bind("<ButtonPress-1>", on_button_press)
     canvas.bind("<B1-Motion>", on_move_press)
@@ -193,7 +197,21 @@ def start_cut_screen():
     # monitor 為 GDATA 的 x1 ,x2, y1, y2
 
     monitor = {"left": GDATA["x1"], "top": GDATA["y1"], "width": GDATA["x2"] - GDATA["x1"], "height": GDATA["y2"] - GDATA["y1"]}
-    frame = sct.grab(monitor)
+
+    # 藏掉細框
+    # 有label == "隱藏圖框"，就是要隱藏，截完再後顯示
+    NEED_SWITCH_RECT = False
+    if GDATA["UI"]["show_hide_rect_button"].cget("text") == "隱藏圖框" and "overlay" in GDATA and GDATA["overlay"] != None:
+        NEED_SWITCH_RECT = True
+
+    
+    if NEED_SWITCH_RECT == True: # 截之前先隱藏
+        do_show_hide_rect_button(False)
+
+    frame = sct.grab(monitor) # 截圖 
+
+    if NEED_SWITCH_RECT == True: # 截完再後顯示
+        do_show_hide_rect_button(True)
     mss.tools.to_png(frame.rgb, frame.size, output=GDATA["cut_screen_file"])
     #sct.shot(output=GDATA["cut_screen_file"])
 
@@ -450,6 +468,17 @@ def new_project():
         GDATA["UI"]["select_area_button"].config(state=tk.NORMAL)
         method_count_wait_process_files() # 計算有多少待處理的檔案
 
+def do_show_hide_rect_button(b):
+	# 顯示或隱藏細框
+	global GDATA
+	if GDATA["overlay"] == None:
+		return
+	if b == True:
+		# GDATA["overlay"] 顯示
+		GDATA["overlay"].deiconify()
+	else:        
+		GDATA["overlay"].withdraw() 
+
 def method_show_hide_rect_button():
     # 顯示或隱藏細框
 	global GDATA
@@ -457,8 +486,16 @@ def method_show_hide_rect_button():
 		return
 	if GDATA["overlay"].winfo_viewable():
 		GDATA["overlay"].withdraw()
+        # 調整 show_hide_rect_button 文字
+		GDATA["UI"]["show_hide_rect_button"].config(text="顯示圖框")
+		# 按鈕取消紅邊框
+		GDATA["UI"]["show_hide_rect_button"].config(highlightcolor="SystemButtonFace")
 	else:
 		GDATA["overlay"].deiconify()
+        # 調整 show_hide_rect_button 文字
+		GDATA["UI"]["show_hide_rect_button"].config(text="隱藏圖框")
+		# 按鈕加紅邊框
+		GDATA["UI"]["show_hide_rect_button"].config(highlightcolor="red")
 
 def project_selected(self,a,b):
     # 選到專案檔後，才能選擇拍照範圍
@@ -487,6 +524,9 @@ def project_selected(self,a,b):
         GDATA["overlay"] = create_overlay_window(GDATA["x1"], GDATA["y1"], GDATA["x2"], GDATA["y2"])	
         GDATA["UI"]["start_button"].config(state=tk.NORMAL) # 啟用開始按鈕
         GDATA["UI"]["show_hide_rect_button"].config(state=tk.NORMAL) # 啟用開始按鈕
+        # 按鈕加紅邊框
+        if GDATA["UI"]["show_hide_rect_button"].cget("text") == "隱藏圖框":
+            GDATA["UI"]["show_hide_rect_button"].config(highlightcolor="red")
     # 計算有多少待處理的檔案
     method_count_wait_process_files()
 
@@ -613,9 +653,14 @@ GDATA["UI"]["start_button"].pack(side=tk.LEFT, padx=5)
 GDATA["UI"]["show_hide_rect_button"] = tk.Button(
     GDATA["UI"]["third_frame"], text="隱藏圖框", 
     command=method_show_hide_rect_button,
+    highlightthickness=1,
+    #fg="#ffffff",    
+    highlightcolor='SystemButtonFace', #'SystemButtonFace',
+    default='active',
     state=tk.DISABLED # 選擇拍照範圍後才能截圖 
 )
 GDATA["UI"]["show_hide_rect_button"].pack(side=tk.LEFT, padx=5)
+
 
 '''
 GDATA["UI"]["stop_button"] = tk.Button(
