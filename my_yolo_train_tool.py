@@ -228,7 +228,7 @@ def start_cut_screen():
 
     if NEED_SWITCH_RECT == True:  # 截完再後顯示
         do_show_hide_rect_button(True)
-    mss.tools.to_jpg(frame.rgb, frame.size, output=GDATA["cut_screen_file"])
+    mss.tools.to_png(frame.rgb, frame.size, output=GDATA["cut_screen_file"])
     # sct.shot(output=GDATA["cut_screen_file"])
 
     method_count_wait_process_files()
@@ -735,7 +735,7 @@ GDATA["UI"]["select_area_button"].pack(side=tk.LEFT, padx=5)
 
 GDATA["UI"]["start_button"] = tk.Button(
     GDATA["UI"]["third_frame"],
-    text="截圖(熱鍵)：CTRL + ALT + ~ ",
+    text="截圖(熱鍵)：CTRL + F2",
     command=start_cut_screen,
     state=tk.DISABLED,  # 選擇拍照範圍後才能截圖
 )
@@ -919,7 +919,10 @@ def run_flask():
                 _MY_DATASET_FOLDER = _PROJECT_FOLDER + my.SP() + "my_dataset"
                 _KIND_FOLDER = _MY_DATASET_FOLDER + my.SP() + kind_name
                 _NEW_KIND_FOLDER = _MY_DATASET_FOLDER + my.SP() + new_kind_name
-                if my.is_dir(_KIND_FOLDER) == True and my.is_dir(_NEW_KIND_FOLDER) == False:
+                if (
+                    my.is_dir(_KIND_FOLDER) == True
+                    and my.is_dir(_NEW_KIND_FOLDER) == False
+                ):
                     os.rename(_KIND_FOLDER, _NEW_KIND_FOLDER)
                 elif my.is_dir(_KIND_FOLDER) == False:
                     return jsonify({"status": "NO", "reason": "類別不存在"})
@@ -951,8 +954,8 @@ def run_flask():
 threading.Thread(target=run_flask).start()
 
 # 註冊熱鍵 CTRL + ALT + ` 或 CTRL + ALT + ~，或 CTRL + ALT + F1
-keyboard.add_hotkey("ctrl+alt+~", start_cut_screen)  # 設置螢幕熱鍵
-keyboard.add_hotkey("ctrl+alt+f1", start_cut_screen)  # 設置螢幕熱鍵
+#keyboard.add_hotkey("ctrl+alt+~", start_cut_screen)  # 設置螢幕熱鍵
+keyboard.add_hotkey("ctrl+f2", start_cut_screen)  # 設置螢幕熱鍵
 # keyboard.add_hotkey('ctrl+alt+~', start_cut_screen)  # 設置螢幕熱鍵
 
 
