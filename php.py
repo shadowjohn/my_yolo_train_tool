@@ -15,8 +15,12 @@
 class kit:           
     def __init__(self):
         self.form_status = False;
-    def is_str(self,s):
-        return isinstance(s, basestring)
+    def is_str(self,s):        
+        if self.python_version() == 2:
+            basestring_type = basestring  # Python 2
+        else:
+            basestring_type = str  # Python 3        
+        return isinstance(s, basestring_type)
     def array_push(self,arr,data):
         return arr.append(data);
     def pwd(self):
