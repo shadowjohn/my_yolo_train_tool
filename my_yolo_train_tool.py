@@ -17,7 +17,7 @@ import portalocker
 import mss
 import php
 import keyboard
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, send_from_directory
 from ctypes import windll, byref, sizeof, c_int, wintypes
 from ctypes.wintypes import HWND, LONG, RECT
 import requests
@@ -380,12 +380,14 @@ my = php.kit()
 pwd = os.path.dirname(os.path.realpath(sys.argv[0]))  # 取得 exe 檔案的目錄路徑
 if my.is_dir(pwd + my.SP() + "data") == False:
     my.mkdir(pwd + my.SP() + "data")
-    #os.chmod(pwd + my.SP() + "data", 0o777)
+    # os.chmod(pwd + my.SP() + "data", 0o777)
     os.chmod(pwd + my.SP() + "data", stat.S_IREAD | stat.S_IWRITE)
 if my.is_dir(pwd + my.SP() + "data" + my.SP() + "projects") == False:
     my.mkdir(pwd + my.SP() + "data" + my.SP() + "projects")
-    #os.chmod(pwd + my.SP() + "data" + my.SP() + "projects", 0o777)
-    os.chmod(pwd + my.SP() + "data" + my.SP() + "projects", stat.S_IREAD | stat.S_IWRITE)
+    # os.chmod(pwd + my.SP() + "data" + my.SP() + "projects", 0o777)
+    os.chmod(
+        pwd + my.SP() + "data" + my.SP() + "projects", stat.S_IREAD | stat.S_IWRITE
+    )
 
 GDATA = {
     "VERSION": "0.01",
@@ -769,7 +771,7 @@ def win_do_move(event):
     deltay = event.y - root.y
     x = root.winfo_x() + deltax
     y = root.winfo_y() + deltay
-    root.geometry("+" + x + "+" + y)
+    root.geometry(f"+{x}+{y}")
 
 
 def project_get_list_all():
@@ -800,8 +802,8 @@ def new_project():
     )
     os.chmod(
         GDATA["pwd"] + my.SP() + "data" + my.SP() + "projects" + my.SP() + project_name,
-        stat.S_IREAD | stat.S_IWRITE
-    ) # 0o777
+        stat.S_IREAD | stat.S_IWRITE,
+    )  # 0o777
     # 繼續建立 dataset 與 my_dataset
     my.mkdir(
         GDATA["pwd"]
@@ -824,7 +826,7 @@ def new_project():
         + project_name
         + my.SP()
         + "dataset",
-        stat.S_IREAD | stat.S_IWRITE #0o777,
+        stat.S_IREAD | stat.S_IWRITE,  # 0o777,
     )
     my.mkdir(
         GDATA["pwd"]
@@ -847,7 +849,7 @@ def new_project():
         + project_name
         + my.SP()
         + "my_dataset",
-        stat.S_IREAD | stat.S_IWRITE #0o777,
+        stat.S_IREAD | stat.S_IWRITE,  # 0o777,
     )
     messagebox.showinfo("提示", "新增專案檔成功！")
 
@@ -1122,6 +1124,13 @@ def run_flask():
     def home():
         return render_template("index.html")
 
+    # data 目錄也要分享
+    @app.route("/data/<path:filename>")
+    def data(filename):
+        _PWD = os.getcwd()
+        DATA_FOLDER = _PWD + my.SP() + "data"
+        return send_from_directory(DATA_FOLDER, filename)
+
     @app.route("/api", methods=["GET", "POST"])
     def api():
         GETS = request.args
@@ -1189,7 +1198,7 @@ def run_flask():
                 _MY_DATASET_FOLDER = _PROJECT_FOLDER + my.SP() + "my_dataset"
                 _KIND_FOLDER = _MY_DATASET_FOLDER + my.SP() + kind_name
                 my.mkdir(_KIND_FOLDER)
-                os.chmod(_KIND_FOLDER, stat.S_IREAD | stat.S_IWRITE ) #0o777
+                os.chmod(_KIND_FOLDER, stat.S_IREAD | stat.S_IWRITE)  # 0o777
                 if my.is_dir(_KIND_FOLDER):
                     return jsonify({"status": "OK"})
                 else:
@@ -1258,6 +1267,91 @@ def run_flask():
                 elif my.is_dir(_NEW_KIND_FOLDER) == True:
                     return jsonify({"status": "NO", "reason": "新類別已存在"})
                 return jsonify({"status": "OK"})
+            if mode == "getPhotoList":
+                # 取得 project_name 目錄下的圖片，因為是未分類的
+                project_name = request.form["project_name"]
+                _PWD = os.getcwd()
+                _PROJECT_FOLDER = (
+                    _PWD
+                    + my.SP()
+                    + "data"
+                    + my.SP()
+                    + "projects"
+                    + my.SP()
+                    + project_name
+                )
+                fp = my.glob(_PROJECT_FOLDER + my.SP() + "*.jpg")
+                fp = [{"photo_name": my.basename(f)} for f in fp]
+                return jsonify({"status": "OK", "data": fp})
+            # 刪照片
+            if mode == "delPhoto":
+                if "project_name" not in request.form:
+                    return (
+                        jsonify({"status": "NO", "reason": "沒有這個專案..."}),
+                        400,
+                    )
+                if "photo_name" not in request.form:
+                    return jsonify({"status": "NO", "reason": "圖片名稱未填..."})
+                project_name = request.form["project_name"]
+                photo_name = my.basename(request.form["photo_name"])
+                _PWD = os.getcwd()
+                _PROJECT_FOLDER = (
+                    _PWD
+                    + my.SP()
+                    + "data"
+                    + my.SP()
+                    + "projects"
+                    + my.SP()
+                    + project_name
+                )
+                _PHOTO_FILE = _PROJECT_FOLDER + my.SP() + photo_name
+                if my.is_file(_PHOTO_FILE):
+                    os.remove(_PHOTO_FILE)
+                    return jsonify({"status": "OK"})
+                else:
+                    return jsonify({"status": "NO", "reason": "圖片不存在"})
+            if mode == "setPhotoToKind":
+                # 把圖片放到類別裡
+
+                project_name = request.form["project_name"]
+                kind_name = request.form["kind_name"]
+                photo_name = my.basename(request.form["photo_name"])
+                if "project_name" not in request.form:
+                    return (
+                        jsonify({"status": "NO", "reason": "沒有這個專案..."}),
+                        400,
+                    )
+                if "photo_name" not in request.form:
+                    return jsonify({"status": "NO", "reason": "圖片名稱未填..."})
+                if "kind_name" not in request.form:
+                    return jsonify({"status": "NO", "reason": "類別名稱未填..."})
+                _PWD = os.getcwd()
+                _PROJECT_FOLDER = (
+                    _PWD
+                    + my.SP()
+                    + "data"
+                    + my.SP()
+                    + "projects"
+                    + my.SP()
+                    + project_name
+                )
+                _MY_DATASET_FOLDER = _PROJECT_FOLDER + my.SP() + "my_dataset"
+                _KIND_FOLDER = _MY_DATASET_FOLDER + my.SP() + kind_name
+                _PHOTO_FILE = _PROJECT_FOLDER + my.SP() + photo_name
+                _NEW_PHOTO_FILE = _KIND_FOLDER + my.SP() + photo_name
+                if my.is_file(_PHOTO_FILE) == False:
+                    return jsonify({"status": "NO", "reason": "圖片不存在"})
+                if my.is_dir(_KIND_FOLDER) == False:
+                    my.mkdir(_KIND_FOLDER)
+                    os.chmod(_KIND_FOLDER, stat.S_IREAD | stat.S_IWRITE)
+                if my.is_file(_NEW_PHOTO_FILE) == True:
+                    my.unlink(_NEW_PHOTO_FILE)
+                shutil.move(_PHOTO_FILE, _NEW_PHOTO_FILE)
+                # 有移成功嗎
+                if my.is_file(_NEW_PHOTO_FILE):
+                    return jsonify({"status": "OK"})
+                else:
+                    return jsonify({"status": "NO", "reason": "移動失敗"})
         return jsonify({"status": "OK"})
 
     @app.route("/datetime", methods=["GET", "POST"])
