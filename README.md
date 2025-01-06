@@ -4,8 +4,16 @@
 
 ## 畫面截圖
 <img src="pic/screenshot/run.png">
+單機執行畫面
+
+<img src="pic/screenshot/wen.png">
+標記畫面，桌面直接畫 Canvas 框
+
 <img src="pic/screenshot/kind_setting.png">
+類型設定，設定要訓練的種類
+
 <img src="pic/screenshot/pic_to_kind.png">
+圖片分類，將圖片分類到種類
 
 ## 環境安裝
 1. 安裝 python3	
