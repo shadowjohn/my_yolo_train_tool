@@ -1,3 +1,4 @@
+from shlex import join
 import cv2
 import numpy as np
 import time
@@ -258,7 +259,7 @@ def run_keep_screen_predict():
                     GDATA["x1_model"],
                     GDATA["y1_model"],
                     GDATA["x2_model"],
-                    GDATA["y2_model"]
+                    GDATA["y2_model"],
                 )
                 # print(rect)
                 # 獲取桌面截圖
@@ -300,7 +301,7 @@ def run_keep_screen_predict():
                 # , imgsz=2048
                 desired_classes = [0, 1]
                 results = model.predict(
-                    img, imgsz=1024, conf=0.6 #, classes=desired_classes
+                    img, imgsz=1024, conf=0.6  # , classes=desired_classes
                 )[0]
 
                 # shutil.rmtree(temp_dir)
@@ -406,23 +407,19 @@ def create_overlay_window(x1, y1, x2, y2):
 
 
 my = php.kit()
-pwd = os.path.dirname(os.path.realpath(sys.argv[0]))  # 取得 exe 檔案的目錄路徑
-if my.is_dir(pwd + my.SP() + "data") == False:
-    my.mkdir(pwd + my.SP() + "data")
-    # os.chmod(pwd + my.SP() + "data", 0o777)
-    os.chmod(pwd + my.SP() + "data", stat.S_IREAD | stat.S_IWRITE)
-if my.is_dir(pwd + my.SP() + "data" + my.SP() + "projects") == False:
-    my.mkdir(pwd + my.SP() + "data" + my.SP() + "projects")
-    # os.chmod(pwd + my.SP() + "data" + my.SP() + "projects", 0o777)
-    os.chmod(
-        pwd + my.SP() + "data" + my.SP() + "projects", stat.S_IREAD | stat.S_IWRITE
-    )
+basedir = os.path.dirname(os.path.realpath(sys.argv[0]))  # 取得 exe 檔案的目錄路徑
+if my.is_dir(os.path.join(basedir, "data")) == False:
+    my.mkdir(os.path.join(basedir, "data"))    
+    os.chmod(os.path.join(basedir, "data"), 0o777)
+if my.is_dir(os.path.join(basedir, "data", "projects")) == False:
+    my.mkdir(os.path.join(basedir, "data", "projects"))    
+    os.chmod(os.path.join(basedir, "data", "projects"), 0o777)
 
 GDATA = {
     "VERSION": "0.01",
     "UI": {},
     "THREAD": {},
-    "pwd": pwd,
+    "basedir": basedir,
     "recording": False,  # 錄製狀態
     "out": None,
     "record_area": None,
@@ -436,7 +433,7 @@ GDATA = {
     "run_end_time": None,  # 影片結束轉檔時間
 }
 
-lock_file = pwd + "\\lock.txt"
+lock_file = os.path.join(basedir, "lock.txt")
 
 # 檢查是否存在鎖定檔案並創建文件鎖
 # 防程式重複啟動
@@ -608,7 +605,7 @@ def method_count_wait_process_files():
     # 計算有多少待處理的檔案
     global GDATA
     GDATA["wait_process_files"] = 0
-    fp = my.glob(GDATA["project_folder"] + my.SP() + "*.jpg")
+    fp = my.glob(os.path.join(GDATA["project_folder"], "*.jpg"))
     GDATA["wait_process_files"] = len(fp)
     GDATA["UI"]["status_label"].config(
         text="待處理檔案數：%s" % GDATA["wait_process_files"]
@@ -881,8 +878,8 @@ def project_get_list_all():
     # 取得所有專案檔
     global GDATA
     project_list = []
-    for project in os.listdir(GDATA["pwd"] + "\\data\\projects"):
-        if os.path.isdir(GDATA["pwd"] + "\\data\\projects\\" + project):
+    for project in os.listdir(GDATA["basedir"] + "\\data\\projects"):
+        if os.path.isdir(GDATA["basedir"] + "\\data\\projects\\" + project):
             project_list.append(project)
     return project_list
 
@@ -900,59 +897,28 @@ def new_project():
     if project_name in project_get_list_all():
         messagebox.showwarning("警告", "專案檔名稱已存在！")
         return
-    my.mkdir(
-        GDATA["pwd"] + my.SP() + "data" + my.SP() + "projects" + my.SP() + project_name
-    )
-    os.chmod(
-        GDATA["pwd"] + my.SP() + "data" + my.SP() + "projects" + my.SP() + project_name,
-        stat.S_IREAD | stat.S_IWRITE,
-    )  # 0o777
+    # 定義目錄路徑
+    project_dir = os.path.join(GDATA["basedir"], "data", "projects", project_name)
+
+    # 建立目錄
+    os.makedirs(project_dir, exist_ok=True)
+    os.chmod(project_dir, 0o777)  # 0o777
     # 繼續建立 dataset 與 my_dataset
     my.mkdir(
-        GDATA["pwd"]
-        + my.SP()
-        + "data"
-        + my.SP()
-        + "projects"
-        + my.SP()
-        + project_name
-        + my.SP()
-        + "dataset"
+        os.path.join(GDATA["basedir"], "data", "projects", project_name, "dataset"),
+        recursive=True,
     )
     os.chmod(
-        GDATA["pwd"]
-        + my.SP()
-        + "data"
-        + my.SP()
-        + "projects"
-        + my.SP()
-        + project_name
-        + my.SP()
-        + "dataset",
-        stat.S_IREAD | stat.S_IWRITE,  # 0o777,
+        os.path.join(GDATA["basedir"], "data", "projects", project_name, "dataset"),
+        0o777,
     )
     my.mkdir(
-        GDATA["pwd"]
-        + my.SP()
-        + "data"
-        + my.SP()
-        + "projects"
-        + my.SP()
-        + project_name
-        + my.SP()
-        + "my_dataset"
+        os.path.join(GDATA["basedir"], "data", "projects", project_name, "my_dataset"),
+        recursive=True,
     )
     os.chmod(
-        GDATA["pwd"]
-        + my.SP()
-        + "data"
-        + my.SP()
-        + "projects"
-        + my.SP()
-        + project_name
-        + my.SP()
-        + "my_dataset",
-        stat.S_IREAD | stat.S_IWRITE,  # 0o777,
+        os.path.join(GDATA["basedir"], "data", "projects", project_name, "my_dataset"),
+        0o777,
     )
     messagebox.showinfo("提示", "新增專案檔成功！")
 
@@ -1017,8 +983,8 @@ def project_selected(self, a, b):
     GDATA["UI"]["execute_folder_button"].config(
         state=tk.NORMAL
     )  # 選到專案檔後，才能選擇 編輯訓練檔
-    GDATA["project_folder"] = (
-        GDATA["pwd"] + my.SP() + "data" + my.SP() + "projects" + my.SP() + project
+    GDATA["project_folder"] = os.path.join(
+        GDATA["basedir"], "data", "projects", project
     )
     # 檢查是否有 rect.txt
     _OUTPUT_RECT_FILE = os.path.join(GDATA["project_folder"], "rect.txt")
@@ -1058,15 +1024,15 @@ binary_data = base64.b64decode(icon_b64)
 icon_b64 = None
 
 # 將二進制數據寫入文件
-with open(GDATA["pwd"] + "\\tmp_icon.ico", "wb") as f:
+with open(GDATA["basedir"] + "\\tmp_icon.ico", "wb") as f:
     f.write(binary_data)
 binary_data = None
 
 
 # 設置窗口圖標
-root.iconbitmap(GDATA["pwd"] + "\\tmp_icon.ico")
-if os.path.isfile(GDATA["pwd"] + "\\tmp_icon.ico"):
-    os.remove(GDATA["pwd"] + "\\tmp_icon.ico")
+root.iconbitmap(GDATA["basedir"] + "\\tmp_icon.ico")
+if os.path.isfile(GDATA["basedir"] + "\\tmp_icon.ico"):
+    os.remove(GDATA["basedir"] + "\\tmp_icon.ico")
 
 # 計算窗口位置
 screen_width = root.winfo_screenwidth()
@@ -1230,8 +1196,8 @@ def run_flask():
     # data 目錄也要分享
     @app.route("/data/<path:filename>")
     def data(filename):
-        _PWD = os.getcwd()
-        DATA_FOLDER = _PWD + my.SP() + "data"
+        _PD = os.getcwd()
+        DATA_FOLDER = os.path.join(_PD, "data")
         return send_from_directory(DATA_FOLDER, filename)
 
     @app.route("/api", methods=["GET", "POST"])
@@ -1240,10 +1206,8 @@ def run_flask():
         if "mode" in GETS:
             mode = GETS["mode"]
             if mode == "project_list":
-                _PWD = os.getcwd()
-                projects = my.glob_dirs(
-                    _PWD + my.SP() + "data" + my.SP() + "projects" + my.SP() + "*"
-                )
+                _PD = os.getcwd()
+                projects = my.glob_dirs(os.path.join(_PD, "data", "projects", "*"))
                 projects = [os.path.basename(p) for p in projects]
                 return jsonify({"status": "OK", "data": projects})
             if mode == "getKindList":
@@ -1256,18 +1220,10 @@ def run_flask():
                         400,
                     )
                 project_name = request.form["project_name"]
-                _PWD = os.getcwd()
-                _PROJECT_FOLDER = (
-                    _PWD
-                    + my.SP()
-                    + "data"
-                    + my.SP()
-                    + "projects"
-                    + my.SP()
-                    + project_name
-                )
-                _MY_DATASET_FOLDER = _PROJECT_FOLDER + my.SP() + "my_dataset"
-                _KINDS = my.glob_dirs(_MY_DATASET_FOLDER + my.SP() + "*")
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KINDS = my.glob_dirs(os.path.join(_MY_DATASET_FOLDER, "*"))
                 OUTPUT = {"status": "OK", "data": {}}
 
                 # 重要
@@ -1276,7 +1232,7 @@ def run_flask():
 
                 for kind in _KINDS:
                     _KIND = os.path.basename(kind)
-                    _KIND_FILES = len(my.glob(kind + my.SP() + "*.jpg"))
+                    _KIND_FILES = len(my.glob(os.path.join(kind, "*.jpg")))
                     OUTPUT["data"][_KIND] = {"數量": _KIND_FILES}
 
                 return jsonify(OUTPUT)
@@ -1293,20 +1249,12 @@ def run_flask():
                     return jsonify({"status": "NO", "reason": "請輸入類別名稱"})
                 project_name = request.form["project_name"]
                 kind_name = request.form["kind_name"]
-                _PWD = os.getcwd()
-                _PROJECT_FOLDER = (
-                    _PWD
-                    + my.SP()
-                    + "data"
-                    + my.SP()
-                    + "projects"
-                    + my.SP()
-                    + project_name
-                )
-                _MY_DATASET_FOLDER = _PROJECT_FOLDER + my.SP() + "my_dataset"
-                _KIND_FOLDER = _MY_DATASET_FOLDER + my.SP() + kind_name
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
                 my.mkdir(_KIND_FOLDER)
-                os.chmod(_KIND_FOLDER, stat.S_IREAD | stat.S_IWRITE)  # 0o777
+                os.chmod(_KIND_FOLDER, 0o777)  # 0o777
                 if my.is_dir(_KIND_FOLDER):
                     return jsonify({"status": "OK"})
                 else:
@@ -1323,18 +1271,11 @@ def run_flask():
                     return jsonify({"status": "NO", "reason": "請輸入類別名稱"})
                 project_name = request.form["project_name"]
                 kind_name = my.basename(request.form["kind_name"])
-                _PWD = os.getcwd()
-                _PROJECT_FOLDER = (
-                    _PWD
-                    + my.SP()
-                    + "data"
-                    + my.SP()
-                    + "projects"
-                    + my.SP()
-                    + project_name
-                )
-                _MY_DATASET_FOLDER = _PROJECT_FOLDER + my.SP() + "my_dataset"
-                _KIND_FOLDER = _MY_DATASET_FOLDER + my.SP() + kind_name
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
                 print("Del path: %s" % (_KIND_FOLDER))
                 # if my.is_dir(_KIND_FOLDER):
                 my.delete_directory_contents(_KIND_FOLDER)
@@ -1352,19 +1293,11 @@ def run_flask():
                 project_name = request.form["project_name"]
                 kind_name = my.basename(request.form["kind_name"])
                 new_kind_name = my.basename(request.form["new_kind_name"])
-                _PWD = os.getcwd()
-                _PROJECT_FOLDER = (
-                    _PWD
-                    + my.SP()
-                    + "data"
-                    + my.SP()
-                    + "projects"
-                    + my.SP()
-                    + project_name
-                )
-                _MY_DATASET_FOLDER = _PROJECT_FOLDER + my.SP() + "my_dataset"
-                _KIND_FOLDER = _MY_DATASET_FOLDER + my.SP() + kind_name
-                _NEW_KIND_FOLDER = _MY_DATASET_FOLDER + my.SP() + new_kind_name
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, +"my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
+                _NEW_KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, new_kind_name)
                 if (
                     my.is_dir(_KIND_FOLDER) == True
                     and my.is_dir(_NEW_KIND_FOLDER) == False
@@ -1378,17 +1311,9 @@ def run_flask():
             if mode == "getPhotoList":
                 # 取得 project_name 目錄下的圖片，因為是未分類的
                 project_name = request.form["project_name"]
-                _PWD = os.getcwd()
-                _PROJECT_FOLDER = (
-                    _PWD
-                    + my.SP()
-                    + "data"
-                    + my.SP()
-                    + "projects"
-                    + my.SP()
-                    + project_name
-                )
-                fp = my.glob(_PROJECT_FOLDER + my.SP() + "*.jpg")
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                fp = my.glob(os.path.join(_PROJECT_FOLDER, "*.jpg"))
                 fp = [{"photo_name": my.basename(f)} for f in fp]
                 return jsonify({"status": "OK", "data": fp})
             # 刪照片
@@ -1402,17 +1327,9 @@ def run_flask():
                     return jsonify({"status": "NO", "reason": "圖片名稱未填..."})
                 project_name = request.form["project_name"]
                 photo_name = my.basename(request.form["photo_name"])
-                _PWD = os.getcwd()
-                _PROJECT_FOLDER = (
-                    _PWD
-                    + my.SP()
-                    + "data"
-                    + my.SP()
-                    + "projects"
-                    + my.SP()
-                    + project_name
-                )
-                _PHOTO_FILE = _PROJECT_FOLDER + my.SP() + photo_name
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _PHOTO_FILE = os.path.join(_PROJECT_FOLDER, photo_name)
                 if my.is_file(_PHOTO_FILE):
                     os.remove(_PHOTO_FILE)
                     return jsonify({"status": "OK"})
@@ -1433,25 +1350,17 @@ def run_flask():
                     return jsonify({"status": "NO", "reason": "圖片名稱未填..."})
                 if "kind_name" not in request.form:
                     return jsonify({"status": "NO", "reason": "類別名稱未填..."})
-                _PWD = os.getcwd()
-                _PROJECT_FOLDER = (
-                    _PWD
-                    + my.SP()
-                    + "data"
-                    + my.SP()
-                    + "projects"
-                    + my.SP()
-                    + project_name
-                )
-                _MY_DATASET_FOLDER = _PROJECT_FOLDER + my.SP() + "my_dataset"
-                _KIND_FOLDER = _MY_DATASET_FOLDER + my.SP() + kind_name
-                _PHOTO_FILE = _PROJECT_FOLDER + my.SP() + photo_name
-                _NEW_PHOTO_FILE = _KIND_FOLDER + my.SP() + photo_name
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
+                _PHOTO_FILE = os.path.join(_PROJECT_FOLDER, photo_name)
+                _NEW_PHOTO_FILE = os.path.join(_KIND_FOLDER, photo_name)
                 if my.is_file(_PHOTO_FILE) == False:
                     return jsonify({"status": "NO", "reason": "圖片不存在"})
                 if my.is_dir(_KIND_FOLDER) == False:
                     my.mkdir(_KIND_FOLDER)
-                    os.chmod(_KIND_FOLDER, stat.S_IREAD | stat.S_IWRITE)
+                    os.chmod(_KIND_FOLDER, 0o777)
                 if my.is_file(_NEW_PHOTO_FILE) == True:
                     my.unlink(_NEW_PHOTO_FILE)
                 shutil.move(_PHOTO_FILE, _NEW_PHOTO_FILE)
@@ -1463,23 +1372,15 @@ def run_flask():
             if mode == "getDoMarkKindList":
                 # 取得 project_name 目錄下的圖片，已分類的照片數量、未處理的照片數量
                 project_name = request.form["project_name"]
-                _PWD = os.getcwd()
-                _PROJECT_FOLDER = (
-                    _PWD
-                    + my.SP()
-                    + "data"
-                    + my.SP()
-                    + "projects"
-                    + my.SP()
-                    + project_name
-                )
-                _MY_DATASET_FOLDER = _PROJECT_FOLDER + my.SP() + "my_dataset"
-                _KINDS = my.glob_dirs(_MY_DATASET_FOLDER + my.SP() + "*")
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KINDS = my.glob_dirs(os.path.join(_MY_DATASET_FOLDER, "*"))
                 _data = []
                 for kind in _KINDS:
                     _KIND = os.path.basename(kind)
-                    _KIND_FILES = len(my.glob(kind + my.SP() + "*.jpg"))
-                    _TXT_FILES = len(my.glob(kind + my.SP() + "*.txt"))
+                    _KIND_FILES = len(my.glob(os.path.join(kind, "*.jpg")))
+                    _TXT_FILES = len(my.glob(os.path.join(kind, "*.txt")))
                     _data.append(
                         {
                             "kind_name": _KIND,

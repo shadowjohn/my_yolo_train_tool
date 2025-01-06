@@ -12,29 +12,35 @@
 # reload(sys)
 # sys.setdefaultencoding('utf-8')
 # import htmlentitydefs
-class kit:           
+class kit:
     def __init__(self):
-        self.form_status = False;
-    def is_str(self,s):        
+        self.form_status = False
+
+    def is_str(self, s):
         if self.python_version() == 2:
             basestring_type = basestring  # Python 2
         else:
-            basestring_type = str  # Python 3        
+            basestring_type = str  # Python 3
         return isinstance(s, basestring_type)
-    def array_push(self,arr,data):
-        return arr.append(data);
-    def pwd(self):
-        import os
-        import sys
-        return os.path.dirname(os.path.realpath(sys.argv[0]));
-    def deltree(self,path):
+
+    def array_push(self, arr, data):
+        return arr.append(data)
+
+    # def pwd(self):
+    #    import os
+    #    import sys
+    #    return os.path.dirname(os.path.realpath(sys.argv[0]));
+    def deltree(self, path):
         import shutil
-        shutil.rmtree(path);
-    def delete_directory_contents(self,path):
+
+        shutil.rmtree(path)
+
+    def delete_directory_contents(self, path):
         """
         安全刪除指定目錄的所有內容（僅一層）。
         """
         import os
+
         if not os.path.exists(path):
             print(f"The directory '{path}' does not exist.")
             return
@@ -55,43 +61,68 @@ class kit:
             except Exception as e:
                 print(f"Failed to delete {item_path}: {e}")
         os.rmdir(path)  # 刪除目錄本身
-    def math_round(self,data,step):
+
+    def math_round(self, data, step):
         import decimal
-        a = decimal.Decimal(data);
-        return round(a,step);
-    def array_shuffle(self,arr):  
+
+        a = decimal.Decimal(data)
+        return round(a, step)
+
+    def array_shuffle(self, arr):
         import random
-        random.shuffle(arr);    
+
+        random.shuffle(arr)
+
     def is_win(self):
         import sys
-        is_windows = hasattr(sys, 'getwindowsversion')
+
+        is_windows = hasattr(sys, "getwindowsversion")
         return is_windows
+
     def allow_ajax(self):
-        self.echo("Access-Control-Allow-Origin: *\n");
-        self.echo("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept\n");   
+        self.echo("Access-Control-Allow-Origin: *\n")
+        self.echo(
+            "Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept\n"
+        )
+
     def server_name(self):
         import socket
+
         return socket.gethostname()
-    def SP(self):        
+
+    def SP(self):
         if self.is_win():
-          return "\\"
+            return "\\"
         else:
-          return "/"        
-    def include(self,filename):
+            return "/"
+
+    def include(self, filename):
         print(self.file_get_contents(filename))
-    def mkdir(self,dirname):
-        # Create directory
+
+    def mkdir(self, path, mode=0o777, recursive=False):
+        """
+        仿 PHP mkdir 函數
+        :param path: 要創建的目錄路徑
+        :param mode: 權限模式，預設 0o777
+        :param recursive: 是否遞歸創建目錄，預設為 False
+        """
         import os
-        if self.is_dir(dirname)==False:
-          os.mkdir(dirname)
+        if recursive:
+            os.makedirs(path, mode=mode, exist_ok=True)
+        else:
+            os.mkdir(path, mode=mode)
+
     def time(self):
-        # Return timestamp   
-        import time 
+        # Return timestamp
+        import time
+
         return int(time.time())
+
     def microtime(self, get_as_float=False):
         import time
+
         current_time = time.time()
-        
+
         if not get_as_float:
             # 將時間拆分為秒和微秒，類似 PHP 的 (microseconds seconds) 格式
             seconds = int(current_time)
@@ -100,11 +131,13 @@ class kit:
         else:
             # 直接返回浮點數時間戳
             return current_time
-    def date(self,*args):
+
+    def date(self, *args):
         # Argv(0) for output struct
         # Argv(1) for timestamp
         import datetime
-        lens = len(args)        
+
+        lens = len(args)
         nowtime = datetime.datetime.now()
         if lens == 2:
             nowtime = datetime.datetime.fromtimestamp(int(args[1]))
@@ -116,390 +149,533 @@ class kit:
             elif args[0] == "Y-m-d":
                 return nowtime.strftime("%Y-%m-%d")
             elif args[0] == "Y":
-                return nowtime.strftime("%Y") 
+                return nowtime.strftime("%Y")
             elif args[0] == "m":
-                return nowtime.strftime("%m")       
+                return nowtime.strftime("%m")
             elif args[0] == "d":
                 return nowtime.strftime("%d")
             elif args[0] == "H":
-                return nowtime.strftime("%H") 
+                return nowtime.strftime("%H")
             elif args[0] == "i":
-                return nowtime.strftime("%M") 
+                return nowtime.strftime("%M")
             elif args[0] == "s":
                 return nowtime.strftime("%S")
             elif args[0] == "Y-m-d H:i":
                 return nowtime.strftime("%Y-%m-%d %H:%M")
             elif args[0] == "Ymd":
-                return nowtime.strftime("%Y%m%d")  
+                return nowtime.strftime("%Y%m%d")
             elif args[0] == "Y/m/d H:i:s":
                 return nowtime.strftime("%Y/%m/%d %H:%M:%S")
             elif args[0] == "Y/m/d":
-                return nowtime.strftime("%Y/%m/%d")                                                                                                             
+                return nowtime.strftime("%Y/%m/%d")
             else:
-                return nowtime.strftime("%Y-%m-%d %H:%M:%S")  
-    def count(self,arr):
+                return nowtime.strftime("%Y-%m-%d %H:%M:%S")
+
+    def count(self, arr):
         return len(arr)
-    
-    def strlen(self,x):
-        return len(x)   
-    def trim(self,input): 
+
+    def strlen(self, x):
+        return len(x)
+
+    def trim(self, input):
         # Return trim data
-        return str(input).strip();
-    def ls2l(self,list_string):
+        return str(input).strip()
+
+    def ls2l(self, list_string):
         import ast
-        return ast.literal_eval(list_string)         
-    def str_replace(self,findwords,replace_words,data):
+
+        return ast.literal_eval(list_string)
+
+    def str_replace(self, findwords, replace_words, data):
         # Data Replace
-        return data.replace(findwords,replace_words)
-    def copy(self,source_file,target_file):
+        return data.replace(findwords, replace_words)
+
+    def copy(self, source_file, target_file):
         import shutil
-        shutil.copy(source_file,target_file)
-    def move(self,source_file,target_file):
+
+        shutil.copy(source_file, target_file)
+
+    def move(self, source_file, target_file):
         import shutil
-        shutil.move(source_file,target_file)
-    def copy_all(self,source_dir,target_dir):
+
+        shutil.move(source_file, target_file)
+
+    def copy_all(self, source_dir, target_dir):
         import shutil
-        shutil.copytree(source_dir,target_dir)
-    def utf8tobig5(self,data):
-        return data.encode('big5');
-    def touch(self,fname, times=None):
-        import os        
-        with open(fname, 'a'):
-          os.utime(fname, times);
-    def is_dir(self,pathname):
+
+        shutil.copytree(source_dir, target_dir)
+
+    def utf8tobig5(self, data):
+        return data.encode("big5")
+
+    def touch(self, fname, times=None):
         import os
+
+        with open(fname, "a"):
+            os.utime(fname, times)
+
+    def is_dir(self, pathname):
+        import os
+
         return os.path.isdir(pathname)
-    def is_file(self,filename):
+
+    def is_file(self, filename):
         import os
+
         return os.path.isfile(filename)
-    def rand(self,start_int,end_int):
+
+    def rand(self, start_int, end_int):
         import random
-        return random.randint(start_int,end_int)
-    def unlink(self,filename):
+
+        return random.randint(start_int, end_int)
+
+    def unlink(self, filename):
         import os
-        if self.is_file(filename)==True:
-          os.remove(filename)
-    def glob(self,pathdata):
+
+        if self.is_file(filename) == True:
+            os.remove(filename)
+
+    def glob(self, pathdata):
         import glob
+
         return glob.glob(pathdata)
+
     def glob_dirs(self, pathdata):
         import glob
         import os
+
         # 使用 glob 匹配所有項目
         paths = glob.glob(pathdata)
         # 過濾出所有目錄
         return [path for path in paths if os.path.isdir(path)]
-    def base64_encode(self,data):
+
+    def base64_encode(self, data):
         import base64
+
         return base64.encodestring(data)
-    def base64_decode(self,data):
+
+    def base64_decode(self, data):
         import base64
-        return base64.decodestring(data)    
-    def file_get_contents(self,data_path):
-        if self.strtolower(data_path).find("http:") != -1 or self.strtolower(data_path).find("ftp:") != -1:
+
+        return base64.decodestring(data)
+
+    def file_get_contents(self, data_path):
+        if (
+            self.strtolower(data_path).find("http:") != -1
+            or self.strtolower(data_path).find("ftp:") != -1
+        ):
             # From web
-            if self.python_version()==2:
-              import urllib2
-              return urllib2.urlopen(data_path).read()
+            if self.python_version() == 2:
+                import urllib2
+
+                return urllib2.urlopen(data_path).read()
             else:
-              import urllib.request
-              return urllib.request.urlopen(data_path).read()
+                import urllib.request
+
+                return urllib.request.urlopen(data_path).read()
         else:
-            return open(data_path,encoding = 'utf8').read()
-    def file_put_contents(self,filename,data,IS_APPEND=False):
-        f = "";
-        if IS_APPEND==True:
-          f = open(filename, 'a');
+            return open(data_path, encoding="utf8").read()
+
+    def file_put_contents(self, filename, data, IS_APPEND=False):
+        f = ""
+        if IS_APPEND == True:
+            f = open(filename, "a")
         else:
-          f = open(filename, 'wb');
+            f = open(filename, "wb")
         f.write(data)
         f.close()
-    def sleep(self,second):
+
+    def sleep(self, second):
         import time
-        time.sleep(self,second)
-    def usleep(self,micro_seconds):
+
+        time.sleep(self, second)
+
+    def usleep(self, micro_seconds):
         import time
+
         time.sleep(micro_seconds / 1000000.0)
-    def strtotime(self,datedata):
+
+    def strtotime(self, datedata):
         import time
+
         output = 0
         try:
-          output = time.strptime(datedata, '%Y-%m-%d %H:%M:%S')
+            output = time.strptime(datedata, "%Y-%m-%d %H:%M:%S")
         except:
-          output = time.strptime(datedata, '%Y-%m-%d')
+            output = time.strptime(datedata, "%Y-%m-%d")
         return int(time.mktime(output))
+
     def exit(self):
         import sys
+
         sys.exit(0)
-    def echo(self,data):
+
+    def echo(self, data):
         import sys
-        sys.stdout.write( ("%s" % data) ); 
-    def strtoupper(self,data):
-        return data.upper();
-    def strtolower(self,data):
-        return data.lower() 
-    def explode(self,sep,data):
+
+        sys.stdout.write(("%s" % data))
+
+    def strtoupper(self, data):
+        return data.upper()
+
+    def strtolower(self, data):
+        return data.lower()
+
+    def explode(self, sep, data):
         return data.split(sep)
-    def implode(self,sep,arr):
+
+    def implode(self, sep, arr):
         return sep.join(arr)
-    def rmdir(self,dirpath):
+
+    def rmdir(self, dirpath):
         import os
+
         os.rmdir(dirpath)
-    def print_r(self,*args):
+
+    def print_r(self, *args):
         import print_r
+
         if len(args) == 1:
-          print_r.print_r(args[0])
+            print_r.print_r(args[0])
         elif len(args) == 2:
-          return print_r.print_r(args[0],output = False)
-    def json_decode(self,data):
+            return print_r.print_r(args[0], output=False)
+
+    def json_decode(self, data):
         import json
+
         return json.loads(data)
-    def json_encode(self,dict_data):
+
+    def json_encode(self, dict_data):
         import json
-        return json.dumps(dict_data); #, ensure_ascii=False);
-    def json_encode_utf8(self,dict_data):
+
+        return json.dumps(dict_data)
+        # , ensure_ascii=False);
+
+    def json_encode_utf8(self, dict_data):
         import json
+
         return json.dumps(dict_data, ensure_ascii=False)
-    def json_format(self,json_data):
+
+    def json_format(self, json_data):
         import json
-        return json.dumps(self.json_decode(json_data),indent=4, sort_keys=True)
-    def json_format_utf8(self,json_data):
+
+        return json.dumps(self.json_decode(json_data), indent=4, sort_keys=True)
+
+    def json_format_utf8(self, json_data):
         import json
-        return json.dumps(self.json_decode(json_data),indent=4, sort_keys=True, ensure_ascii=False)        
-    def xml_decode(self,data):
+
+        return json.dumps(
+            self.json_decode(json_data), indent=4, sort_keys=True, ensure_ascii=False
+        )
+
+    def xml_decode(self, data):
         import xmltodict
+
         return xmltodict.parse(data)
-    def xml_encode(self,dict_data):
+
+    def xml_encode(self, dict_data):
         import xmltodict
+
         return xmltodict.unparse(dict_data)
+
     def system(self, cmd):
         import os
-        return os.popen(cmd).read()         
+
+        return os.popen(cmd).read()
+
     def htmlspecialchars(self, data):
-        #import cgi
-        #return cgi.escape(data,True)
+        # import cgi
+        # return cgi.escape(data,True)
         import html
+
         return html.escape(data)
-    def htmlspecialchars_decode(self,data):
+
+    def htmlspecialchars_decode(self, data):
         import html
+
         # For html spacialchars decode
-        #import re
-        #pattern = re.compile("&(\w+?);")
-        #return pattern.sub(self.htmlspecialchars_decode_func, string)    
+        # import re
+        # pattern = re.compile("&(\w+?);")
+        # return pattern.sub(self.htmlspecialchars_decode_func, string)
         return html.unescape(data)
-    def in_array(self, needle,arr):
-        return ( needle in arr )       
+
+    def in_array(self, needle, arr):
+        return needle in arr
+
     def pre_print_r(self, *argv):
         if len(argv) == 1:
-            print("<pre>\n%s\n</pre>" % (self.print_r(argv[0],True)))
+            print("<pre>\n%s\n</pre>" % (self.print_r(argv[0], True)))
         else:
-            return "<pre>\n%s\n</pre>" % (self.print_r(argv[0],True))
-    def nl2br(self,data):
-        return data.replace("\n","<br>")
-    def getGET_POST(self, string_fields,method):
-        import cgi           
+            return "<pre>\n%s\n</pre>" % (self.print_r(argv[0], True))
+
+    def nl2br(self, data):
+        return data.replace("\n", "<br>")
+
+    def getGET_POST(self, string_fields, method):
+        import cgi
+
         if self.form_status == False:
-          self.form = cgi.FieldStorage();
-          self.form_status = True                
-        output = {}        
+            self.form = cgi.FieldStorage()
+            self.form_status = True
+        output = {}
         for k in self.form.keys():
-          variable = str(k)
-          value = str(self.form.getvalue(variable))
-          output[variable] = value
+            variable = str(k)
+            value = str(self.form.getvalue(variable))
+            output[variable] = value
         return output
-    def save_uploaded_file (self,form_file, upload_filename):
-        #http://www.tutorialspoint.com/python/python_cgi_programming.htm
-        import shutil        
+
+    def save_uploaded_file(self, form_file, upload_filename):
+        # http://www.tutorialspoint.com/python/python_cgi_programming.htm
+        import shutil
+
         fileitem = form_file
-        if not fileitem.file: return
-        #outpath = os.path.join(upload_dir, fileitem.filename)
+        if not fileitem.file:
+            return
+        # outpath = os.path.join(upload_dir, fileitem.filename)
         dn = self.dirname(upload_filename)
         if self.is_dir(dn) == False:
-          self.mkdir(dn)
-        #self.copy(fileitem.filename,upload_filename)
-        open(upload_filename, 'wb').write(fileitem.file.read())    
-        #with open(outpath, 'wb') as fout:
-        #    shutil.copyfileobj(fileitem.file, fout, 100000)  
-#     def getGET_POST(self, string_fields,method):
-#         # the data must trim , htmlspecialchars and addslashes        
-#         method = self.strtoupper(method)
-#         m = self.explode(',',string_fields)
-#         output = {}
-#         if method == "GET":
-#             from django.http import HttpResponse                        
-#             for i in request.GET.keys():
-#                 if self.in_array(i,m):
-#                     output[i] =  request.GET[i]
-#             return output
-#         elif method == "POST":
-#             from django.http import HttpResponse                        
-#             for i in request.POST.keys():
-#                 if self.in_array(i,m):
-#                     output[i] =  request.POST[i]
-#             return output
-    def url_get_kind(self,url):
-        #http or ftp
+            self.mkdir(dn)
+        # self.copy(fileitem.filename,upload_filename)
+        open(upload_filename, "wb").write(fileitem.file.read())
+        # with open(outpath, 'wb') as fout:
+        #    shutil.copyfileobj(fileitem.file, fout, 100000)
+
+    #     def getGET_POST(self, string_fields,method):
+    #         # the data must trim , htmlspecialchars and addslashes
+    #         method = self.strtoupper(method)
+    #         m = self.explode(',',string_fields)
+    #         output = {}
+    #         if method == "GET":
+    #             from django.http import HttpResponse
+    #             for i in request.GET.keys():
+    #                 if self.in_array(i,m):
+    #                     output[i] =  request.GET[i]
+    #             return output
+    #         elif method == "POST":
+    #             from django.http import HttpResponse
+    #             for i in request.POST.keys():
+    #                 if self.in_array(i,m):
+    #                     output[i] =  request.POST[i]
+    #             return output
+    def url_get_kind(self, url):
+        # http or ftp
         import urlparse
-        return urlparse.urlsplit(url)[0]            
-    def url_get_hostname(self,url):
+
+        return urlparse.urlsplit(url)[0]
+
+    def url_get_hostname(self, url):
         import urlparse
+
         return urlparse.urlsplit(url)[1]
-    def url_get_path(self,url):
+
+    def url_get_path(self, url):
         import urlparse
+
         return urlparse.urlsplit(url)[2]
-    def dirname(self,path):
+
+    def dirname(self, path):
         import os
+
         return os.path.dirname(path)
-    def mainname(self,path):
+
+    def mainname(self, path):
         import os
+
         return os.path.splitext(self.basename(path))[0]
-    def basename(self,path):
+
+    def basename(self, path):
         import os
-        _output = "";
+
+        _output = ""
         if self.is_file(path):
-          _output = os.path.basename(path)
+            _output = os.path.basename(path)
         else:
-          m = self.explode(self.SP(),path)
-          _output = m[self.count(m)-1]
-        return _output    
-    def subname(self,path):
+            m = self.explode(self.SP(), path)
+            _output = m[self.count(m) - 1]
+        return _output
+
+    def subname(self, path):
         import os
-        return os.path.splitext(path)[-1].replace('.','') 
-    def natcasesort(self,arr): 
-        if isinstance(arr, list): 
-          arr = sorted(arr, key=lambda x:str(x).lower()) 
-        elif isinstance(arr, dict): 
-          arr = sorted(arr.iteritems(), key=lambda x:str(x[0]).lower())
+
+        return os.path.splitext(path)[-1].replace(".", "")
+
+    def natcasesort(self, arr):
+        if isinstance(arr, list):
+            arr = sorted(arr, key=lambda x: str(x).lower())
+        elif isinstance(arr, dict):
+            arr = sorted(arr.iteritems(), key=lambda x: str(x[0]).lower())
         return arr
-    def sort(self,arr):
+
+    def sort(self, arr):
         return sorted(arr)
-    def array_unique(self,arr):
+
+    def array_unique(self, arr):
         return list(set(array))
-    def array_values(self,dictarr):
+
+    def array_values(self, dictarr):
         return dictarr.values()
-    def is_string_like(self,data,find_string):
+
+    def is_string_like(self, data, find_string):
         if data.find(find_string) == -1:
-          return False
+            return False
         else:
-          return True
-    def link_db(self,db_kind,host,user,passwd,db):
+            return True
+
+    def link_db(self, db_kind, host, user, passwd, db):
         import pdo
+
         _db_type = ""
         db_kind = self.strtoupper(db_kind)
         if db_kind == "MYSQL":
-          db_type = "MySQLdb"
-        _link_str = 'Module='+db_type+';Host='+host+';User='+user+';Passwd='+passwd+';DB='+db
+            db_type = "MySQLdb"
+        _link_str = (
+            "Module="
+            + db_type
+            + ";Host="
+            + host
+            + ";User="
+            + user
+            + ";Passwd="
+            + passwd
+            + ";DB="
+            + db
+        )
         PDO = pdo.connect(_link_str)
-        self.execSQL(PDO,"SET NAMES UTF8")           
+        self.execSQL(PDO, "SET NAMES UTF8")
         return PDO
-    def execSQL(self,pdo,SQL): 
-        pdo.simpleCMD(SQL);
-    def selectSQL_SAFE(self,pdo,SQL,m):
-        SQL = self.str_replace("?","%s",SQL)    
-        Results = pdo.open(SQL,m)
+
+    def execSQL(self, pdo, SQL):
+        pdo.simpleCMD(SQL)
+
+    def selectSQL_SAFE(self, pdo, SQL, m):
+        SQL = self.str_replace("?", "%s", SQL)
+        Results = pdo.open(SQL, m)
         output = []
         keys = Results.keys()
-        #print(keys)
+        # print(keys)
         while Results.next():
-          d = {}
-          for k in keys:
-            d[k] = str(Results[k].value)                        
-          output.append(d)
+            d = {}
+            for k in keys:
+                d[k] = str(Results[k].value)
+            output.append(d)
         return output
-        #while Results.next():
+        # while Results.next():
         #    print("Name: " + Results['Name'].value)
-    def insertSQL(self,pdo,table,keyvalue):
+
+    def insertSQL(self, pdo, table, keyvalue):
         F = []
         V = []
-        Q = []        
-        for k in keyvalue:          
-          F.append(k)
-          V.append(keyvalue[k])
-          Q.append("?")                
-        FIELDS = self.implode('`,`',F)                
-        Q_FIELDS = self.implode(',',Q)        
-        
-        SQL = "INSERT INTO `"+table+"`(`"+FIELDS+"`)VALUES("+Q_FIELDS+")"
-        SQL = self.str_replace("?","%s",SQL)  
-        LAST_ID = pdo.execute(SQL,V)
+        Q = []
+        for k in keyvalue:
+            F.append(k)
+            V.append(keyvalue[k])
+            Q.append("?")
+        FIELDS = self.implode("`,`", F)
+        Q_FIELDS = self.implode(",", Q)
+
+        SQL = "INSERT INTO `" + table + "`(`" + FIELDS + "`)VALUES(" + Q_FIELDS + ")"
+        SQL = self.str_replace("?", "%s", SQL)
+        LAST_ID = pdo.execute(SQL, V)
         return LAST_ID.insertid
+
     def error_report_on(self):
-        import cgitb 
+        import cgitb
+
         cgitb.enable()
-    def strip_tags(self,html_data):
+
+    def strip_tags(self, html_data):
         from bs4 import BeautifulSoup
-        bs_html = BeautifulSoup(html_data,'html.parser');
+
+        bs_html = BeautifulSoup(html_data, "html.parser")
         return bs_html.text
-    def myprint(self,data):
+
+    def myprint(self, data):
         import pprint
-        pprint.pprint(data);      
-    def header(self,headers = None, memory = False):
-        _output = "";
+
+        pprint.pprint(data)
+
+    def header(self, headers=None, memory=False):
+        _output = ""
         if headers is None:
-          _output+="Content-Type: text/html\n";
+            _output += "Content-Type: text/html\n"
         else:
-          # Content-Type: application/octet-stream\n
-          _output+=str(headers);
+            # Content-Type: application/octet-stream\n
+            _output += str(headers)
         if memory == True:
-          None
+            None
         else:
-          print(_output);
-        return _output;
-    def filesize(self,filename):
+            print(_output)
+        return _output
+
+    def filesize(self, filename):
         import os
+
         return os.path.getsize(filename)
-    def download_Header(self,display_filename,filesize=None):                
-        _output_filename = self.basename(display_filename);
-        _H = "";
-        #_H+="Content-Type: text/html\n";
-        _H+="Content-Type: application/octet-stream\n";         
-        _H+=("Content-Disposition: attachment; filename=\"%s\";\n" % (_output_filename));
-        _H+="Content-Transfer-Encoding: binary;\n";
-        _H+="Expires: 0;\n";
-        _H+="Cache-Control: must-revalidate;\n";
-        _H+="Pragma: public;\n";
+
+    def download_Header(self, display_filename, filesize=None):
+        _output_filename = self.basename(display_filename)
+        _H = ""
+        # _H+="Content-Type: text/html\n";
+        _H += "Content-Type: application/octet-stream\n"
+        _H += 'Content-Disposition: attachment; filename="%s";\n' % (_output_filename)
+        _H += "Content-Transfer-Encoding: binary;\n"
+        _H += "Expires: 0;\n"
+        _H += "Cache-Control: must-revalidate;\n"
+        _H += "Pragma: public;\n"
         if filesize is not None:
-          _H+=("Content-Length: %ld;\n" % filesize);        
-        self.header(_H);
-    def get_between(self,data,start,end):
-        result = data[data.find(start)+len(start):data.rfind(end)]
+            _H += "Content-Length: %ld;\n" % filesize
+        self.header(_H)
+
+    def get_between(self, data, start, end):
+        result = data[data.find(start) + len(start) : data.rfind(end)]
         if data[:-1] == result:
-          return "";
+            return ""
         return result
-    def get_between_multi(self,data,start,end):
-        #prevent search multiple data        
-        source=data;
-        start_sep=start;
-        end_sep=end;
-        result=[]
-        tmp=source.split(start_sep)
+
+    def get_between_multi(self, data, start, end):
+        # prevent search multiple data
+        source = data
+        start_sep = start
+        end_sep = end
+        result = []
+        tmp = source.split(start_sep)
         for par in tmp:
-          if end_sep in par:
-            result.append(par.split(end_sep)[0])        
-        return result 
-    def s2b(self,my_str):
+            if end_sep in par:
+                result.append(par.split(end_sep)[0])
+        return result
+
+    def s2b(self, my_str):
         bytes = str.encode(my_str)
-        return bytes 
-    def convert(self,s):
+        return bytes
+
+    def convert(self, s):
         try:
-            return s.encode('latin1').decode('utf8')
+            return s.encode("latin1").decode("utf8")
         except:
-            return s        
-    def ceil(self,data):
+            return s
+
+    def ceil(self, data):
         import math
-        return math.ceil(data);
-    def is_numeric(self,data):
-        return data.isnumeric();
+
+        return math.ceil(data)
+
+    def is_numeric(self, data):
+        return data.isnumeric()
+
     def python_version(self):
         import sys
+
         if sys.version_info[0] > 2:
-          return 3;
+            return 3
         else:
-          return 2;        
-    def urlencode(self,data):
+            return 2
+
+    def urlencode(self, data):
         if self.python_version() == 3:
-          import urllib.parse
-          return urllib.parse.quote(data, safe="")
+            import urllib.parse
+
+            return urllib.parse.quote(data, safe="")
         else:
-          import urllib
-          return urllib.quote(data, safe="")
+            import urllib
+
+            return urllib.quote(data, safe="")
