@@ -1,4 +1,4 @@
-﻿function getGET() {
+function getGET() {
     var output = {};
     output['hash'] = location.hash;
     var _m = location.href.replace(output['hash'], '').split('?');

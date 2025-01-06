@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * jQuery mybox plugin
  * Version 0.12 (14-Oct-2019)
  * @requires jQuery v1.2.3 or later

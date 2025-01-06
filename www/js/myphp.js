@@ -1,4 +1,4 @@
-﻿function my_fix_random() {
+function my_fix_random() {
     //var array = new Uint32Array(1);
     //var v = window.crypto.getRandomValues(array)[0];
     //return parseFloat((v / (Math.pow(10, v.toString().length))).toFixed(10));    

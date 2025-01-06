@@ -834,10 +834,10 @@ def open_folder():
 
 
 def browser_folder():
-    # 用瀏覽器開啟 http://localhost:9487
+    # 用瀏覽器開啟 http://127.0.0.1:9487
     global GDATA
     webbrowser.open(
-        "http://localhost:9487/?project_name=" + my.urlencode(GDATA["project"])
+        "http://127.0.0.1:9487/?project_name=" + my.urlencode(GDATA["project"])
     )
 
 
