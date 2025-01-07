@@ -25,10 +25,14 @@ import requests
 import subprocess
 import signal
 from ultralytics import YOLO
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageTk
 import tempfile
 import shutil
 import stat
+
+# 讓 canvas 滑鼠事件可以穿透用
+import ctypes
+from ctypes import wintypes
 
 names_cht_dict = {
     "person": "人物",
@@ -161,7 +165,7 @@ def run_desktop_example():
     # 程式開始
     global model
     if model == None:
-        model = YOLO("example_pt/yolo11x.pt")
+        model = YOLO(os.path.join(basedir, "example_pt", "yolo11x.pt"))
 
     # 使用者需框選螢幕範圍給 YOLO 預測，才不會一直辨識整個螢幕
     # 用 tkinter 的 Toplevel 來做
@@ -247,6 +251,10 @@ def run_keep_screen_predict():
             """
             break
         try:
+            # 如果 GDATA["x1_model"] 是 None，就不執行
+            if GDATA["x1_model"] == None:
+                time.sleep(0.1)
+                continue
             with mss.mss() as sct:
                 monitor = sct.monitors[1]
                 # 改用框的範圍
@@ -263,7 +271,11 @@ def run_keep_screen_predict():
                 )
                 # print(rect)
                 # 獲取桌面截圖
+                # hide 紅框，這樣截圖就不會有紅框
+                overlay_window.hideAll()
                 sct_img = sct.grab(rect)
+                # 截完圖再顯示紅框
+                overlay_window.showAll()
                 # 顯示截圖
                 img = np.array(sct_img)
                 # 傳到 localhost 5000 flask 進行預測
@@ -299,31 +311,40 @@ def run_keep_screen_predict():
                 # img = img / 255.0  # 讓像素值在 0 到 1 之間
                 img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
                 # , imgsz=2048
+                # 是否只處理特定的類別
                 desired_classes = [0, 1]
+
                 results = model.predict(
                     img, imgsz=1024, conf=0.6  # , classes=desired_classes
                 )[0]
 
                 # shutil.rmtree(temp_dir)
-                overlay_window.clear()
+
                 # output = {
                 #    "status": "OK",
                 #    #"pid": _PID,
                 #    "data": []
                 # }
+                bboxes = []
                 for i, box in enumerate(results.boxes.xyxy.tolist()):
                     x1, y1, x2, y2 = map(int, box)
                     label = int(results.boxes.cls[i])
                     confidence = results.boxes.conf[i]
                     label_name = results.names[label]
-                    # cht_label_name = names_cht_dict.get(label_name, label_name)
+                    cht_label_name = names_cht_dict.get(label_name, label_name)
                     # 加回傳自身的 process id
+                    bboxes.append([x1, y1, x2, y2, cht_label_name, confidence])
+
+                    # 效能比較不好，合併再一次繪
+                    """
                     overlay_window.create_rectangle(
                         x1 + GDATA["x1_model"],
                         y1 + GDATA["y1_model"],
                         x2 + GDATA["x1_model"],
                         y2 + GDATA["y1_model"],
+                        cht_label_name,
                     )
+                    """
                     # output["data"].append({
                     #    "label": label_name,
                     #    "label_cht": cht_label_name,
@@ -343,7 +364,8 @@ def run_keep_screen_predict():
                 #    # 螢幕畫方框
                 #    #_screen_rects.append(create_overlay_window(x1, y1, x2, y2))
                 #    overlay_window.create_rectangle(x1, y1, x2, y2)
-
+            # overlay_window.clear()
+            overlay_window.create_multi_rectangle(bboxes)
         except Exception as e:
             print(e)
             pass
@@ -365,13 +387,127 @@ class OverlayWindow:
         self.canvas = tk.Canvas(self.overlay, bg="black", highlightthickness=0)
         self.canvas.pack(fill="both", expand=True)
 
+        # 使窗口忽略滑鼠事件
+        # self.make_window_click_through()
+
         # 紀錄矩形框的列表
         self.rectangles = []
+        self.labelLists = []
 
-    def create_rectangle(self, x1, y1, x2, y2):
+        # 指向 Windows 系統字體目錄中的 Arial 字體
+        # self.font_path = "C:\\Windows\\Fonts\\simsun.ttc"
+        self.font_path = "C:\\Windows\\Fonts\\msjh.ttc"
+        self.font_size = 24
+        self.font = ImageFont.truetype(self.font_path, self.font_size)
+
+    def make_window_click_through(self):
+        # 取窗口句柄
+        hwnd = ctypes.windll.user32.GetForegroundWindow()
+
+        # 定義參數
+        GWL_EXSTYLE = -20
+        WS_EX_LAYERED = 0x80000
+        WS_EX_TRANSPARENT = 0x20
+
+        # 獲取當前窗口屬性
+        style = ctypes.windll.user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+        # 添加穿透屬性
+        ctypes.windll.user32.SetWindowLongW(
+            hwnd, GWL_EXSTYLE, style | WS_EX_LAYERED | WS_EX_TRANSPARENT
+        )
+
+    def hideAll(self):
+        self.overlay.withdraw()
+
+    def showAll(self):
+        self.overlay.deiconify()
+
+    def create_multi_rectangle(self, bboxes):
+        # 繪製多個矩形框
+        if len(bboxes) == 0:
+            overlay_window.clear()
+            return
+        global GDATA
+        # 創建圖像，最後一次框的大小
+        # RGBA (0,0,0,0) 表示完全透明
+        # (0, 0, 0, 0)
+        image = Image.new(
+            "RGBA",
+            (
+                GDATA["x2_model"] - GDATA["x1_model"],
+                GDATA["y2_model"] - GDATA["y1_model"],
+            ),
+            (0, 0, 0, 0),
+        )
+        draw = ImageDraw.Draw(image)
+
+        # 繪製多個矩形
+
+        for bbox in bboxes:
+            x1, y1, x2, y2, labelName, confidence = bbox
+            # 繪製矩形
+
+            draw.rectangle([x1, y1, x2, y2], outline="red", width=2)
+            if labelName is None:
+                continue
+            # 計算文字位置
+            txt_y = y2 - 35
+            txt_x = (x1 + x2) / 2 - len(labelName) * 12
+
+            # 先繪製白色陰影
+            for i in [-2, -1, 0, 1, 2]:
+                for j in [-2, -1, 0, 1, 2]:
+                    draw.text(
+                        (txt_x + i, txt_y + j),
+                        labelName,
+                        fill="white",
+                        font=self.font,
+                    )
+
+            # 再繪製藍色文字
+            draw.text((txt_x, txt_y), labelName, fill="blue", font=self.font)
+        # 將圖像轉換為 PhotoImage
+        self.photo = ImageTk.PhotoImage(image)  # 儲存到類屬性，防止被回收
+
+        # 最後一刻才清
+        self.clear()
+        # 顯示圖像
+        self.canvas.create_image(
+            GDATA["x1_model"], GDATA["y1_model"], image=self.photo, anchor="nw"
+        )
+
+    def create_rectangle(self, x1, y1, x2, y2, labelName=None):
         # 繪製矩形框並儲存矩形對象
         rect = self.canvas.create_rectangle(x1, y1, x2, y2, outline="red", width=2)
         self.rectangles.append(rect)
+        if labelName is not None:
+            # 計算文字位置
+            txt_y = y2 + 1
+            txt_x = (x1 + x2) / 2 - len(labelName) * 12
+
+            # 先繪製白色陰影
+            shadow_offset = 2  # 陰影偏移量
+            textObj_shadow = self.canvas.create_text(
+                txt_x + shadow_offset,
+                txt_y + shadow_offset,
+                text=labelName,
+                anchor="nw",
+                fill="white",
+                font=("Arial", 24),
+            )
+            self.labelLists.append(textObj_shadow)
+
+            # 再繪製藍色文字
+            textObj = self.canvas.create_text(
+                txt_x,
+                txt_y,
+                text=labelName,
+                anchor="nw",
+                fill="blue",
+                font=("Arial", 24),
+            )
+            self.labelLists.append(textObj)
+
         return len(self.rectangles) - 1  # 返回矩形框索引
 
     def update_rectangle(self, index, x1, y1, x2, y2):
@@ -384,6 +520,12 @@ class OverlayWindow:
         for rect in self.rectangles:
             self.canvas.delete(rect)
         self.rectangles.clear()
+        # 清除所有標籤
+        for label in self.labelLists:
+            self.canvas.delete(label)
+        self.labelLists.clear()
+        # 移除圖像
+        self.canvas.delete("all")
 
 
 # 畫框用的透明窗口
@@ -409,10 +551,10 @@ def create_overlay_window(x1, y1, x2, y2):
 my = php.kit()
 basedir = os.path.dirname(os.path.realpath(sys.argv[0]))  # 取得 exe 檔案的目錄路徑
 if my.is_dir(os.path.join(basedir, "data")) == False:
-    my.mkdir(os.path.join(basedir, "data"))    
+    my.mkdir(os.path.join(basedir, "data"))
     os.chmod(os.path.join(basedir, "data"), 0o777)
 if my.is_dir(os.path.join(basedir, "data", "projects")) == False:
-    my.mkdir(os.path.join(basedir, "data", "projects"))    
+    my.mkdir(os.path.join(basedir, "data", "projects"))
     os.chmod(os.path.join(basedir, "data", "projects"), 0o777)
 
 GDATA = {
@@ -431,6 +573,10 @@ GDATA = {
     "frame_list": [],  # 幀列表
     "run_start_time": None,  # 影片開始轉檔時間
     "run_end_time": None,  # 影片結束轉檔時間
+    "x1_model": None,  # 模型框選的 x1
+    "y1_model": None,  # 模型框選的 y1
+    "x2_model": None,  # 模型框選的 x2
+    "y2_model": None,  # 模型框選的 y2
 }
 
 lock_file = os.path.join(basedir, "lock.txt")
@@ -460,6 +606,12 @@ icon_b64 = "AAABAAEAWFgAAAEAIABIfQAAFgAAACgAAABYAAAAsAAAAAEAIAAAAAAAAHkAAMEOAADB
 def select_area_for_model():
     # 選擇訓練畫面範圍
     global GDATA
+    # 框的時候先清空之前的框
+    GDATA["x1_model"] = None
+    GDATA["y1_model"] = None
+    GDATA["x2_model"] = None
+    GDATA["y2_model"] = None
+
     if "overlay_model" in GDATA and GDATA["overlay_model"] != None:
         GDATA["overlay_model"].destroy()
         GDATA["overlay_model"] = None
