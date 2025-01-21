@@ -21,7 +21,7 @@ https://www.python.org/ftp/python/3.12.8/python-3.12.8-amd64.exe
 建議安裝在 C:\Python312_64
 
 2. 安裝 CUDA Toolkit 11.8
-https://developer.nvidia.com/cuda-11-8-0-download-archive?target_os=Windows&target_arch=x86_64&target_version=11&target_type=exe_loca	l
+https://developer.nvidia.com/cuda-11-8-0-download-archive?target_os=Windows&target_arch=x86_64&target_version=11&target_type=exe_local
 Windows→x86_64→11→exe (local)
 <img src="pic/screenshot/nvcc.png">
 裝完 cuda 後，記得檢查 cuda 版本，需確定是 11.8
