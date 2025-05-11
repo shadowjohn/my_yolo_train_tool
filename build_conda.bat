@@ -1,6 +1,8 @@
 rem rd /S build
 rem -w --clean
-c:\python312_64\scripts\pyinstaller -F --onefile --icon="pic\icon.ico" --version-file=metadata.txt ^
+SET mypath=%~dp0
+echo %mypath%
+C:\Windows\System32\chcp.com 65001 && set PYTHONIOENCODING=utf-8 && conda run --prefix "%mypath%\binary\Ultralytics" "%mypath%\binary\Ultralytics\scripts\pyinstaller.exe" -F --onefile --icon="pic\icon.ico" --version-file=metadata.txt ^
 --exclude-module=_ssl ^
 --exclude-module=_bz2 ^
 --exclude-module=_lzma ^
@@ -21,4 +23,5 @@ c:\python312_64\scripts\pyinstaller -F --onefile --icon="pic\icon.ico" --version
 --exclude-module=setuptools ^
 --add-data=www:www ^
 my_yolo_train_tool.py
+
 rem --exclude-module=PIL ^

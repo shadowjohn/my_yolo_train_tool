@@ -165,7 +165,7 @@ def run_desktop_example():
     # 程式開始
     global model
     if model == None:
-        model = YOLO(os.path.join(basedir, "example_pt", "yolo11x.pt"))
+        model = YOLO(os.path.join(basedir, "example_pt", "last.pt"))
 
     # 使用者需框選螢幕範圍給 YOLO 預測，才不會一直辨識整個螢幕
     # 用 tkinter 的 Toplevel 來做
@@ -332,6 +332,9 @@ def run_keep_screen_predict():
                     confidence = results.boxes.conf[i]
                     label_name = results.names[label]
                     cht_label_name = names_cht_dict.get(label_name, label_name)
+                    
+
+
                     # 加回傳自身的 process id
                     bboxes.append([x1, y1, x2, y2, cht_label_name, confidence])
 
