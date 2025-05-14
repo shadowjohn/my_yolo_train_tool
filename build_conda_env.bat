@@ -6,11 +6,11 @@ rem 4. ¦w¸Ë yolo
 
 SET mypath=%~dp0
 echo %mypath%
-mkdir binary -p
+mkdir binary
 call conda create --prefix "%mypath%\binary\Ultralytics" python=3.12 -y
 call conda activate "%mypath%\binary\Ultralytics"
 cd /d "%mypath%\binary\Ultralytics"
-call scripts\pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+rem call scripts\pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 call scripts\pip install -r ..\..\requirements.txt
 
 

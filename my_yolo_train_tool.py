@@ -29,10 +29,14 @@ from PIL import Image, ImageDraw, ImageFont, ImageTk
 import tempfile
 import shutil
 import stat
-
+import zipfile
+import json
 # 讓 canvas 滑鼠事件可以穿透用
 import ctypes
 from ctypes import wintypes
+
+my = php.kit()
+basedir = os.path.dirname(os.path.realpath(sys.argv[0]))  # 取得 exe 檔案的目錄路徑
 
 names_cht_dict = {
     "person": "人物",
@@ -118,7 +122,10 @@ names_cht_dict = {
 }
 
 # 測試 Model
+model_file = os.path.join(basedir, "example_pt", "best.pt")
 model = None
+# 信心度
+model_confidence = 0.6
 
 
 # Windows 專用功能：設置窗口滑鼠穿透
@@ -135,23 +142,23 @@ def set_window_exclude(window_id):
     windll.user32.SetLayeredWindowAttributes(hwnd, 0, 255, 0x2)  # LWA_ALPHA = 0x2
 
 
-# run_desktop_example 執行桌面範例
+# run_desktop_example 執行桌面辨識範例
 def run_desktop_example():
     # 按鈕名稱變成 - 停止
     # 再按一次按鈕，就會停止
     global is_run_keep_screen_predict
     if (
         GDATA["UI"]["btn_desktop_example_button"].config("text")[-1]
-        == "桌面範例(運作中)"
+        == "桌面辨識範例(運作中)"
     ):
-        GDATA["UI"]["btn_desktop_example_button"].config(text="桌面範例(已停止)")
+        GDATA["UI"]["btn_desktop_example_button"].config(text="桌面辨識範例(已停止)")
         # os.system("taskkill /F /IM run_desktop_flask_example.bat")
 
         # 結束 run_keep_screen_predict 裡的 while True
         is_run_keep_screen_predict = False
         return
     # 按鈕名稱變成 - 運作中
-    GDATA["UI"]["btn_desktop_example_button"].config(text="桌面範例(運作中)")
+    GDATA["UI"]["btn_desktop_example_button"].config(text="桌面辨識範例(運作中)")
 
     # 取得進程的 PID
     # pid = process.pid
@@ -164,8 +171,9 @@ def run_desktop_example():
     # 用 requests 傳到 flask
     # 程式開始
     global model
+    global model_file
     if model == None:
-        model = YOLO(os.path.join(basedir, "example_pt", "last.pt"))
+        model = YOLO(model_file)
 
     # 使用者需框選螢幕範圍給 YOLO 預測，才不會一直辨識整個螢幕
     # 用 tkinter 的 Toplevel 來做
@@ -198,6 +206,7 @@ def run_keep_screen_predict():
     global run_desktop_flask_example_PID
     global overlay_window
     global GDATA
+    global model_confidence
     # process = subprocess.Popen("run_desktop_flask_example.bat", shell=False)
     # _screen_rects = []
 
@@ -315,7 +324,7 @@ def run_keep_screen_predict():
                 desired_classes = [0, 1]
 
                 results = model.predict(
-                    img, imgsz=1024, conf=0.6  # , classes=desired_classes
+                    img, imgsz=1024, conf=model_confidence  # , classes=desired_classes
                 )[0]
 
                 # shutil.rmtree(temp_dir)
@@ -332,8 +341,6 @@ def run_keep_screen_predict():
                     confidence = results.boxes.conf[i]
                     label_name = results.names[label]
                     cht_label_name = names_cht_dict.get(label_name, label_name)
-                    
-
 
                     # 加回傳自身的 process id
                     bboxes.append([x1, y1, x2, y2, cht_label_name, confidence])
@@ -551,8 +558,6 @@ def create_overlay_window(x1, y1, x2, y2):
     return overlay
 
 
-my = php.kit()
-basedir = os.path.dirname(os.path.realpath(sys.argv[0]))  # 取得 exe 檔案的目錄路徑
 if my.is_dir(os.path.join(basedir, "data")) == False:
     my.mkdir(os.path.join(basedir, "data"))
     os.chmod(os.path.join(basedir, "data"), 0o777)
@@ -993,6 +998,75 @@ def browser_folder():
     )
 
 
+def run_choice_zip_pt():
+    # 開啟檔案選擇器
+    global GDATA
+    global model_file
+    global basedir
+    global model
+    global names_cht_dict
+    file_path = filedialog.askopenfilename(
+        title="選擇壓縮檔 或 pt 檔",
+        filetypes=(("zip files", "*.zip"), ("pt files", "*.pt")),
+    )
+    if file_path:
+        # 取得檔名
+        file_name = os.path.basename(file_path)
+        # 取得檔名不含副檔名
+        print("file_path: %s" % file_path)
+        # file_path: C:/Users/johnho/Desktop/model_1.zip
+        # 如果是 zip 解壓縮檔
+        if file_name.endswith(".pt"):
+            # 載入模型
+            model_file = file_path
+            model = YOLO(model_file)
+        elif file_name.endswith(".zip"):
+            # 將 zip copy 到 example_pt 資料夾
+            example_pt_path = os.path.join(basedir, "example_pt")
+            if not os.path.exists(example_pt_path):
+                os.makedirs(example_pt_path)
+            # 然後建立 example_pt 暫存目錄區
+            tmp_path = os.path.join(basedir, "example_pt", str(int(time.time())))
+            if not os.path.exists(tmp_path):
+                os.makedirs(tmp_path)
+            # 複製 zip 檔到 tmp_path 資料夾
+            bn = os.path.basename(file_path)
+            op = os.path.join(tmp_path, bn)
+            shutil.copy(file_path, op)
+
+            # 解壓縮 zip 檔
+            with zipfile.ZipFile(file_path, "r") as zip_ref:
+                zip_ref.extractall(tmp_path)
+                # 取得解壓縮後的檔案名稱
+                for file in os.listdir(tmp_path):
+                    print("file: %s" % (file))
+                    if file.endswith(".pt"):
+                        model_file = os.path.join(tmp_path, file)
+                        model = YOLO(model_file)                        
+                    if os.path.basename(file) == "data_dict.json":
+                        # 讀取 data_dict.json
+                        with open(os.path.join(tmp_path, file), "r", encoding="utf-8") as f:
+                            _cht_dict = json.load(f)      
+                            names_cht_dict = {}
+                            for key in _cht_dict.keys():
+                                print("%s: %s" % (key, _cht_dict[key]["Chinese_Name"]))
+                                names_cht_dict[key] = _cht_dict[key]["Chinese_Name"]
+            
+            
+def run_update_confidence(input):
+    # 更新信心值    
+    global model_confidence
+    global GDATA
+    # 取得信心值
+    confidence = float(GDATA["UI"]["confidence_scale"].get())
+    # 更新信心值
+    model_confidence = confidence
+    # label 
+    GDATA["UI"]["confidence_label"].config(
+        text="信心值: %.1f" % confidence
+    )
+
+
 def on_message():
     global MESSAGE
     messagebox.showinfo("說明", MESSAGE)
@@ -1012,21 +1086,27 @@ def on_closing():
 
 # 函數：鼠標按下時的位置
 def win_start_move(event):
-    root.x = event.x
-    root.y = event.y
+    widget_type = event.widget.winfo_class()
+    if widget_type != "Scale":
+        root.x = event.x
+        root.y = event.y
 
 
 def win_stop_move(event):
-    root.x = None
-    root.y = None
+    widget_type = event.widget.winfo_class()
+    if widget_type != "Scale":
+        root.x = None
+        root.y = None
 
 
 def win_do_move(event):
-    deltax = event.x - root.x
-    deltay = event.y - root.y
-    x = root.winfo_x() + deltax
-    y = root.winfo_y() + deltay
-    root.geometry(f"+{x}+{y}")
+    widget_type = event.widget.winfo_class()
+    if widget_type != "Scale":
+        deltax = event.x - root.x
+        deltay = event.y - root.y
+        x = root.winfo_x() + deltax
+        y = root.winfo_y() + deltay
+        root.geometry(f"+{x}+{y}")
 
 
 def project_get_list_all():
@@ -1193,7 +1273,7 @@ if os.path.isfile(GDATA["basedir"] + "\\tmp_icon.ico"):
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
 window_width = 420  # 假設窗口寬度為 420
-window_height = 160  # 假設窗口高度為  160
+window_height = 250  # 假設窗口高度為  160
 
 # 計算窗口位置: 右下角150px，距離底部30%
 x = screen_width - window_width - 150
@@ -1216,11 +1296,6 @@ GDATA["UI"]["exit_button"] = tk.Button(
     GDATA["UI"]["first_frame"], text="離開程式", command=on_closing
 )
 GDATA["UI"]["exit_button"].pack(side=tk.RIGHT, padx=5)
-
-GDATA["UI"]["btn_desktop_example_button"] = tk.Button(
-    GDATA["UI"]["first_frame"], text="桌面範例(已停止)", command=run_desktop_example
-)
-GDATA["UI"]["btn_desktop_example_button"].pack(side=tk.RIGHT, padx=5)
 
 GDATA["UI"]["info_button"] = tk.Button(
     GDATA["UI"]["first_frame"], text="說明", command=on_message
@@ -1319,12 +1394,51 @@ GDATA["UI"]["stop_button"] = tk.Button(
 GDATA["UI"]["stop_button"].pack(side=tk.LEFT, padx=5)
 """
 
-
-# 第四列，狀態列
+# 第四列，模型相關
 GDATA["UI"]["fourth_frame"] = tk.Frame(root)
 GDATA["UI"]["fourth_frame"].pack(padx=5, pady=5, fill=tk.X)
 
-GDATA["UI"]["status_label"] = tk.Label(GDATA["UI"]["fourth_frame"], text="")
+GDATA["UI"]["選擇模型檔"] = tk.Button(
+    GDATA["UI"]["fourth_frame"], text="選擇模型檔", command=run_choice_zip_pt
+)
+GDATA["UI"]["選擇模型檔"].pack(side=tk.LEFT, padx=5)
+
+GDATA["UI"]["btn_desktop_example_button"] = tk.Button(
+    GDATA["UI"]["fourth_frame"], text="桌面辨識範例(已停止)", command=run_desktop_example
+)
+GDATA["UI"]["btn_desktop_example_button"].pack(side=tk.LEFT, padx=5)
+
+# 第五列，信心度
+GDATA["UI"]["fifth_frame"] = tk.Frame(root)
+GDATA["UI"]["fifth_frame"].pack(padx=5, pady=5, fill=tk.X)
+# 可以調整信心度 0.1 ~ 1.0
+GDATA["UI"]["confidence_label"] = tk.Label(
+    GDATA["UI"]["fifth_frame"], text="信心度：%s" % (model_confidence), anchor=tk.W
+)
+GDATA["UI"]["confidence_label"].pack(side=tk.LEFT, padx=5)
+# 下方不要顯示數字    
+GDATA["UI"]["confidence_scale"] = tk.Scale(
+    GDATA["UI"]["fifth_frame"],
+    from_=0.1,
+    to=1.0,
+    resolution=0.1,
+    orient=tk.HORIZONTAL,
+    length=250,
+    sliderlength=20,
+    showvalue=0,    
+    tickinterval=0,
+    command=run_update_confidence,
+)
+GDATA["UI"]["confidence_scale"].set(model_confidence)
+GDATA["UI"]["confidence_scale"].pack(side=tk.LEFT, padx=5)
+
+
+
+# 第六列，狀態列
+GDATA["UI"]["sixth_frame"] = tk.Frame(root)
+GDATA["UI"]["sixth_frame"].pack(padx=5, pady=5, fill=tk.X)
+
+GDATA["UI"]["status_label"] = tk.Label(GDATA["UI"]["sixth_frame"], text="")
 GDATA["UI"]["status_label"].pack(side=tk.LEFT, padx=5)
 
 
