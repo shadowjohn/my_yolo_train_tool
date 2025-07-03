@@ -31,7 +31,8 @@ def convert_yolov8(pt_path, onnx_path, imgsz):
         simplify=True,
         opset=12,             # 明確設定 opset
         half=False,           # 若你要支援 FP32
-        device='cpu'          # 確保 ONNX 轉換穩定
+        #device='cpu',          # 確保 ONNX 轉換穩定
+        nms=True,  # <--- ✅ 加這個！
     )
 
     # 輸出路徑修正（YOLO v8 會輸出到 runs\export\onnx\model.onnx）
