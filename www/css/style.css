@@ -41,3 +41,9 @@ th {
     color: #000;
     text-align: center;
 }
+.none {
+    display: none;
+}
+.marginleft15px {
+    margin-left: 15px;
+}

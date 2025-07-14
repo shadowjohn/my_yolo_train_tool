@@ -46,7 +46,7 @@ function myAjax_async_json(url, postdata, func) {
         dataType: 'json',
         success: function (html) {
             func(html);
-            my_gc(html);
+            //my_gc(html);
             html = null;
         }
     });

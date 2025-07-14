@@ -410,7 +410,7 @@ class kit:
 
     def nl2br(self, data):
         return data.replace("\n", "<br>")
-
+    
     def getGET_POST(self, string_fields, method):
         import cgi
 

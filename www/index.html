@@ -19,6 +19,9 @@
         <button type="button" reqc="btnAddProject" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProjectModal">
             新增專案
         </button>
+        <button type="button" reqc="btnEditProject" class="btn btn-primary none marginleft15px" data-bs-toggle="modal" data-bs-target="#editProjectModal">
+            編輯專案
+        </button>
     </div>
 
     <div class="form-group">
@@ -39,16 +42,55 @@
         <!-- 這裡可以放主要內容 -->
     </div>
 </body>
-<script>
+<script nonce="gg">
     var GETS = getGET();
-    if (GETS["project_name"] == undefined) {
+    if (GETS["project_name"] == undefined || GETS["project_name"] == "") {
         GETS["project_name"] = "";
         $("#divTop").removeClass('d-none');
         $("#divTop").addClass('d-none');
     }
     else {
         $("#divTop").removeClass('d-none');
+        $("button[reqc='btnEditProject']").removeClass('none');
         setMemory("project_name", GETS["project_name"]);
+
+        // 原 yolo 畫面，選到專案
+        var o = {
+            "project_name": GETS["project_name"]
+        };
+        myAjax_async_json("/api?mode=choice_project", o, function (jd) {
+            if (jd['status'] == 'OK') {
+            }
+        });
+
+        // 按編輯
+        $("button[reqc='btnEditProject']").off().click(function () {
+            var project_name = GETS["project_name"].toString();
+            var new_project_name = prompt("編輯專案", project_name);
+            var o = {
+                "orin_project_name": project_name.trim(),
+                "new_project_name": new_project_name.trim()
+            };
+            if (o["orin_project_name"] == "" || o["new_project_name"] == "") {
+                smallComment("輸入不可為空值...", 2000, false, {});
+                return;
+            }
+            myAjax_async_json("/api?mode=project_edit_action", o, function (jd) {
+                if (jd['status'] == 'OK') {
+                    smallComment('編輯成功...', 2000, false, {});
+                    console.log(jd);
+                    (function (_jd) {
+                        setTimeout(function () {
+                            console.log(_jd);
+                            location.href = "/www/index.html?project_name=" + encodeURIComponent(_jd['new_project_name']);
+                        }, 500);
+                    })(jd);
+                }
+                else {
+                    smallComment(jd['reason'], 2000, false, {});
+                }
+            });
+        });
     }
     var APP = {
         method: {
@@ -57,7 +99,28 @@
                 APP.method.projects.project_list();
                 //新增專案
                 $("button[reqc='btnAddProject']").off().click(function () {
-                    dialogMyBoxOn("請稍候", true, function () { });
+                    //dialogMyBoxOn("請稍候", true, function () { });
+                    var project_name = prompt("新增專案", "請輸入專案名稱");
+                    //alert(project_name);
+                    var o = {
+                        "project_name": project_name
+                    };
+                    if (o["project_name"] == "請輸入專案名稱") {
+                        smallComment('請輸入專案名稱...', 2000, false, {});
+                        return;
+                    }
+                    myAjax_async_json("/api?mode=project_add_action", o, function (jd) {
+                        if (jd['status'] == 'OK') {
+                            smallComment('新增成功...', 2000, false, {});
+                            setTimeout(function () {
+                                location.href = "/index.html?project_name=" + encodeURIComponent(jd['project_name']);
+                            }, 500);
+                        }
+                        else {
+                            smallComment(jd['reason'], 2000, false, {});
+                        }
+
+                    });
                 });
                 // 定義按鈕
                 $("a[reqc='a物件清單']").off().click(function () {
@@ -140,7 +203,7 @@
                         $("#project_name").off().change(function () {
                             var project_name = $(this).val();
                             if (project_name == "") {
-                                return;
+                                //return;
                             }
                             setMemory("project_name", project_name);
                             project_name = encodeURIComponent(project_name);

@@ -31,6 +31,7 @@ import shutil
 import stat
 import zipfile
 import json
+
 # 讓 canvas 滑鼠事件可以穿透用
 import ctypes
 from ctypes import wintypes
@@ -1042,29 +1043,29 @@ def run_choice_zip_pt():
                     print("file: %s" % (file))
                     if file.endswith(".pt"):
                         model_file = os.path.join(tmp_path, file)
-                        model = YOLO(model_file)                        
+                        model = YOLO(model_file)
                     if os.path.basename(file) == "data_dict.json":
                         # 讀取 data_dict.json
-                        with open(os.path.join(tmp_path, file), "r", encoding="utf-8") as f:
-                            _cht_dict = json.load(f)      
+                        with open(
+                            os.path.join(tmp_path, file), "r", encoding="utf-8"
+                        ) as f:
+                            _cht_dict = json.load(f)
                             names_cht_dict = {}
                             for key in _cht_dict.keys():
                                 print("%s: %s" % (key, _cht_dict[key]["Chinese_Name"]))
                                 names_cht_dict[key] = _cht_dict[key]["Chinese_Name"]
-            
-            
+
+
 def run_update_confidence(input):
-    # 更新信心值    
+    # 更新信心值
     global model_confidence
     global GDATA
     # 取得信心值
     confidence = float(GDATA["UI"]["confidence_scale"].get())
     # 更新信心值
     model_confidence = confidence
-    # label 
-    GDATA["UI"]["confidence_label"].config(
-        text="信心值: %.1f" % confidence
-    )
+    # label
+    GDATA["UI"]["confidence_label"].config(text="信心值: %.1f" % confidence)
 
 
 def on_message():
@@ -1169,6 +1170,31 @@ def new_project():
         GDATA["UI"]["select_area_button"].config(state=tk.NORMAL)
         method_count_wait_process_files()  # 計算有多少待處理的檔案
 
+def reload_projects(project_name=None):
+    # 重新載入專案列表
+    # 會清空目前選擇的專案檔，並且重新載入專案列表
+    # 如果有選擇專案檔，則選擇該專案檔
+    global GDATA    
+    
+    GDATA["UI"]["select_project_selected_menu"]["menu"].delete(0, "end")
+    GDATA["UI"]["select_project_selected"].set("選擇專案檔")
+    for project in project_get_list_all():
+        GDATA["UI"]["select_project_selected_menu"]["menu"].add_command(
+            label=project,
+            command=tk._setit(GDATA["UI"]["select_project_selected"], project),
+        )
+        GDATA["UI"]["select_project_selected_menu"].pack(side=tk.LEFT, padx=5)
+        GDATA["UI"]["select_area_button"].config(state=tk.NORMAL)
+        GDATA["project_folder"] = os.path.join(
+            GDATA["basedir"], "data", "projects", project_name
+        )
+        method_count_wait_process_files()  # 計算有多少待處理的檔案
+    #GDATA["project_folder"] = None  # 清空專案資料夾
+    if project_name is not None:
+        GDATA["UI"]["select_project_selected"].set(project_name)
+        GDATA["project_folder"] = os.path.join(
+            GDATA["basedir"], "data", "projects", project_name
+        )
 
 def do_show_hide_rect_button(b):
     # 顯示或隱藏細框
@@ -1404,7 +1430,9 @@ GDATA["UI"]["選擇模型檔"] = tk.Button(
 GDATA["UI"]["選擇模型檔"].pack(side=tk.LEFT, padx=5)
 
 GDATA["UI"]["btn_desktop_example_button"] = tk.Button(
-    GDATA["UI"]["fourth_frame"], text="桌面辨識範例(已停止)", command=run_desktop_example
+    GDATA["UI"]["fourth_frame"],
+    text="桌面辨識範例(已停止)",
+    command=run_desktop_example,
 )
 GDATA["UI"]["btn_desktop_example_button"].pack(side=tk.LEFT, padx=5)
 
@@ -1416,7 +1444,7 @@ GDATA["UI"]["confidence_label"] = tk.Label(
     GDATA["UI"]["fifth_frame"], text="信心度：%s" % (model_confidence), anchor=tk.W
 )
 GDATA["UI"]["confidence_label"].pack(side=tk.LEFT, padx=5)
-# 下方不要顯示數字    
+# 下方不要顯示數字
 GDATA["UI"]["confidence_scale"] = tk.Scale(
     GDATA["UI"]["fifth_frame"],
     from_=0.1,
@@ -1425,13 +1453,12 @@ GDATA["UI"]["confidence_scale"] = tk.Scale(
     orient=tk.HORIZONTAL,
     length=250,
     sliderlength=20,
-    showvalue=0,    
+    showvalue=0,
     tickinterval=0,
     command=run_update_confidence,
 )
 GDATA["UI"]["confidence_scale"].set(model_confidence)
 GDATA["UI"]["confidence_scale"].pack(side=tk.LEFT, padx=5)
-
 
 
 # 第六列，狀態列
@@ -1472,6 +1499,7 @@ def run_flask():
     @app.route("/api", methods=["GET", "POST"])
     def api():
         GETS = request.args
+        POSTS = request.form
         if "mode" in GETS:
             mode = GETS["mode"]
             if mode == "project_list":
@@ -1479,6 +1507,64 @@ def run_flask():
                 projects = my.glob_dirs(os.path.join(_PD, "data", "projects", "*"))
                 projects = [os.path.basename(p) for p in projects]
                 return jsonify({"status": "OK", "data": projects})
+            if mode == "project_add_action":
+
+                if "project_name" not in request.form:
+                    return (
+                        jsonify({"status": "NO", "reason": "Missing project_name"}),
+                        400,
+                    )
+                project_name = request.form["project_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                if my.is_dir(_PROJECT_FOLDER):
+                    return jsonify(
+                        {"status": "NO", "reason": "專案已存在，請重新命名專案名稱"}
+                    )
+
+                my.mkdir(_PROJECT_FOLDER)
+                os.chmod(_PROJECT_FOLDER, 0o777)  # 0o777
+                OUTPUT = {"status": "OK", "data": {}, "project_name": project_name}
+                reload_projects(project_name)  # 重新載入專案列表
+                return jsonify(OUTPUT)
+            if mode == "project_edit_action":
+                # 編輯專案名稱
+                # orin_project_name 是 POST orin_project_name
+                # new_project_name 是 POST new_project_name
+                if "orin_project_name" not in request.form or "new_project_name" not in request.form:
+                    return (
+                        jsonify(
+                            {"status": "NO", "reason": "輸入異常"}
+                        ),
+                        400,
+                    )
+                _PD = os.getcwd()
+                orin_project_name = request.form["orin_project_name"]
+                new_project_name = request.form["new_project_name"]
+
+                _ORIN_PROJECT_FOLDER = os.path.join(_PD, "data", "projects", orin_project_name)
+                _NEW_PROJECT_FOLDER = os.path.join(_PD, "data", "projects", new_project_name)
+
+                if not my.is_dir(_ORIN_PROJECT_FOLDER):
+                    return jsonify(
+                        {"status": "NO", "reason": "原專案不存在，請重新命名專案名稱"}
+                    )
+                if my.is_dir(_NEW_PROJECT_FOLDER):
+                    return jsonify(
+                        {"status": "NO", "reason": "新專案已存在，請重新命名專案名稱"}
+                    )
+                # 將原專案目錄重新命名為新專案目錄
+                os.rename(_ORIN_PROJECT_FOLDER, _NEW_PROJECT_FOLDER)
+                os.chmod(_NEW_PROJECT_FOLDER, 0o777)  # 0o777
+                OUTPUT = {"status": "OK", "data": {}, "new_project_name": new_project_name}
+                reload_projects(new_project_name)  # 重新載入專案列表
+                return jsonify(OUTPUT)
+            if mode == "choice_project":
+                project_name = request.form["project_name"]
+                reload_projects(project_name)  # 重新載入專案列表
+                OUTPUT = {"status": "OK", "data": {}, "project_name": project_name}
+                reload_projects(project_name)  # 重新載入專案列表
+                return jsonify(OUTPUT)
             if mode == "getKindList":
                 # 從 my_dataset 資料夾取得所有的類別
                 # project_name 是 POST project_name
