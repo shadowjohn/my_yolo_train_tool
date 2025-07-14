@@ -34,8 +34,9 @@
     <div id="divTop" class="d-flex justify-content-left align-items-center d-none" style="height: 55px; background-color: #f0f0f0;">
         <!-- 可以放功能列-->
         <a href="javascript:;" reqk="a功能按鈕" reqc="a物件清單" class="btn btn-secondary mx-2">物件清單</a>
-        <a href="javascript:;" reqk="a功能按鈕" reqc="a照片分類" class="btn btn-secondary mx-2">照片分類</a>
+        <a href="javascript:;" reqk="a功能按鈕" reqc="a待分類照片" class="btn btn-secondary mx-2">待分類照片</a>
         <a href="javascript:;" reqk="a功能按鈕" reqc="a圖框設定" class="btn btn-secondary mx-2">圖框設定</a>
+        <a href="javascript:;" reqk="a功能按鈕" reqc="a模型訓練" class="btn btn-secondary mx-2">模型訓練</a>
     </div>
     <hr class="my-4" style="border-color: red;" />
     <div id="divMain">
@@ -142,8 +143,8 @@
                     // 監聽 iframe 的載入事件
                     $("#divMain iframe")[0].addEventListener("load", adjustIframeHeight);
                 });
-                // 按到 照片分類
-                $("a[reqc='a照片分類']").off().click(function () {
+                // 按到 待分類照片
+                $("a[reqc='a待分類照片']").off().click(function () {
                     //改變按鈕樣式
                     $("a[reqk='a功能按鈕']").removeClass("btn-secondary");
                     $("a[reqk='a功能按鈕']").removeClass("btn-primary");
@@ -175,6 +176,28 @@
                     var uPROJECT_NAME = encodeURIComponent(getMemory("project_name"));
                     $("#divMain").html(`
                         <iframe src="/www/domark.html?project_name=${uPROJECT_NAME}" class="iframe_class"></iframe>
+                    `);
+                    function adjustIframeHeight() {
+                        const iframe = document.getElementById("iframeId");
+                        if (iframe) {
+                            iframe.style.height = (iframe.contentWindow.document.body.scrollHeight + 80) + "px";
+                        }
+                    }
+                    // 監聽 iframe 的載入事件
+                    $("#divMain iframe")[0].addEventListener("load", adjustIframeHeight);
+                });
+
+                // 按到 模型訓練
+                $("a[reqc='a模型訓練']").off().click(function () {
+                    //改變按鈕樣式
+                    $("a[reqk='a功能按鈕']").removeClass("btn-secondary");
+                    $("a[reqk='a功能按鈕']").removeClass("btn-primary");
+                    $("a[reqk='a功能按鈕']").addClass("btn-secondary");
+                    $(this).removeClass("btn-secondary");
+                    $(this).addClass("btn-primary");
+                    var uPROJECT_NAME = encodeURIComponent(getMemory("project_name"));
+                    $("#divMain").html(`
+                        <iframe src="/www/train.html?project_name=${uPROJECT_NAME}" class="iframe_class"></iframe>
                     `);
                     function adjustIframeHeight() {
                         const iframe = document.getElementById("iframeId");
