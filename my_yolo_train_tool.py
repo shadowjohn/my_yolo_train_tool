@@ -1170,12 +1170,13 @@ def new_project():
         GDATA["UI"]["select_area_button"].config(state=tk.NORMAL)
         method_count_wait_process_files()  # 計算有多少待處理的檔案
 
+
 def reload_projects(project_name=None):
     # 重新載入專案列表
     # 會清空目前選擇的專案檔，並且重新載入專案列表
     # 如果有選擇專案檔，則選擇該專案檔
-    global GDATA    
-    
+    global GDATA
+
     GDATA["UI"]["select_project_selected_menu"]["menu"].delete(0, "end")
     GDATA["UI"]["select_project_selected"].set("選擇專案檔")
     for project in project_get_list_all():
@@ -1189,12 +1190,13 @@ def reload_projects(project_name=None):
             GDATA["basedir"], "data", "projects", project_name
         )
         method_count_wait_process_files()  # 計算有多少待處理的檔案
-    #GDATA["project_folder"] = None  # 清空專案資料夾
+    # GDATA["project_folder"] = None  # 清空專案資料夾
     if project_name is not None:
         GDATA["UI"]["select_project_selected"].set(project_name)
         GDATA["project_folder"] = os.path.join(
             GDATA["basedir"], "data", "projects", project_name
         )
+
 
 def do_show_hide_rect_button(b):
     # 顯示或隱藏細框
@@ -1531,19 +1533,24 @@ def run_flask():
                 # 編輯專案名稱
                 # orin_project_name 是 POST orin_project_name
                 # new_project_name 是 POST new_project_name
-                if "orin_project_name" not in request.form or "new_project_name" not in request.form:
+                if (
+                    "orin_project_name" not in request.form
+                    or "new_project_name" not in request.form
+                ):
                     return (
-                        jsonify(
-                            {"status": "NO", "reason": "輸入異常"}
-                        ),
+                        jsonify({"status": "NO", "reason": "輸入異常"}),
                         400,
                     )
                 _PD = os.getcwd()
                 orin_project_name = request.form["orin_project_name"]
                 new_project_name = request.form["new_project_name"]
 
-                _ORIN_PROJECT_FOLDER = os.path.join(_PD, "data", "projects", orin_project_name)
-                _NEW_PROJECT_FOLDER = os.path.join(_PD, "data", "projects", new_project_name)
+                _ORIN_PROJECT_FOLDER = os.path.join(
+                    _PD, "data", "projects", orin_project_name
+                )
+                _NEW_PROJECT_FOLDER = os.path.join(
+                    _PD, "data", "projects", new_project_name
+                )
 
                 if not my.is_dir(_ORIN_PROJECT_FOLDER):
                     return jsonify(
@@ -1556,7 +1563,11 @@ def run_flask():
                 # 將原專案目錄重新命名為新專案目錄
                 os.rename(_ORIN_PROJECT_FOLDER, _NEW_PROJECT_FOLDER)
                 os.chmod(_NEW_PROJECT_FOLDER, 0o777)  # 0o777
-                OUTPUT = {"status": "OK", "data": {}, "new_project_name": new_project_name}
+                OUTPUT = {
+                    "status": "OK",
+                    "data": {},
+                    "new_project_name": new_project_name,
+                }
                 reload_projects(new_project_name)  # 重新載入專案列表
                 return jsonify(OUTPUT)
             if mode == "choice_project":
@@ -1650,7 +1661,7 @@ def run_flask():
                 new_kind_name = my.basename(request.form["new_kind_name"])
                 _PD = os.getcwd()
                 _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
-                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, +"my_dataset")
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
                 _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
                 _NEW_KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, new_kind_name)
                 if (
@@ -1726,6 +1737,7 @@ def run_flask():
                     return jsonify({"status": "NO", "reason": "移動失敗"})
             if mode == "getDoMarkKindList":
                 # 取得 project_name 目錄下的圖片，已分類的照片數量、未處理的照片數量
+                # 取得照片分類
                 project_name = request.form["project_name"]
                 _PD = os.getcwd()
                 _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
@@ -1744,6 +1756,117 @@ def run_flask():
                         }
                     )
                 return jsonify({"status": "OK", "data": _data})
+            if mode == "getMY_DATASETSPhotos":
+                # 取得 project_name 目錄下的圖片、txt 檔案
+                # 合併圖片與 txt 檔案，txt 檔案名稱與圖片名稱相同
+                # txt 可能不存在，給空字串
+                # 取得照片分類
+                project_name = POSTS["project_name"]  # 如三國迷因
+                kind_name = POSTS["kind_name"]  # 如 劉備
+                show_kind = POSTS["show_kind"]  # needProcessOnly、showAll
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
+                fpJpgs = my.glob(os.path.join(_KIND_FOLDER, "*.jpg"))
+                # 定義輸出資料結構
+                OUTPUT = {
+                    "status": "OK",
+                    "data": [],
+                    "project_name": project_name,
+                    "kind_name": kind_name,
+                    "show_kind": show_kind,
+                }
+                if show_kind == "needProcessOnly":
+                    # 只顯示需要處理的圖片
+                    for jpg in fpJpgs:
+                        _jpg = my.basename(jpg)
+                        _txt = os.path.splitext(_jpg)[0] + ".txt"
+                        _txt_path = os.path.join(_KIND_FOLDER, _txt)
+                        if my.is_file(_txt_path) == False:
+                            OUTPUT["data"].append(
+                                {"photo_name": _jpg, "txt_name": "", "txt_data": ""}
+                            )                        
+                elif show_kind == "showAll":
+                    # 顯示所有圖片，包含已處理的圖片
+                    for jpg in fpJpgs:
+                        _jpg = my.basename(jpg)
+                        _txt = os.path.splitext(_jpg)[0] + ".txt"
+                        _txt_path = os.path.join(_KIND_FOLDER, _txt)
+                        if my.is_file(_txt_path) == False:
+                            OUTPUT["data"].append(
+                                {"photo_name": _jpg, "txt_name": "", "txt_data": ""}
+                            )
+                        else:
+                            OUTPUT["data"].append(
+                                {
+                                    "photo_name": _jpg,
+                                    "txt_name": _txt,
+                                    "txt_data": my.file_get_contents(_txt_path),
+                                }
+                            )
+                # 返回結果
+                return jsonify(OUTPUT)
+            if mode == "resetPhotoKind":
+                # 重置圖片分類，將圖片移到未分類的資料夾
+                project_name = POSTS["project_name"]
+                kind_name = POSTS["kind_name"]
+                mn = POSTS["mn"]  # 圖片名稱
+                _PD = os.getcwd()
+                orin_photo_path = os.path.join(
+                    _PD,
+                    "data",
+                    "projects",
+                    project_name,
+                    "my_dataset",
+                    kind_name,
+                    mn + ".jpg",
+                )
+                orin_txt_path = os.path.join(
+                    _PD,
+                    "data",
+                    "projects",
+                    project_name,
+                    "my_dataset",
+                    kind_name,
+                    mn + ".txt",
+                )
+                # 如果 orin_txt_path 存在，則刪除
+                if my.is_file(orin_txt_path):
+                    os.remove(orin_txt_path)
+                if my.is_file(orin_photo_path):
+                    # 將圖片移到未分類的資料夾
+                    _UNCLASSIFIED_FOLDER = os.path.join(
+                        _PD, "data", "projects", project_name
+                    )
+                    _UNCLASSIFIED_PHOTO_PATH = os.path.join(
+                        _UNCLASSIFIED_FOLDER, mn + ".jpg"
+                    )
+                    shutil.move(orin_photo_path, _UNCLASSIFIED_PHOTO_PATH)
+                return jsonify({"status": "OK"})
+            if mode == "saveTxt":
+                # 框選的圖片，儲存標註的 txt 檔案
+                # project_name 是 POST project_name
+                # kind_name 是 POST kind_name
+                # imgbn 是 POST imgbn
+                # txt 是 POST txt
+                _PD = os.getcwd()
+                project_name = POSTS["project_name"]
+                kind_name = POSTS["kind_name"]
+                mn = my.mainname(POSTS["imgbn"])
+                txt = POSTS["txt"]
+                txt_filepath = os.path.join(
+                    _PD,
+                    "data",
+                    "projects",
+                    project_name,
+                    "my_dataset",
+                    kind_name,
+                    mn + ".txt",
+                )
+                my.file_put_contents(txt_filepath, txt.encode("utf-8"))
+                os.chmod(txt_filepath, 0o777)
+                return jsonify({"status": "OK"})
         return jsonify({"status": "OK"})
 
     @app.route("/datetime", methods=["GET", "POST"])

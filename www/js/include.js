@@ -253,3 +253,24 @@ function smallComment(message, seconds, is_need_motion, cssOptions) {
         }, seconds);
     }
 }
+function basename(filepath) {
+    var m = explode("/", filepath);
+    var mdata = explode("?", end(m));
+    return mdata[0];
+}
+function mainname(filepath) {
+    filepath = basename(filepath);
+    var mdata = explode(".", filepath);
+    return mdata[0];
+}
+function subname(filepath) {
+    filepath = basename(filepath);
+    var m = explode(".", filepath);
+    return end(m);
+}
+function arduino_map(x, in_min, in_max, out_min, out_max) {
+    //x = 輸入值
+    //in 如 0~255
+    //out 如 0~1024
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
