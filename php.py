@@ -107,6 +107,7 @@ class kit:
         :param recursive: 是否遞歸創建目錄，預設為 False
         """
         import os
+
         if recursive:
             os.makedirs(path, mode=mode, exist_ok=True)
         else:
@@ -279,11 +280,15 @@ class kit:
     def file_put_contents(self, filename, data, IS_APPEND=False):
         f = ""
         if IS_APPEND == True:
-            f = open(filename, "a")
+            f = open(filename, "a", encoding="utf-8")
         else:
-            f = open(filename, "wb")
+            f = open(filename, "w", encoding="utf-8")
         f.write(data)
         f.close()
+    def file_put_contents_bytes(self, filename, data, IS_APPEND=False):
+        mode = "ab" if IS_APPEND else "wb"
+        with open(filename, mode) as f:
+            f.write(data)
 
     def sleep(self, second):
         import time
@@ -410,7 +415,7 @@ class kit:
 
     def nl2br(self, data):
         return data.replace("\n", "<br>")
-    
+
     def getGET_POST(self, string_fields, method):
         import cgi
 

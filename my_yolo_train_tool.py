@@ -747,7 +747,7 @@ def select_area():
         _OUTPUT_RECT_FILE = os.path.join(GDATA["project_folder"], "rect.txt")
         my.file_put_contents(
             _OUTPUT_RECT_FILE,
-            my.json_encode({"x1": x1, "y1": y1, "x2": x2, "y2": y2}).encode("UTF-8"),
+            my.json_encode({"x1": x1, "y1": y1, "x2": x2, "y2": y2}),
         )
 
         GDATA["UI"]["start_button"].config(state=tk.NORMAL)  # 啟用開始按鈕
@@ -1865,7 +1865,7 @@ def run_flask():
                     kind_name,
                     mn + ".txt",
                 )
-                my.file_put_contents(txt_filepath, txt.encode("utf-8"))
+                my.file_put_contents(txt_filepath, txt)
                 os.chmod(txt_filepath, 0o777)
                 return jsonify({"status": "OK"})
             if mode == "train_add":
@@ -1907,12 +1907,12 @@ def run_flask():
                     os.chmod(_TASK_FOLDER, 0o777)
                 # 寫入 job.txt
                 job_txt_path = os.path.join(_TASK_FOLDER, "job.txt")
-                my.file_put_contents(job_txt_path, my.json_encode(o).encode("utf-8"))
+                my.file_put_contents(job_txt_path, my.json_encode(o))
                 os.chmod(job_txt_path, 0o777)
 
                 # 寫入待處理 status.txt 內容 0
                 status_txt_path = os.path.join(_TASK_FOLDER, "status.txt")
-                my.file_put_contents(status_txt_path, "0".encode("utf-8"))
+                my.file_put_contents(status_txt_path, "0")
                 return jsonify({"status": "OK"})
             if mode == "train_lists":
                 # 取得所有的訓練任務列表
@@ -1949,6 +1949,59 @@ def run_flask():
                         # 如果任務資料夾沒有 job.txt 或 status.txt，則跳過
                         continue
                 return jsonify({"status": "OK", "data": m_data})
+            if mode == "train_get_task_status":
+                # 取得任務的狀態
+                project_name = POSTS["project_name"]
+                task_name = POSTS["task_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _TASK_FOLDER = os.path.join(_PROJECT_FOLDER, "train_project", task_name)
+                status_txt_path = os.path.join(_TASK_FOLDER, "status.txt")
+                status_log_txt_path = os.path.join(_TASK_FOLDER, "status_log.txt")
+                status_progress_txt_path = os.path.join(
+                    _TASK_FOLDER, "status_progress.txt"
+                )
+                if not my.is_file(status_txt_path):
+                    return jsonify({"status": "NO", "reason": "任務不存在"})
+
+                # 讀取 status.txt
+                o = {
+                    "status": str(my.file_get_contents(status_txt_path)),
+                    "status_log": str(my.file_get_contents(status_log_txt_path)),
+                    "status_progress": str(
+                        my.file_get_contents(status_progress_txt_path)
+                    ),
+                }
+                return jsonify(
+                    {
+                        "status": "OK",
+                        "data": o,
+                        "project_name": project_name,
+                        "task_name": task_name,
+                    }
+                )
+            if mode == "train_retrain":
+                # 重新訓練任務
+                project_name = POSTS["project_name"]
+                task_name = POSTS["task_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _TASK_FOLDER = os.path.join(_PROJECT_FOLDER, "train_project", task_name)
+                status_txt_path = os.path.join(_TASK_FOLDER, "status.txt")
+                if not my.is_file(status_txt_path):
+                    return jsonify({"status": "NO", "reason": "任務不存在"})
+                # 將 status.txt 改為 0
+                my.file_put_contents(status_txt_path, "0")
+                # 清空 status_log.txt
+                status_log_txt_path = os.path.join(_TASK_FOLDER, "status_log.txt")
+                my.file_put_contents(status_log_txt_path, "")
+                # 清空 status_progress.txt
+                status_progress_txt_path = os.path.join(
+                    _TASK_FOLDER, "status_progress.txt"
+                )
+                my.file_put_contents(status_progress_txt_path, "0")
+                # 返回 OK
+                return jsonify({"status": "OK"})
         return jsonify({"status": "OK"})
 
     @app.route("/datetime", methods=["GET", "POST"])
@@ -1988,15 +2041,17 @@ def reset_train_project_status():
     # 檢查所有專案的 train_project 資料夾
     for project in my.glob_dirs(os.path.join(_TRAIN_FOLDER, "*")):
         _TRAIN_PROJECT_FOLDER = os.path.join(project, "train_project")
-        if my.is_dir(_TRAIN_PROJECT_FOLDER):
+        my.mkdir(_TRAIN_PROJECT_FOLDER, mode=0o777, recursive=True)
+        for _TASK_FOLDER in my.glob_dirs(os.path.join(project, "train_project", "*")):
+            # 建目錄
             # 檢查 status.txt 是否存在
-            _STATUS_FILE = os.path.join(_TRAIN_PROJECT_FOLDER, "status.txt")
+            _STATUS_FILE = os.path.join(_TASK_FOLDER, "status.txt")
             if my.is_file(_STATUS_FILE):
                 # 讀取 status.txt
                 status = str(my.file_get_contents(_STATUS_FILE))
                 if status == "1":
                     # 如果是 1，則改成 0
-                    my.file_put_contents(_STATUS_FILE, "0".encode("utf-8"))
+                    my.file_put_contents(_STATUS_FILE, "0")
                     print("Reset status.txt to 0 for project: %s" % (project))
 
 
@@ -2011,181 +2066,263 @@ def background_worker():
         _PD = os.getcwd()
         _TRAIN_FOLDER = os.path.join(_PD, "data", "projects")
         for project in my.glob_dirs(os.path.join(_TRAIN_FOLDER, "*")):
-            _TASK_FOLDER = os.path.join(project, "train_project")
-            if my.is_dir(_TASK_FOLDER):
-                # 檢查 status.txt 是否存在
-                _STATUS_FILE = os.path.join(_TASK_FOLDER, "status.txt")
-                _STATUS_FILE_LOG = os.path.join(_TASK_FOLDER, "status_log.txt")
-                my.file_put_contents(_STATUS_FILE_LOG, "".encode("utf-8"))
-                if my.is_file(_STATUS_FILE):
-                    # 讀取 status.txt
-                    status = str(my.file_get_contents(_STATUS_FILE))
-                    if status == "0":
-                        # 如果是 0，則開始處理任務
-                        print("Processing project: %s" % (project))
-                        # 處理中，將 status 改為 1
-                        my.file_put_contents(_STATUS_FILE, "1".encode("utf-8"))
-                        # 在這裡添加處理任務的代碼
-                        my.file_put_contents(
-                            _STATUS_FILE_LOG, "轉檔開始中...".encode("utf-8"), True
-                        )
-                        # 程式開始-------------------------------------------------------------Start
-                        # 建立訓練圖片、驗證圖片資料夾
+            # print(project); #C:\Users\johnho\Desktop\my_yolo_train_tool\data\projects\三國迷因
+            # return
+            for _TASK_FOLDER in my.glob_dirs(
+                os.path.join(project, "train_project", "*")
+            ):
+                if my.is_dir(_TASK_FOLDER):
+                    # 檢查 status.txt 是否存在
+                    _STATUS_FILE = os.path.join(_TASK_FOLDER, "status.txt")
+                    _STATUS_FILE_LOG = os.path.join(_TASK_FOLDER, "status_log.txt")
+                    _STATUS_FILE_PROGRESS = os.path.join(
+                        _TASK_FOLDER, "status_progress.txt"
+                    )
+                    if my.is_file(_STATUS_FILE):
+                        # 讀取 status.txt
+                        status = str(my.file_get_contents(_STATUS_FILE))
+                        if status == "0":
+                            # 如果是 0，則開始處理任務
+                            my.file_put_contents(_STATUS_FILE_LOG, "")
+                            my.file_put_contents(_STATUS_FILE_PROGRESS, "0")
+                            print("Processing project: %s" % (project))
+                            # 處理中，將 status 改為 1
+                            my.file_put_contents(_STATUS_FILE, "1")
+                            # 在這裡添加處理任務的代碼
+                            my.file_put_contents(
+                                _STATUS_FILE_LOG, "轉檔開始中...\r\n", True
+                            )
+                            my.file_put_contents(
+                                _STATUS_FILE_PROGRESS,
+                                str(my.rand(0, 5) / 10.0),
+                            )
+                            # 程式開始-------------------------------------------------------------Start
+                            # 建立訓練圖片、驗證圖片資料夾
 
-                        _TRAIN_IMAGES_FOLDER = os.path.join(
-                            _TASK_FOLDER, "datasets", "my_dataset", "images", "train"
-                        )
-                        _VAL_IMAGES_FOLDER = os.path.join(
-                            _TASK_FOLDER, "datasets", "my_dataset", "images", "val"
-                        )
-                        _TRAIN_LABELS_FOLDER = os.path.join(
-                            _TASK_FOLDER, "datasets", "my_dataset", "labels", "train"
-                        )
-                        _VAL_LABELS_FOLDER = os.path.join(
-                            _TASK_FOLDER, "datasets", "my_dataset", "labels", "val"
-                        )
-                        my.mkdir(_TRAIN_IMAGES_FOLDER, mode=0o777, recursive=True)
-                        my.mkdir(_VAL_IMAGES_FOLDER, mode=0o777, recursive=True)
-                        my.mkdir(_TRAIN_LABELS_FOLDER, mode=0o777, recursive=True)
-                        my.mkdir(_VAL_LABELS_FOLDER, mode=0o777, recursive=True)
-                        # 依 train_percent、val_percent 複製 m_kinds 圖片到訓練資料夾和驗證資料夾
-                        # 檔名照 m_kinds index 0_xxxxxx 1_xxxxxx ... 文字檔也是
-                        # 取得 job.txt 的內容
-                        job_txt_path = os.path.join(_TASK_FOLDER, "job.txt")
-                        if not my.is_file(job_txt_path):
+                            _TRAIN_IMAGES_FOLDER = os.path.join(
+                                _TASK_FOLDER,
+                                "datasets",
+                                "my_dataset",
+                                "images",
+                                "train",
+                            )
+                            _VAL_IMAGES_FOLDER = os.path.join(
+                                _TASK_FOLDER, "datasets", "my_dataset", "images", "val"
+                            )
+                            _TRAIN_LABELS_FOLDER = os.path.join(
+                                _TASK_FOLDER,
+                                "datasets",
+                                "my_dataset",
+                                "labels",
+                                "train",
+                            )
+                            _VAL_LABELS_FOLDER = os.path.join(
+                                _TASK_FOLDER, "datasets", "my_dataset", "labels", "val"
+                            )
+                            my.mkdir(_TRAIN_IMAGES_FOLDER, mode=0o777, recursive=True)
+                            my.mkdir(_VAL_IMAGES_FOLDER, mode=0o777, recursive=True)
+                            my.mkdir(_TRAIN_LABELS_FOLDER, mode=0o777, recursive=True)
+                            my.mkdir(_VAL_LABELS_FOLDER, mode=0o777, recursive=True)
                             my.file_put_contents(
                                 _STATUS_FILE_LOG,
-                                "找不到 job.txt，請確認任務是否正確設定".encode(
-                                    "utf-8"
-                                ),
+                                "建立訓練和驗證資料夾完成...\r\n",
                                 True,
                             )
                             my.file_put_contents(
-                                _STATUS_FILE, "3".encode("utf-8")
-                            )  # 異常結束
-                            continue
-                        job_data = str(my.file_get_contents(job_txt_path))
-                        o = my.json_decode(job_data)
-                        o["m_kinds"] = my.explode("|||3WA|||", o["kinds"])
-                        for index, kind in enumerate(o["m_kinds"]):
-                            # 原始類別資料夾
-                            _KIND_FOLDER = os.path.join(project, "my_dataset", kind)
-                            # 訓練資料夾、驗證資料夾
-                            # _TRAIN_IMAGES_FOLDER
-                            # _VAL_IMAGES_FOLDER
-                            # 同時有圖片和標註檔案才能複製，隨時挑選 train_percent 百分比的圖片
-                            # 取得所有圖片檔案
-                            _IMAGES = my.glob(os.path.join(_KIND_FOLDER, "*.jpg"))
-                            _IMAGES = sorted(_IMAGES, key=os.path.getctime)
-                            _LABELS = my.glob(os.path.join(_KIND_FOLDER, "*.txt"))
-                            _LABELS = sorted(_LABELS, key=os.path.getctime)
-                            # 檢查圖片和標註檔案是否一一對應，不是的從陣列中移除
-                            _IMAGES = [
-                                img
-                                for img in _IMAGES
-                                if os.path.splitext(img)[0] + ".txt" in _LABELS
-                            ]
-                            _LABELS = [
-                                lbl
-                                for lbl in _LABELS
-                                if os.path.splitext(lbl)[0] + ".jpg" in _IMAGES
-                            ]
-                            # 計算訓練和驗證的數量
-                            total_count = len(_IMAGES)
-                            train_count = int(
-                                total_count * (int(o["train_percent"]) / 100)
+                                _STATUS_FILE_PROGRESS,
+                                str(my.rand(5, 9) / 10.0),
                             )
-                            val_count = total_count - train_count
-                            # 複製圖片和標註檔案到訓練資料夾和驗證資料夾
-                            # 打亂圖片
-                            random.shuffle(_IMAGES)
-                            # 訓練資料夾
-                            for i in range(train_count):
-                                img = _IMAGES[i]
-                                lbl = os.path.splitext(img)[0] + ".txt"
-                                # 複製圖片
-                                shutil.copy(img, _TRAIN_IMAGES_FOLDER)
-                                # 複製標註檔案
-                                if os.path.isfile(lbl):
-                                    shutil.copy(lbl, _TRAIN_LABELS_FOLDER)
-                                # 重命名檔案
-                                new_img_name = f"{index}_{os.path.basename(img)}"
-                                new_lbl_name = f"{index}_{os.path.basename(lbl)}"
-                                os.rename(
-                                    os.path.join(
-                                        _TRAIN_IMAGES_FOLDER, os.path.basename(img)
-                                    ),
-                                    os.path.join(_TRAIN_IMAGES_FOLDER, new_img_name),
+                            # 依 train_percent、val_percent 複製 m_kinds 圖片到訓練資料夾和驗證資料夾
+                            # 檔名照 m_kinds index 0_xxxxxx 1_xxxxxx ... 文字檔也是
+                            # 取得 job.txt 的內容
+                            job_txt_path = os.path.join(_TASK_FOLDER, "job.txt")
+                            if not my.is_file(job_txt_path):
+                                my.file_put_contents(
+                                    _STATUS_FILE_LOG,
+                                    "找不到 job.txt，請確認任務是否正確設定\r\n",
+                                    True,
                                 )
-                                if os.path.isfile(
-                                    os.path.join(
-                                        _TRAIN_LABELS_FOLDER, os.path.basename(lbl)
-                                    )
-                                ):
+                                my.file_put_contents(_STATUS_FILE, "3")  # 異常結束
+                                my.file_put_contents(_STATUS_FILE_PROGRESS, str(100.0))
+                                continue
+                            job_data = str(my.file_get_contents(job_txt_path))
+                            o = my.json_decode(job_data)
+                            o["m_kinds"] = my.explode("|||3WA|||", o["kinds"])
+                            for index, kind in enumerate(o["m_kinds"]):
+                                # 原始類別資料夾
+                                _KIND_FOLDER = os.path.join(project, "my_dataset", kind)
+                                # 訓練資料夾、驗證資料夾
+                                # _TRAIN_IMAGES_FOLDER
+                                # _VAL_IMAGES_FOLDER
+                                # 同時有圖片和標註檔案才能複製，隨時挑選 train_percent 百分比的圖片
+                                # 取得所有圖片檔案
+                                _IMAGES = my.glob(os.path.join(_KIND_FOLDER, "*.jpg"))
+                                _IMAGES = sorted(_IMAGES, key=os.path.getctime)
+                                _LABELS = my.glob(os.path.join(_KIND_FOLDER, "*.txt"))
+                                _LABELS = sorted(_LABELS, key=os.path.getctime)
+                                # 檢查圖片和標註檔案是否一一對應，不是的從陣列中移除
+                                _IMAGES = [
+                                    img
+                                    for img in _IMAGES
+                                    if os.path.splitext(img)[0] + ".txt" in _LABELS
+                                ]
+                                _LABELS = [
+                                    lbl
+                                    for lbl in _LABELS
+                                    if os.path.splitext(lbl)[0] + ".jpg" in _IMAGES
+                                ]
+                                # 計算訓練和驗證的數量
+                                total_count = len(_IMAGES)
+                                train_count = int(
+                                    total_count * (int(o["train_percent"]) / 100)
+                                )
+                                val_count = total_count - train_count
+                                # 複製圖片和標註檔案到訓練資料夾和驗證資料夾
+                                # 打亂圖片
+                                random.shuffle(_IMAGES)
+                                # 訓練資料夾
+                                my.file_put_contents(
+                                    _STATUS_FILE_LOG,
+                                    f"處理類別 {kind} ({index + 1}/{len(o['m_kinds'])})...\r\n",
+                                    True,
+                                )
+                                for i in range(train_count):
+                                    img = _IMAGES[i]
+                                    lbl = os.path.splitext(img)[0] + ".txt"
+                                    # 複製圖片
+                                    shutil.copy(img, _TRAIN_IMAGES_FOLDER)
+                                    # 複製標註檔案
+                                    if os.path.isfile(lbl):
+                                        shutil.copy(lbl, _TRAIN_LABELS_FOLDER)
+                                    # 重命名檔案
+                                    new_img_name = f"{index}_{os.path.basename(img)}"
+                                    new_lbl_name = f"{index}_{os.path.basename(lbl)}"
+
+                                    # 強制複蓋
+                                    if os.path.isfile(
+                                        os.path.join(_TRAIN_IMAGES_FOLDER, new_img_name)
+                                    ):
+                                        os.remove(
+                                            os.path.join(
+                                                _TRAIN_IMAGES_FOLDER, new_img_name
+                                            )
+                                        )
+
                                     os.rename(
                                         os.path.join(
-                                            _TRAIN_LABELS_FOLDER, os.path.basename(lbl)
+                                            _TRAIN_IMAGES_FOLDER, os.path.basename(img)
                                         ),
+                                        os.path.join(
+                                            _TRAIN_IMAGES_FOLDER, new_img_name
+                                        ),
+                                    )
+                                    if os.path.isfile(
+                                        os.path.join(
+                                            _TRAIN_LABELS_FOLDER, os.path.basename(lbl)
+                                        )
+                                    ):
+
+                                        if os.path.isfile(
+                                            os.path.join(
+                                                _TRAIN_LABELS_FOLDER, new_lbl_name
+                                            )
+                                        ):
+                                            os.remove(
+                                                os.path.join(
+                                                    _TRAIN_LABELS_FOLDER, new_lbl_name
+                                                )
+                                            )
+
+                                        os.rename(
+                                            os.path.join(
+                                                _TRAIN_LABELS_FOLDER,
+                                                os.path.basename(lbl),
+                                            ),
+                                            os.path.join(
+                                                _TRAIN_LABELS_FOLDER, new_lbl_name
+                                            ),
+                                        )
+                                    # 編輯 label 檔，第一行加上 kind 的 index
+                                    data = my.file_get_contents(
+                                        os.path.join(_TRAIN_LABELS_FOLDER, new_lbl_name)
+                                    )
+                                    my.file_put_contents(
                                         os.path.join(
                                             _TRAIN_LABELS_FOLDER, new_lbl_name
                                         ),
+                                        data,
                                     )
-                                # 編輯 label 檔，第一行加上 kind 的 index
-                                data = my.file_get_contents(
-                                    os.path.join(_TRAIN_LABELS_FOLDER, new_lbl_name)
-                                )
-                                data = f"{index} {data}"
+                                    # 更新進度
+                                    my.file_put_contents(
+                                        _STATUS_FILE_PROGRESS,
+                                        str(10.0 + (index * 35.0 / len(o["m_kinds"]))),
+                                    )
+                                # 驗證資料夾
                                 my.file_put_contents(
-                                    os.path.join(_TRAIN_LABELS_FOLDER, new_lbl_name),
-                                    data.encode("utf-8"),
+                                    _STATUS_FILE_LOG,
+                                    f"處理類別 {kind} ({index + 1}/{len(o['m_kinds'])}) 完成，開始處理驗證資料...\r\n",
+                                    True,
                                 )
-                            # 驗證資料夾
-                            for i in range(train_count, total_count):
-                                img = _IMAGES[i]
-                                lbl = os.path.splitext(img)[0] + ".txt"
-                                # 複製圖片
-                                shutil.copy(img, _VAL_IMAGES_FOLDER)
-                                # 複製標註檔案
-                                if os.path.isfile(lbl):
-                                    shutil.copy(lbl, _VAL_LABELS_FOLDER)
-                                # 重命名檔案
-                                new_img_name = f"{index}_{os.path.basename(img)}"
-                                new_lbl_name = f"{index}_{os.path.basename(lbl)}"
-                                os.rename(
-                                    os.path.join(
-                                        _VAL_IMAGES_FOLDER, os.path.basename(img)
-                                    ),
-                                    os.path.join(_VAL_IMAGES_FOLDER, new_img_name),
-                                )
-                                if os.path.isfile(
-                                    os.path.join(
-                                        _VAL_LABELS_FOLDER, os.path.basename(lbl)
-                                    )
-                                ):
+                                for i in range(train_count, total_count):
+                                    img = _IMAGES[i]
+                                    lbl = os.path.splitext(img)[0] + ".txt"
+                                    # 複製圖片
+                                    shutil.copy(img, _VAL_IMAGES_FOLDER)
+                                    # 複製標註檔案
+                                    if os.path.isfile(lbl):
+                                        shutil.copy(lbl, _VAL_LABELS_FOLDER)
+                                    # 重命名檔案
+                                    new_img_name = f"{index}_{os.path.basename(img)}"
+                                    new_lbl_name = f"{index}_{os.path.basename(lbl)}"
                                     os.rename(
                                         os.path.join(
-                                            _VAL_LABELS_FOLDER, os.path.basename(lbl)
+                                            _VAL_IMAGES_FOLDER, os.path.basename(img)
                                         ),
-                                        os.path.join(_VAL_LABELS_FOLDER, new_lbl_name),
+                                        os.path.join(_VAL_IMAGES_FOLDER, new_img_name),
                                     )
-                                # 編輯 label 檔，第一行加上 kind 的 index
-                                data = my.file_get_contents(
-                                    os.path.join(_VAL_LABELS_FOLDER, new_lbl_name)
-                                )
-                                data = f"{index} {data}"
-                                my.file_put_contents(
-                                    os.path.join(_VAL_LABELS_FOLDER, new_lbl_name),
-                                    data.encode("utf-8"),
-                                )
+                                    if os.path.isfile(
+                                        os.path.join(
+                                            _VAL_LABELS_FOLDER, os.path.basename(lbl)
+                                        )
+                                    ):
+                                        os.rename(
+                                            os.path.join(
+                                                _VAL_LABELS_FOLDER,
+                                                os.path.basename(lbl),
+                                            ),
+                                            os.path.join(
+                                                _VAL_LABELS_FOLDER, new_lbl_name
+                                            ),
+                                        )
+                                    # 編輯 label 檔，第一行加上 kind 的 index
+                                    data = my.file_get_contents(
+                                        os.path.join(_VAL_LABELS_FOLDER, new_lbl_name)
+                                    )
 
-                        # 程式結束-------------------------------------------------------------End
+                                    my.file_put_contents(
+                                        os.path.join(_VAL_LABELS_FOLDER, new_lbl_name),
+                                        data,
+                                    )
+                                    my.file_put_contents(
+                                        _STATUS_FILE_PROGRESS,
+                                        str(
+                                            10.0
+                                            + (index * 35.0 / len(o["m_kinds"]))
+                                            + (35.0 * train_count / total_count)
+                                        ),
+                                    )
+                                # 開始轉檔 Yolo 訓練，產出 yaml 檔案
 
-                        # 處理完畢後，將 status 改為 2
-                        my.file_put_contents(_STATUS_FILE, "2".encode("utf-8"))
-                        print("Finished processing project: %s" % (project))
-                        my.file_put_contents(
-                            _STATUS_FILE_LOG, "轉檔完成".encode("utf-8"), True
-                        )
+                            # 程式結束-------------------------------------------------------------End
+
+                            # 處理完畢後，將 status 改為 2
+                            my.file_put_contents(
+                                _STATUS_FILE_PROGRESS,
+                                str("100.0")
+                            )
+                            my.file_put_contents(_STATUS_FILE, "2")
+                            print("Finished processing project: %s" % (project))
+                            my.file_put_contents(_STATUS_FILE_LOG, "轉檔完成\r\n", True)
         time.sleep(1)  # 每秒檢查一次
 
 
