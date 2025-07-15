@@ -439,3 +439,38 @@ function selectToCheckbox(select_jQDom, options) {
     */
     return output;
 }
+function myW(html, func, cssOption) {
+    if (typeof (window['myW_t']) == "undefined") {
+        window['myW_t'] = 0;
+    }
+    $.fn.center = function () {
+        this.css("position", "absolute");
+        this.css("top", ($(window).height() - this.height()) / 2 + $(window).scrollTop() + "px");
+        this.css("left", ($(window).width() - this.width()) / 2 + $(window).scrollLeft() + "px");
+        return this;
+    }
+    var t = new Date().getTime() + "_" + window['myW_t']++;
+    var id = "myW_" + t;
+    $("body").append("<div id='" + id + "'></div>");
+    $("#" + id).css({
+        'position': 'absolute',
+        'z-index': new Date().getTime(),
+        'padding': '3px',
+        'background-color': '#fff',
+        'color': 'black',
+        'border': '2px solid #00f'
+    });
+    if (typeof (cssOption) != "undefined" && typeof (cssOption) == "object") {
+        for (var k in cssOption) {
+            $("#" + id).css(k, cssOption[k]);
+        }
+    }
+    html = html.replace("{myW_id}", id);
+    $("#" + id).html(html);
+    $(window).bind("scroll", { id: id }, function (event) {
+        $("#" + event.data.id).center();
+    });
+    $("#" + id).center();
+    func(id);
+    return id;
+}

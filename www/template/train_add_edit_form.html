@@ -1,0 +1,141 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>建立或編輯訓練資料</title>
+    <script src="/www/js/jquery.min.js"></script>
+    <script src="/www/js/myphp.js"></script>
+    <script src="/www/js/mybox.js"></script>
+    <script src="/www/js/include.js"></script>
+    <link rel="stylesheet" href="/www/css/reset.css" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="/www/css/style.css" />
+    <style nonce="gg">
+        body {
+            padding: 25px;
+            font-size: 24px;
+        }
+
+        .h2titleClass {
+            text-align: left;
+            margin-left: 50px;
+            font-size: 36px;
+        }
+
+        .spanProjectNameClass {
+            font-weight: bold;
+        }
+
+        .big-checkbox {
+            width: 16px;
+            height: 16px;
+            transform: scale(1.8) translateY(-1px); /* 放大 1.8 倍 */ /* 放大 + 向上微調 */
+            transform-origin: top left; /* 可選：避免位置偏移 */
+            margin-right: 8px; /* 增加間距 */
+            transform-origin: center; /* 縮放中心點 */
+        }
+
+        .spanSelectToCheckbox input[type='checkbox'] {
+            width: 16px;
+            height: 16px;
+            transform: scale(1.8) translateY(-1px); /* 放大 1.8 倍 */ /* 放大 + 向上微調 */
+            transform-origin: top left; /* 可選：避免位置偏移 */
+            margin-right: 8px; /* 增加間距 */
+            transform-origin: center; /* 縮放中心點 */
+        }
+    </style>
+</head>
+<body>
+    <h2 reqc="h2title" class="h2titleClass">GG</h2>
+    <hr />
+    <p><span class="bold">專案：</span><span reqc="spanProjectName" class="spanProjectNameClass"></span></p>
+    <p>
+        <span class="bold">類別選擇：</span><label><input type="checkbox" reqc="chkAll" class="big-checkbox" checked /> 全選</label>
+        <div reqc="divKinds">
+            <!--放置哪些分類，預設選擇-->
+            <select reqc="selKinds" multiple="multiple"></select>
+        </div>
+    </p>
+    <p>
+        <span class="bold">訓練與驗證比例(訓練/驗證)：</span>
+        <select reqc="selTrainVal">
+            <option value="100/0" selected>100/0</option>
+            <option value="90/10">90/10</option>
+            <option value="80/20">80/20</option>
+            <option value="70/30">70/30</option>
+        </select>
+    </p>
+    <hr />
+    <div align="right">
+        <input type="button" value="取消" class="btn btn-danger" reqc="btnCancel" />
+        <input type="button" value="開始訓練" class="btn btn-primary" reqc="btnStart" />
+    </div>
+</body>
+</html>
+<script nonce="gg">
+    var GETS = getGET();
+    var project_name = GETS['project_name'];
+    $("span[reqc='spanProjectName']").text(project_name);
+
+    // 取得分類圖列
+    var o = {
+        "project_name": project_name
+    };
+    myAjax_async_json("/api?mode=getDoMarkKindList", o, function (jd) {
+        var m = [];
+        jd['data'].map(function (v) {
+            var d = `<option value="${v.kind_name}" selected>${v.kind_name} (已訓練數：${v.total_pics - v.need_process_counts} / ${v.total_pics})</option>  `;
+            m.push(d);
+        });
+        $("select[reqc='selKinds']").html(m.join(''));
+        selectToCheckbox($("select[reqc='selKinds']"), {
+            "separate": "<br />",  //分格方式改用斷行
+            "class": "spanSelectToCheckbox"
+        });
+
+        // 按到全選
+        $("input[reqc='chkAll']").off().change(function () {
+            var checked = $(this).prop("checked");
+            $("select[reqc='selKinds'] option").prop("selected", checked).trigger("change");
+        });
+    });
+
+    switch (GETS["domode"]) {
+        case "add":
+            $("h2[reqc='h2title']").text('建立新模型');
+            break;
+    }
+
+    // 按下開始訓練
+    $("input[reqc='btnStart']").off().click(function () {
+        var o = {
+            "project_name": project_name,
+            "train_val": $("select[reqc='selTrainVal']").val(),
+            "kinds": $("select[reqc='selKinds']").val().join("|||3WA|||")
+        };
+        console.log(o);
+        // kinds 不可為空
+        if (o['kinds'] == "") {
+            smallComment("至少選擇一種類別訓練...", 2000, false, {});
+            return;
+        }
+        myAjax_async_json("/api?mode=train_add", o, function (jd) {
+            if (jd['status'] == "OK") {
+                // 關 dialogMyBox
+                smallComment("訓練已建立，請稍候...", 2000, false, {});
+                setTimeout(function () {
+                    parent.dialogMyBoxOff();
+                    // 外層重啟
+                    parent.window.reload();
+                }, 500);
+            }
+        });
+
+    });
+
+    // 取消
+    $("input[reqc='btnCancel']").off().click(function () {
+        parent.dialogMyBoxOff();
+    });    
+</script>

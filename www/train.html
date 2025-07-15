@@ -10,7 +10,7 @@
     <script src="/www/js/jquery.min.js"></script>
     <script src="/www/js/myphp.js"></script>
     <script src="/www/js/mybox.js"></script>
-    <script src="/www/js/include.js"></script>
+    <script src="/www/js/include.js?v=2"></script>
     <link rel="stylesheet" href="/www/css/reset.css" />
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
@@ -18,6 +18,71 @@
     <style nonce="gg">
         .thetable {
             width: 100%;
+        }
+
+            .thetable th, .thetable td {
+                padding: 3px;
+            }
+
+        .taskTableClass thead th[field='step'] {
+            width: 75px;
+        }
+
+        .taskTableClass thead th[field='sdt'] {
+            width: 115px;
+        }
+
+        .taskTableClass thead th[field='edt'] {
+            width: 115px;
+        }
+
+        .taskTableClass thead th[field='fake_kinds'] {
+            width: 100px;
+        }
+
+        .taskTableClass thead th[field='fake_train_percent_val_percent'] {
+            width: 140px;
+        }
+
+        .taskTableClass thead th[field='fake_options'] {
+            width: 245px;
+        }
+
+
+        .taskTableClass tbody td[field='step'] {
+            text-align: right;
+            padding-right: 18px;
+        }
+
+        .taskTableClass tbody td[field='sdt'] {
+            text-align: center;
+        }
+
+        .taskTableClass tbody td[field='edt'] {
+            text-align: center;
+        }
+
+        .taskTableClass tbody td[field='fake_kinds'] {
+            text-align: right;
+            padding-right: 18px;
+            cursor: pointer;
+        }
+
+        .taskTableClass tbody td[field='fake_train_percent_val_percent'] {
+            text-align: center;
+        }
+
+        .taskTableClass tbody td[field='fake_status'] {
+            text-align: center;
+        }
+
+        .taskTableClass tbody td[field='fake_options'] {
+            text-align: center;
+        }
+
+        .myWClass {
+            height: 450px;
+            overflow: auto;
         }
     </style>
 </head>
@@ -49,12 +114,89 @@
                     window['wh'] = getWindowSize();
                     var w70 = window['wh']['width'] * 0.7;
                     var h80 = window['wh']['height'] * 0.8;
-                    var trainURL = "template/train_add_edit_form.html?domode=add&project_name=" + encodeURIComponent(project_name);
+                    var trainURL = "/www/template/train_add_edit_form.html?domode=add&project_name=" + encodeURIComponent(project_name);
                     parent.dialogMyBoxOn(`<iframe class="theiframe" style="width:${w70}px;height:${h80}px;" src="${trainURL}"></iframe>`, true, function () { });
                 });
             },
             "listTrained": function () {
                 // 載入列表
+                var o = {
+                    "project_name": project_name
+                };
+                myAjax_async_json("/api?mode=train_lists", o, function (jd) {
+                    jd.data.map(function (v, i) {
+                        v.step = (i + 1);
+                        v.sdt = date("Y-m-d H:i:s", end(explode("_", v.task_name)));
+                        v.edt = "--";
+                        var ojob_data = json_decode(v.job_data);
+                        for (var k in ojob_data) {
+                            v[k] = ojob_data[k];
+                        }
+                        v.fake_train_percent_val_percent = `${v.train_percent} / ${v.val_percent}`;
+                        var mkinds = explode("|||3WA|||", v.kinds);
+                        var mt = [];
+                        mkinds.map(function (mkv, mkvi) {
+                            mt.push({
+                                "項次": (mkvi + 1),
+                                "類別名稱": mkv
+                            });
+                        });
+                        var html = base64_encode(print_table(mt, "項次,類別名稱", "項次,類別名稱", ""));
+                        v.fake_kinds = `<span req_html="${html}" reqc="spanDetail" class="blue underline bold">${mkinds.length}</span>`;
+                        v.fake_status = "";
+                        v.fake_options = "";
+                        switch (v.status.toString()) {
+                            case "0":
+                                v.fake_status = "待命中";
+                                v.fake_options = `
+                                    <input type="button" class="btn btn-info" value="細節">
+                                    <input type="button" class="btn btn-danger" value="刪除">
+                                `;
+                                break;
+                            case "1":
+                                v.fake_status = "訓練中...";
+                                v.fake_options = `
+                                    <input type="button" class="btn btn-info" value="細節">
+                                    <input type="button" class="btn btn-danger" value="停止">
+                                `;
+                                break;
+                            case "2":
+                                v.fake_status = "完成";
+                                v.fake_options = `
+                                    <input type="button" class="btn btn-info" value="細節">
+                                    <input type="button" class="btn btn-primary" value="下載模型(pt)">
+                                    <input type="button" class="btn btn-info" value="下載模型(手機版)">
+                                    <input type="button" class="btn btn-warning" value="重新訓練">
+                                    <input type="button" class="btn btn-danger" value="刪除">
+                                `;
+                                break;
+                        }
+
+                    });
+                    //table = print_table(jd.data);
+                    var table = print_table(jd.data,
+                        "step,task_name,sdt,edt,fake_kinds,fake_train_percent_val_percent,fake_status,fake_options",
+                        "項次,任務名稱,建立時間,完成時間,類別總數,訓驗/驗證比例,狀態,功能",
+                        "thetable taskTableClass");
+                    $("div[reqc='divTrainLists']").html(table);
+
+
+                    // 滑鼠移到類別的浮動視窗
+                    $("span[reqc='spanDetail']").off().click(function () {
+                        $("div[id^='myW_']").remove();
+                        var html = base64_decode($(this).attr('req_html'));
+                        myW(`<div class="myWClass">
+                                <img src="/www/pic/x_close_32.png" style="position:absolute;right:0px;top:0px;cursor:pointer;" reqc="imgXClose">
+                                ${html}</div>`, function () {
+                            $("img[reqc='imgXClose']").off().click(function () {
+                                $("div[id^='myW_']").remove();
+                            });
+
+                        });
+                    });
+
+
+                }); // ajax
             }
         },
         "init": function () {

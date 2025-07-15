@@ -57,3 +57,7 @@ th {
 .marginleft15px {
     margin-left: 15px;
 }
+
+.underline {
+    text-decoration: underline;
+}
