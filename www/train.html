@@ -100,6 +100,11 @@
             cursor: move;
             background-color: aquamarine;
         }
+
+        .iframeDetailClass {
+            width: 80%;
+            height: 70%;
+        }
     </style>
 </head>
 <body class="container mt-5">
@@ -145,7 +150,29 @@
                 myAjax_async_json("/api?mode=train_get_task_status", o, function (jd) {
                     if (jd['status'] == 'OK') {
                         var status_progress = parseFloat(jd.data['status_progress']).toFixed(2);
+                        if (jd['data']['train_results'] != "") {
+                            // 從 csv 內容解算進度
+                            // 從 jobs 取出 epoch 總數
+                            var jd_job = json_decode(jd['data']['job'], true);
+                            console.log(jd_job);
+                            // 進度為
+                            // 50~95 % 為 epoch 0~結束
+                            var user_defind_epoch = parseFloat(jd_job['epoch'])
+                            var now_epoch_step = 0;
+                            var csv_results = str_replace("\r", "", jd['data']['train_results']).trim();
+                            var m_csv_last = explode(",", end(explode("\n", csv_results))); // 1~10
+                            if (!isNaN(m_csv_last[0])) {
+                                // 進度轉換
+                                now_epoch_step = m_csv_last[0];
+                                if (now_epoch_step != user_defind_epoch) {
+                                    status_progress = arduino_map(parseFloat(m_csv_last[0]), 1.0, user_defind_epoch, 50.0, 95.0);
+                                }
+                                // 一樣代表已最後一筆或完成，照原進度走
+                            }
+                        }
+                        status_progress = sprintf("%.2f", status_progress);
                         $(`span[reqc='spanProgress'][req_task_name='${jd['task_name']}']`).text(status_progress + " %");
+
                         if (status_progress >= 100) {
                             if ($("div[id^='myW_']").length == 0) {
                                 parent.$("a[reqc='a模型訓練']").trigger("click");
@@ -159,7 +186,6 @@
                         })(jd);
                     }
                 });
-
             },
             "listTrained": function () {
                 // 載入列表
@@ -192,14 +218,14 @@
                             case "0":
                                 v.fake_status = "待命中";
                                 v.fake_options = `
-                                    <input type="button" class="btn btn-info margin2px" value="細節">
+                                    <input type="button" class="btn btn-info margin2px" value="細節" reqc="btnDetail" req_project_name="${project_name}" req_task_name="${v.task_name}">
                                     <input type="button" class="btn btn-danger margin2px" value="刪除">
                                 `;
                                 break;
                             case "1":
                                 v.fake_status = `訓練中...<span reqc="spanProgress" req_project_name="${project_name}" req_task_name="${v.task_name}"></span>`;
                                 v.fake_options = `
-                                    <input type="button" class="btn btn-info margin2px" value="細節">
+                                    <input type="button" class="btn btn-info margin2px" value="細節" reqc="btnDetail" req_project_name="${project_name}" req_task_name="${v.task_name}">
                                     <input type="button" class="btn btn-danger margin2px" value="停止">
                                 `;
                                 break;
@@ -209,7 +235,7 @@
                                     <input type="button" class="btn btn-primary margin2px" value="下載模型(pt)">
                                     <input type="button" class="btn btn-info margin2px" value="下載模型(手機版)">
                                     <br>
-                                    <input type="button" class="btn btn-info margin2px" value="細節">
+                                    <input type="button" class="btn btn-info margin2px" value="細節" reqc="btnDetail" req_project_name="${project_name}" req_task_name="${v.task_name}">
                                     <input type="button" class="btn btn-warning margin2px" value="重新訓練" reqc="btnRetrain" req_project_name="${project_name}" req_task_name="${v.task_name}">
                                     <input type="button" class="btn btn-danger margin2px" value="刪除">
                                 `;
@@ -227,6 +253,18 @@
                     // 訓練中的自動更新進度
                     $(`span[reqc='spanProgress']`).each(function (index, dom) {
                         app.method.updateDomStatus(dom);
+                    });
+
+                    // 按下細節
+                    $("input[reqc='btnDetail']").off().click(function () {
+                        var o = {
+                            "project_name": $(this).attr('req_project_name'),
+                            "task_name": $(this).attr('req_task_name')
+                        };
+                        var wh = getWindowSize();
+                        var w85px = wh['width'] * 0.85;
+                        var h75px = wh['height'] * 0.75;
+                        parent.dialogMyBoxOn(`<iframe style="width:${w85px}px;height:${h75px}px;" src="/www/show_detail.html?project_name=${encodeURIComponent(o.project_name)}&task_name=${encodeURIComponent(o.task_name)}"></iframe>`, true, function () { });
                     });
 
                     // 按重新訓練

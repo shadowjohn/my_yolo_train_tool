@@ -1985,7 +1985,9 @@ def run_flask():
                         my.file_get_contents(status_progress_txt_path)
                     ),
                     "status_yolo_log": str(my.file_get_contents(status_yolo_log_path)),
-                    "train_results": ""
+                    "train_results": "",
+                    "job": "",
+                    "imgs": []
                 }
                 # 如果有 runs/train/output/results.csv 則讀取
                 train_results_filepath = os.path.join(
@@ -1993,6 +1995,27 @@ def run_flask():
                 )
                 if my.is_file(train_results_filepath):
                     o["train_results"] = my.file_get_contents(train_results_filepath)
+
+                # 取 job.txt
+                job_txt_path = os.path.join(_TASK_FOLDER, "job.txt")
+                if my.is_file(job_txt_path):
+                    o["job"] = str(my.file_get_contents(job_txt_path))
+
+                # 取 runs\train\output 資料夾下的圖片 jpg、png
+                output_images_folder = os.path.join(
+                    _TASK_FOLDER, "runs", "train", "output"
+                )
+                if my.is_dir(output_images_folder):
+                    output_images = my.glob(
+                        os.path.join(output_images_folder, "*.*")
+                    )
+                    output_images = [
+                        {"name": my.basename(img), "path": img}
+                        for img in output_images
+                        if img.lower().endswith((".jpg", ".png"))
+                    ]
+                    o["imgs"] = output_images
+                    
 
                 return jsonify(
                     {
@@ -2459,6 +2482,22 @@ names_cht: {m_names_cht}
                                 "opt_use_early_stopping": 1,  # 是否使用早停，1 是，0 否
                                 "opt_imgsz": 640,  # 圖片大小
                             }
+
+                            # 從 job.txt 讀取設定
+                            if "epoch" in o:
+                                train_config["opt_epoch_times"] = int(o["epoch"])
+                            if "imgz" in o:
+                                train_config["opt_imgsz"] = int(o["imgz"])
+                            if "batch" in o:
+                                train_config["opt_batch_size"] = int(o["batch"])
+                            if "learning_rate" in o:
+                                train_config["opt_learning_rate"] = float(
+                                    o["learning_rate"]
+                                )
+                            if "optimizer" in o:
+                                train_config["opt_optimizer"] = str(o["optimizer"])
+                                
+
 
                             train_config_file_path = os.path.join(
                                 _TASK_FOLDER, "train_config.json"

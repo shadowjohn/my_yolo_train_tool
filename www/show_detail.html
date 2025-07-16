@@ -1,0 +1,249 @@
+<!--
+    顯示 detail
+-->
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>我的 yolo 訓練機</title>
+    <script src="/www/js/jquery.min.js"></script>
+    <script src="/www/js/myphp.js"></script>
+    <script src="/www/js/mybox.js"></script>
+    <script src="/www/js/include.js"></script>
+    <link rel="stylesheet" href="/www/css/reset.css" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- 引入 ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5"></script>
+    <link rel="stylesheet" href="/www/css/style.css" />
+    <style nonce="gg">
+        .thetable {
+            width: 100%;
+        }
+
+        .progressClass {
+            width: 80%;
+            height: 35px;
+            line-height: 35px;
+            margin-bottom: -13px;
+        }
+
+        .imgRefreshClass {
+            position: fixed;
+            width: 32px;
+            top: 25px;
+            right: 60px;
+            cursor: pointer;
+        }
+
+        .imgXCloseClass {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            cursor: pointer;
+        }
+
+        .divShowHideHistoryClass {
+            display: none;
+        }
+
+        .txtHistoryClass {
+            background-color: #000;
+            color: forestgreen;
+            font-family: Consolas, Verdana, 微軟正黑體;
+            font-size: 16px;
+            padding: 5px;
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            height: 325px;
+            overflow: auto;
+        }
+    </style>
+</head>
+<body class="container mt-5">
+    <img src="/www/pic/refresh.png" reqc="imgRefresh" class="imgRefreshClass" />
+    <img src="/www/pic/x_close_32.png" reqc="imgXClose" class="imgXCloseClass" />
+    <h2 reqc="h2_project_name"></h2>
+    <h3 reqc="h3_task_name"></h3>
+    <hr />
+    <span reqc="progressLog"></span>
+    <progress value="0" min="0" max="100" class="progressClass" reqc="theprogress"></progress>
+    <span reqc="progressPercent"></span>
+    <input type="button" class="btn btn-info" value="轉檔狀況" reqc="btnHistoryToggle" />
+    <br />
+    <div reqc="divShowHideHistory" class="divShowHideHistoryClass">
+        <div align="right" class="marginright25px">
+            <label>
+                <input type="checkbox" reqc="chkAutoScroll" checked /> 自動捲動
+            </label>
+        </div>
+        <textarea reqc="txtHistory" readonly class="txtHistoryClass"></textarea>
+    </div>
+    <!-- 畫布 -->
+    <br />
+    <div id="chart" style="width: 100%; height: 500px; display:none;border:1px solid #00f;"></div>
+    <br />
+    <div reqc="divImgs"></div>
+</body>
+</html>
+<script nonce="gg">
+    var app = {
+        "item": {
+            "project_name": "",
+            "task_name": "",
+        },
+        "method": {
+            "ui_init": function () {
+                $("img[reqc='imgXClose']").off().click(function () {
+                    parent.dialogMyBoxOff();
+                });
+                // reload
+                $("img[reqc='imgRefresh']").off().click(function () {
+                    location.reload();
+                });
+                // btnHistoryToggle
+                $("input[reqc='btnHistoryToggle']").off().click(function () {
+                    $("div[reqc='divShowHideHistory']").fadeToggle();
+                });
+            },
+            "drawChart": function (data) {
+                const epochs = data.map(d => d.epoch);
+                const trainBoxLoss = data.map(d => d["train/box_loss"]);
+                const valBoxLoss = data.map(d => d["val/box_loss"]);
+                const map50 = data.map(d => d["metrics/mAP50(B)"]);
+
+                const chart = echarts.init(document.getElementById("chart"));
+
+                const option = {
+                    title: {
+                        text: "YOLO 訓練曲線圖",
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                    },
+                    legend: {
+                        data: ["Train Box Loss", "Val Box Loss", "mAP@0.5"]
+                    },
+                    xAxis: {
+                        type: "category",
+                        name: "Epoch",
+                        data: epochs,
+                    },
+                    yAxis: [
+                        {
+                            type: "value",
+                            name: "Loss",
+                        },
+                        {
+                            type: "value",
+                            name: "mAP@0.5",
+                            min: 0,
+                            max: 1,
+                        },
+                    ],
+                    series: [
+                        {
+                            name: "Train Box Loss",
+                            type: "line",
+                            data: trainBoxLoss,
+                            smooth: true,
+                        },
+                        {
+                            name: "Val Box Loss",
+                            type: "line",
+                            data: valBoxLoss,
+                            smooth: true,
+                        },
+                        {
+                            name: "mAP@0.5",
+                            type: "line",
+                            yAxisIndex: 1,
+                            data: map50,
+                            smooth: true,
+                        },
+                    ],
+                    dataZoom: [
+                        { type: 'inside' },
+                        { type: 'slider' }
+                    ]
+                };
+
+                chart.setOption(option);
+            },
+            "updateStatus": function () {
+                var o = {
+                    "project_name": app.item.project_name,
+                    "task_name": app.item.task_name
+                };
+                myAjax_async_json("/api?mode=train_get_task_status", o, function (jd) {
+                    if (jd['status'] == 'OK') {
+                        var status_progress = parseFloat(jd.data['status_progress']).toFixed(2);
+                        if (jd['data']['train_results'] != "") {
+                            // 從 csv 內容解算進度
+                            // 從 jobs 取出 epoch 總數
+                            var jd_job = json_decode(jd['data']['job'], true);
+                            console.log(jd_job);
+                            // 進度為
+                            // 50~95 % 為 epoch 0~結束
+                            var user_defind_epoch = parseFloat(jd_job['epoch'])
+                            var now_epoch_step = 0;
+                            var csv_results = str_replace("\r", "", jd['data']['train_results']).trim();
+                            var m_csv_last = explode(",", end(explode("\n", csv_results))); // 1~10
+                            if (!isNaN(m_csv_last[0])) {
+                                // 進度轉換
+                                now_epoch_step = m_csv_last[0];
+                                if (now_epoch_step != user_defind_epoch) {
+                                    status_progress = arduino_map(parseFloat(m_csv_last[0]), 1.0, user_defind_epoch, 50.0, 95.0);
+                                }
+                                // 一樣代表已最後一筆或完成，照原進度走
+                            }
+                            // result to txt
+                            $("textarea[reqc='txtHistory']").val(jd['data']['train_results']);
+                            // 是否自動捲動
+                            if ($("input[reqc='chkAutoScroll']").prop("checked")) {
+                                $("textarea[reqc='txtHistory']").scrollTop = 99999999999;
+                            }
+
+                            // 可以畫圖表
+                            var csvArr = csvtoarray(jd['data']['train_results'], ",", true);
+                            console.log(csvArr);
+                            $("#chart").fadeIn();
+                            app.method.drawChart(csvArr);
+                        }
+                        jd.data.imgs.map(function (v) {
+                            console.log(v);
+                            $("div[reqc='divImgs']").html();
+
+                        });
+                        console.log(status_progress);
+                        status_progress = sprintf("%.2f", status_progress);
+                        $(`span[reqc='progressPercent']`).text(status_progress + " %");
+                        $("progress[reqc='theprogress']").val(status_progress);
+
+                        if (status_progress >= 100) {
+                            return;
+                        }
+                        (function (_jd) {
+                            setTimeout(function () {
+                                app.method.updateStatus();
+                            }, 1000);
+                        })(jd);
+                    }
+                });
+            }
+        },
+        "init": function () {
+            app.method.ui_init();
+            app.method.updateStatus();
+
+        }
+    };
+    var GETS = getGET();
+    console.log(GETS);
+    app.item.project_name = GETS["project_name"];
+    app.item.task_name = GETS["task_name"];
+    $("h2[reqc='h2_project_name']").text(app.item.project_name);
+    $("h3[reqc='h3_task_name']").text(app.item.task_name);
+    app.init();
+</script>
