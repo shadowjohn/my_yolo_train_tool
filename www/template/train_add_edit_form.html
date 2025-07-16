@@ -44,6 +44,12 @@
             margin-right: 8px; /* 增加間距 */
             transform-origin: center; /* 縮放中心點 */
         }
+
+        p {
+            border: 1px dashed #00f;
+            padding: 10px;
+            border-radius: 15px;
+        }
     </style>
 </head>
 <body>
@@ -51,20 +57,90 @@
     <hr />
     <p><span class="bold">專案：</span><span reqc="spanProjectName" class="spanProjectNameClass"></span></p>
     <p>
-        <span class="bold">類別選擇：</span><label><input type="checkbox" reqc="chkAll" class="big-checkbox" checked /> 全選</label>
-        <div reqc="divKinds">
+        <span class="bold">類別選擇：</span>
+        <br />
+        <label><input type="checkbox" reqc="chkAll" class="big-checkbox" checked />全選</label>
+        <br />
+        <span reqc="spanKinds">
             <!--放置哪些分類，預設選擇-->
             <select reqc="selKinds" multiple="multiple"></select>
-        </div>
+        </span>
     </p>
     <p>
         <span class="bold">訓練與驗證比例(訓練/驗證)：</span>
+        <br />
         <select reqc="selTrainVal">
             <option value="100/0" selected>100/0</option>
             <option value="90/10">90/10</option>
             <option value="80/20">80/20</option>
             <option value="70/30">70/30</option>
         </select>
+    </p>
+    <p>
+        <span class="bold">圖片大小</span>
+        <br />
+        <select reqc="selImgz">
+            <option value="320">320</option>
+            <option value="480">480</option>
+            <option value="640" selected>640</option>
+            <option value="800">800</option>
+            <option value="1024">1024</option>
+        </select>
+        <br />
+        <span class="bold">備註：如果要識別的物件都偏小，就選大一些</span>
+    </p>
+    <p>
+        <span class="bold">batch (批次大小)</span>
+        <br />
+        <select reqc="selBatch">
+            <option value="8" selected>8</option>
+            <option value="10">10</option>
+            <option value="12">12</option>
+            <option value="14">14</option>
+            <option value="16">16</option>
+            <option value="20">20</option>
+            <option value="24">24</option>
+            <option value="32">32</option>
+        </select>
+        <br />
+        <span class="bold">備註：GPU Ram 多就可以設大些</span>
+    </p>
+    <p>
+        <span class="bold">learning_rate 學習率</span>
+        <select reqc="sel_learning_rate">
+            <option value="0.05">0.05</option>
+            <option value="0.04">0.04</option>
+            <option value="0.03">0.03</option>
+            <option value="0.02">0.02</option>
+            <option value="0.01" selected>0.01</option>
+            <option value="0.005">0.005</option>
+        </select>
+        <br />
+        <span class="bold">備註：學習率，建議 0.005~0.01，太大容易不收斂，太小訓練慢</span>
+    </p>
+    <p>
+        <span class="bold">optimizer 優化器</span>
+        <br />
+        <select reqc="sel_optimizer">
+            <option value="SDG">SGD</option>
+            <option value="Adam" selected>Adam</option>
+        </select>
+        <br />
+        <span class="bold">備註：建議：Adam（收斂較快，適合大多數情境)</span>
+    </p>
+    <p>
+        <span class="bold">Epoch 訓練次數</span>
+        <br />
+        <span reqc="span_epoch">10</span>
+        <input type="range" min="1" max="300" value="10" reqc="inp_epoch">
+        <br />
+        <span class="bold">
+            備註：<br />
+            1. 研討會 Demo：1~10 (數分鐘)<br />
+            2. 小型資料集：30~100 (數小時)<br />
+            3. 中大型資料集：100~300 (電腦慢可能會跑數日)<br />
+            4. 建議：先用 10~30，觀察 loss 曲線再調整<br />
+        </span>
     </p>
     <hr />
     <div align="right">
@@ -107,12 +183,22 @@
             break;
     }
 
+    // 操作 inp_epoch
+    $("input[reqc='inp_epoch']").off().bind("input", function () {
+        $("span[reqc='span_epoch']").text($(this).val());
+    });
+
     // 按下開始訓練
     $("input[reqc='btnStart']").off().click(function () {
         var o = {
             "project_name": project_name,
             "train_val": $("select[reqc='selTrainVal']").val(),
-            "kinds": $("select[reqc='selKinds']").val().join("|||3WA|||")
+            "kinds": $("select[reqc='selKinds']").val().join("|||3WA|||"),
+            "imgz": $("select[reqc='selImgz']").val(),
+            "batch": $("select[reqc='selBatch']").val(),
+            "learning_rate": $("select[reqc='sel_learning_rate']").val(),
+            "optimizer": $("select[reqc='sel_optimizer']").val(),
+            "epoch": $("input[reqc='inp_epoch']").val()
         };
         console.log(o);
         // kinds 不可為空
@@ -137,5 +223,5 @@
     // 取消
     $("input[reqc='btnCancel']").off().click(function () {
         parent.dialogMyBoxOff();
-    });    
+    });
 </script>

@@ -32,6 +32,7 @@ import stat
 import zipfile
 import json
 import random
+import logging
 
 # 讓 canvas 滑鼠事件可以穿透用
 import ctypes
@@ -1879,6 +1880,12 @@ def run_flask():
                 project_name = POSTS["project_name"]
                 kinds = POSTS["kinds"]
                 train_val = POSTS["train_val"]
+                epoch = POSTS["epoch"]
+                imgz = POSTS["imgz"]  # 圖片尺寸
+                batch = POSTS["batch"]  # 批次大小
+                learning_rate = POSTS["learning_rate"]  # 學習率
+                optimizer = POSTS["optimizer"]  # 優化器
+
                 _PD = os.getcwd()
                 _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
                 _TRAIN_FOLDER = os.path.join(_PROJECT_FOLDER, "train_project")
@@ -1898,6 +1905,11 @@ def run_flask():
                     "m_kinds": my.explode("|||3WA|||", kinds),  # |||3WA|||分隔的類別
                     "train_percent": my.explode("/", train_val)[0],
                     "val_percent": my.explode("/", train_val)[1],
+                    "epoch": epoch,
+                    "imgz": imgz,
+                    "batch": batch,
+                    "learning_rate": learning_rate,
+                    "optimizer": optimizer
                 }
                 # 任務的資料夾
                 task_folder = "task_" + str(my.time())
@@ -1973,7 +1985,15 @@ def run_flask():
                         my.file_get_contents(status_progress_txt_path)
                     ),
                     "status_yolo_log": str(my.file_get_contents(status_yolo_log_path)),
+                    "train_results": ""
                 }
+                # 如果有 runs/train/output/results.csv 則讀取
+                train_results_filepath = os.path.join(
+                    _TASK_FOLDER, "runs", "train", "output", "results.csv"
+                )
+                if my.is_file(train_results_filepath):
+                    o["train_results"] = my.file_get_contents(train_results_filepath)
+
                 return jsonify(
                     {
                         "status": "OK",
@@ -2250,6 +2270,8 @@ def background_worker():
                                     data = my.file_get_contents(
                                         os.path.join(_TRAIN_LABELS_FOLDER, new_lbl_name)
                                     )
+                                    data = my.trim(data)
+                                    data = f"{index} {data}"  # 在第一行加上 index
                                     my.file_put_contents(
                                         os.path.join(
                                             _TRAIN_LABELS_FOLDER, new_lbl_name
@@ -2300,7 +2322,7 @@ def background_worker():
                                             _VAL_LABELS_FOLDER, os.path.basename(lbl)
                                         )
                                     ):
-                                        if os.path.isfile( 
+                                        if os.path.isfile(
                                             os.path.join(
                                                 _VAL_LABELS_FOLDER, new_lbl_name
                                             )
@@ -2324,6 +2346,8 @@ def background_worker():
                                     data = my.file_get_contents(
                                         os.path.join(_VAL_LABELS_FOLDER, new_lbl_name)
                                     )
+                                    data = my.trim(data)
+                                    data = f"{index} {data}"
 
                                     my.file_put_contents(
                                         os.path.join(_VAL_LABELS_FOLDER, new_lbl_name),
@@ -2337,121 +2361,184 @@ def background_worker():
                                             + (35.0 * train_count / total_count)
                                         ),
                                     )
-                                # 開始轉檔 Yolo 訓練，產出 yaml 檔案
-                                yaml_tpl = """
+                            # 開始轉檔 Yolo 訓練，產出 yaml 檔案
+                            yaml_tpl = """
 path: {my_dataset_path}
-train: images/train
-val: images/val
+train: {images_train}
+val: {images_val}
 nc: {nc}
 names: {m_names}
+names_cht: {m_names_cht}
 """
-                                m_names = o["m_kinds"]  # 類別名稱列表
-                                m_indexs = [str(i) for i in range(len(m_names))]
-                                yaml_content = yaml_tpl.format(
-                                    my_dataset_path=os.path.join(
-                                        _TASK_FOLDER, "datasets", "my_dataset"
-                                    ),
-                                    nc=len(m_names),
-                                    m_names=m_indexs,
+                            # 如果是 100 / 0 把 val 那行變成 val: {images_train}
+                            if o["train_percent"] == "100" and o["val_percent"] == "0":
+                                yaml_tpl = yaml_tpl.replace(
+                                    "val: {images_val}", "val: {images_train}"
                                 )
-                                yaml_file_path = os.path.join(_TASK_FOLDER, "data.yaml")
-                                my.file_put_contents(yaml_file_path, yaml_content)
 
-                                # 建立 data_dict.json
-                                """ 長這樣
+                            m_names = o["m_kinds"]  # 類別名稱列表
+                            m_indexs = [str(i) for i in range(len(m_names))]
+                            yaml_content = yaml_tpl.format(
+                                my_dataset_path=os.path.join(
+                                    _TASK_FOLDER, "datasets", "my_dataset"
+                                ),
+                                images_train=os.path.join(
+                                    _TASK_FOLDER,
+                                    "datasets",
+                                    "my_dataset",
+                                    "images",
+                                    "train",
+                                ),
+                                images_val=os.path.join(
+                                    _TASK_FOLDER,
+                                    "datasets",
+                                    "my_dataset",
+                                    "images",
+                                    "val",
+                                ),
+                                nc=len(m_names),
+                                m_names=m_indexs,  # 類別索引列表
+                                m_names_cht=m_names,  # 中文名稱列表
+                            )
+
+                            yaml_file_path = os.path.join(_TASK_FOLDER, "data.yaml")
+
+                            # print("Debug: YAML Path: ", yaml_file_path)
+
+                            my.file_put_contents(yaml_file_path, yaml_content)
+
+                            # 建立 data_dict.json
+                            """ 長這樣
 {
-    "40311": {
-        "Chinese_Name": "長尾鼠耳蝠",
-        "Scientific_Name": "Myotis frater"
-    },
-    ...
+"40311": {
+    "Chinese_Name": "長尾鼠耳蝠",
+    "Scientific_Name": "Myotis frater"
+},
+...
 }
 """
-                                data_dict = {}
-                                for i, name in enumerate(m_names):
-                                    data_dict[str(i)] = {
-                                        "Chinese_Name": name,
-                                        "Scientific_Name": name,
-                                    }
-                                data_dict_file_path = os.path.join(
-                                    _TASK_FOLDER, "data_dict.json"
-                                )
-                                my.file_put_contents(
-                                    data_dict_file_path, my.json_encode(data_dict)
-                                )
+                            data_dict = {}
+                            for i, name in enumerate(m_names):
+                                data_dict[str(i)] = {
+                                    "Chinese_Name": name,
+                                    "Scientific_Name": name,
+                                }
+                            data_dict_file_path = os.path.join(
+                                _TASK_FOLDER, "data_dict.json"
+                            )
+                            my.file_put_contents(
+                                data_dict_file_path, my.json_encode(data_dict)
+                            )
 
-                                # 產出 train_config.json
-                                # 範例
-                                """
-                                {
-                                      "data_yaml": "data.yaml",
-                                      "model_arch": "yolov11n.pt",
-                                      "opt_epoch_times": 11,
-                                      "opt_batch_size": 10,
-                                      "opt_learning_rate": 0.005,
-                                      "opt_optimizer": "Adam",
-                                      "opt_use_augment": 1,
-                                      "opt_use_early_stopping": 1,
-                                      "opt_imgsz": 640      
-                                    }
-                                """
-                                _PD = os.getcwd()
-                                train_config = {
+                            # 產出 train_config.json
+                            # 範例
+                            """
+                            {
                                     "data_yaml": "data.yaml",
-                                    "model_arch": os.path.join(_PD,"example_pt", "yolo11n.pt"),  # 預設模型
-                                    "opt_epoch_times": 10,  # 預設訓練次數
-                                    "opt_batch_size": 10,  # 預設批次大小
-                                    "opt_learning_rate": 0.005,  # 預設學習率
-                                    "opt_optimizer": "Adam",  # 預設優化器
-                                    "opt_use_augment": 1,  # 是否使用增強，1 是，0 否
-                                    "opt_use_early_stopping": 1,  # 是否使用早停，1 是，0 否
-                                    "opt_imgsz": 640,  # 圖片大小
+                                    "model_arch": "yolov11n.pt",
+                                    "opt_epoch_times": 11,
+                                    "opt_batch_size": 10,
+                                    "opt_learning_rate": 0.005,
+                                    "opt_optimizer": "Adam",
+                                    "opt_use_augment": 1,
+                                    "opt_use_early_stopping": 1,
+                                    "opt_imgsz": 640      
                                 }
-                                train_config_file_path = os.path.join(
-                                    _TASK_FOLDER, "train_config.json"
-                                )
-                                my.file_put_contents(
-                                    train_config_file_path,
-                                    my.json_encode(train_config),
-                                )
-                                model = YOLO(train_config["model_arch"])
-                                cfg = ""
-                                with open(
-                                    train_config_file_path, "r", encoding="utf-8"
-                                ) as f:
-                                    cfg = json.load(f)
-                                # 組合訓練參數
-                                train_args = {
-                                    "data": cfg["data_yaml"],
-                                    "epochs": cfg["opt_epoch_times"],
-                                    "batch": cfg.get("opt_batch_size", 16),
-                                    "imgsz": cfg.get("opt_imgsz", 800),
-                                    "lr0": cfg.get("opt_learning_rate", 0.01),
-                                    "optimizer": cfg.get("opt_optimizer", "SGD"),
-                                    "augment": bool(cfg.get("opt_use_augment", 0)),
-                                    "patience": (
-                                        20
-                                        if cfg.get("opt_use_early_stopping", 0)
-                                        else 0
-                                    ),
-                                    "project": "runs/train",
-                                    "name": "output",
-                                    "verbose": True,
-                                    "pretrained": True,
-                                }
-                                print("🔧 訓練參數：", flush=True)
-                                for key, value in train_args.items():
-                                    print(f"  {key}: {value}", flush=True)
+                            """
+                            _PD = os.getcwd()
+                            train_config = {
+                                "data_yaml": yaml_file_path,  # "data.yaml",
+                                "model_arch": os.path.join(
+                                    _PD, "example_pt", "yolo11n.pt"
+                                ),  # 預設模型
+                                "opt_epoch_times": 10,  # 預設訓練次數
+                                "opt_batch_size": 10,  # 預設批次大小
+                                "opt_learning_rate": 0.01,  # 預設學習率
+                                "opt_optimizer": "Adam",  # 預設優化器
+                                "opt_use_augment": 1,  # 是否使用增強，1 是，0 否
+                                "opt_use_early_stopping": 1,  # 是否使用早停，1 是，0 否
+                                "opt_imgsz": 640,  # 圖片大小
+                            }
 
-                                print("🚀 開始訓練 YOLO 模型...", flush=True)
-                                # 訓練過程中將訓練狀態寫入 log 檔案
-                                sys.stdout = open(
-                                    _STATUS_FILE_YOLO_LOG, "a", encoding="utf-8"
-                                )  # 重定向輸出至檔案
+                            train_config_file_path = os.path.join(
+                                _TASK_FOLDER, "train_config.json"
+                            )
+                            my.file_put_contents(
+                                train_config_file_path,
+                                my.json_encode(train_config),
+                            )
+                            model = YOLO(train_config["model_arch"])
+                            cfg = ""
+                            with open(
+                                train_config_file_path, "r", encoding="utf-8"
+                            ) as f:
+                                cfg = json.load(f)
+                            # 組合訓練參數
+                            train_args = {
+                                "data": cfg["data_yaml"],
+                                "epochs": cfg["opt_epoch_times"],
+                                "batch": cfg.get("opt_batch_size", 8),
+                                "imgsz": cfg.get("opt_imgsz", 640),
+                                "lr0": cfg.get("opt_learning_rate", 0.01),
+                                "optimizer": cfg.get("opt_optimizer", "Adam"),
+                                "augment": bool(cfg.get("opt_use_augment", 1)),
+                                "patience": (
+                                    20 if cfg.get("opt_use_early_stopping", 1) else 0
+                                ),
+                                "project": os.path.join(_TASK_FOLDER, "runs/train"),
+                                "name": "output",
+                                "verbose": True,
+                                "pretrained": True,
+                            }
+                            print("🔧 訓練參數：", flush=True)
+                            for key, value in train_args.items():
+                                print(f"  {key}: {value}", flush=True)
 
-                                model.train(**train_args)
-                                print("✅ 訓練完成。", flush=True)
-                                sys.stdout.close()  # 關閉檔案
+                            print("🚀 開始訓練 YOLO 模型...", flush=True)
+                            # 訓練過程中將訓練狀態寫入 log 檔案
+                            #sys.stdout = open(
+                            #    _STATUS_FILE_YOLO_LOG, "a", encoding="utf-8"
+                            #)  # 重定向輸出至檔案
+                            # 建立 logger
+                            logging.basicConfig(
+                                filename=_STATUS_FILE_YOLO_LOG,
+                                filemode='a',
+                                level=logging.INFO,
+                                format='%(asctime)s %(message)s',
+                                encoding='utf-8'
+                            )
+
+                            # 選擇性同步 stdout 到 log
+                            class StreamToLogger:
+                                def __init__(self, logger_func, also_stdout=True):
+                                    self.logger_func = logger_func
+                                    self.stdout = sys.__stdout__ if also_stdout else None
+
+                                def write(self, message):
+                                    if message.strip():
+                                        self.logger_func(message.strip())
+                                    if self.stdout:
+                                        self.stdout.write(message)
+                                        self.stdout.flush()
+
+                                def flush(self):
+                                    if self.stdout:
+                                        self.stdout.flush()
+
+                            sys.stdout = StreamToLogger(logging.info)
+                            sys.stderr = StreamToLogger(logging.error)
+
+                            model.train(**train_args)
+                            print("✅ 訓練完成。", flush=True)
+                            # sys.stdout.close()  # 關閉檔案
+                            # 恢復標準輸出
+                            sys.stdout = sys.__stdout__
+                            sys.stderr = sys.__stderr__
+                            my.file_put_contents(
+                                _STATUS_FILE_LOG, "訓練完成，產生模型檔案...\r\n", True
+                            )
+                            my.file_put_contents(_STATUS_FILE_PROGRESS, str(95.0))
+                            # 將訓練好的模型移動到專案資料夾
 
                             # 程式結束-------------------------------------------------------------End
 

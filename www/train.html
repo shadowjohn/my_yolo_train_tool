@@ -8,6 +8,9 @@
     <meta charset="utf-8">
     <title>我的 yolo 訓練機</title>
     <script src="/www/js/jquery.min.js"></script>
+    <script src="/www/js/jquery-m.min.js"></script>
+    <script src="/www/js/jquery-ui-1.8.24/ui/minified/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="/www/js/jquery-ui-1.8.24/themes/base/minified/jquery-ui.min.css" />
     <script src="/www/js/myphp.js"></script>
     <script src="/www/js/mybox.js"></script>
     <script src="/www/js/include.js?v=3"></script>
@@ -81,8 +84,21 @@
         }
 
         .myWClass {
-            height: 450px;
+            /*min-height: 80px;*/
+            max-height: 450px;
             overflow: auto;
+            padding: 8px;
+        }
+
+            .myWClass tbody td[field='項次'] {
+                text-align: right;
+                padding-right: 15px;
+            }
+
+        .h2drag {
+            text-align: center;
+            cursor: move;
+            background-color: aquamarine;
         }
     </style>
 </head>
@@ -222,7 +238,7 @@
                             "task_name": $(dom).attr("req_task_name")
                         };
                         //console.log("Get task status...: " + index);
-                        console.log(o);                        
+                        console.log(o);
                         myAjax_async_json("/api?mode=train_retrain", o, function (jd) {
                             if (jd['status'] == 'OK') {
                                 parent.smallComment("已註冊重新訓練...", 2000, false, {});
@@ -239,12 +255,17 @@
                         $("div[id^='myW_']").remove();
                         var html = base64_decode($(this).attr('req_html'));
                         myW(`<div class="myWClass">
+                                <h2 class="h2drag">項目列表</h2>
                                 <img src="/www/pic/x_close_32.png" style="position:absolute;right:0px;top:0px;cursor:pointer;" reqc="imgXClose">
-                                ${html}</div>`, function () {
+                                ${html}</div>`, function (myWid) {
                             $("img[reqc='imgXClose']").off().click(function () {
                                 $("div[id^='myW_']").remove();
                             });
 
+                            // 可拖移
+                            $("#" + myWid).draggable({
+                                "handle": ".h2drag"
+                            });
                         });
                     });
 
