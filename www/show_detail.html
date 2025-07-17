@@ -34,6 +34,7 @@
             top: 25px;
             right: 60px;
             cursor: pointer;
+            z-index: 99999;
         }
 
         .imgXCloseClass {
@@ -41,6 +42,7 @@
             top: 25px;
             right: 25px;
             cursor: pointer;
+            z-index: 99999;
         }
 
         .divShowHideHistoryClass {
@@ -49,7 +51,7 @@
 
         .txtHistoryClass {
             background-color: #000;
-            color: forestgreen;
+            color: chartreuse;
             font-family: Consolas, Verdana, 微軟正黑體;
             font-size: 16px;
             padding: 5px;
@@ -59,6 +61,42 @@
             height: 325px;
             overflow: auto;
         }
+
+        .divImgItem {
+            margin-top: 15px;
+            border: 0px solid #00f;
+            padding: 5px;
+            text-align: center;
+            float: left;
+        }
+
+            .divImgItem img[reqc='imgItem'] {
+                height: 250px;
+                border: 1px solid #f00;
+            }
+
+            .divImgItem .spanFileSpan {
+                font-weight: bold;
+            }
+
+        div[reqc='divKinds_outer'] {
+            font-size: 16px;
+            padding: 5px;
+            border: 1px solid #00f;
+        }
+
+        .spanKindItem {
+            border-bottom: 1px solid #00f;
+            margin-right: 15px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        div[reqc='divMetainfo_outer'] {
+            border: 1px solid #00f;
+            padding: 8px;
+            font-size: 24px;
+        }
     </style>
 </head>
 <body class="container mt-5">
@@ -66,6 +104,9 @@
     <img src="/www/pic/x_close_32.png" reqc="imgXClose" class="imgXCloseClass" />
     <h2 reqc="h2_project_name"></h2>
     <h3 reqc="h3_task_name"></h3>
+    <div reqc="divMetainfo_outer">
+
+    </div>
     <hr />
     <span reqc="progressLog"></span>
     <progress value="0" min="0" max="100" class="progressClass" reqc="theprogress"></progress>
@@ -80,10 +121,17 @@
         </div>
         <textarea reqc="txtHistory" readonly class="txtHistoryClass"></textarea>
     </div>
-    <!-- 畫布 -->
     <br />
+    <!-- 畫布 -->
     <div id="chart" style="width: 100%; height: 500px; display:none;border:1px solid #00f;"></div>
     <br />
+    <!-- 訓練項目 index -->
+    <div reqc="divKinds_outer">
+        <h3>訓練類別</h3>
+        <div reqc="divKinds"></div>
+    </div>
+    <br />
+    <!-- yolo 圖片集 -->
     <div reqc="divImgs"></div>
 </body>
 </html>
@@ -179,10 +227,11 @@
                 myAjax_async_json("/api?mode=train_get_task_status", o, function (jd) {
                     if (jd['status'] == 'OK') {
                         var status_progress = parseFloat(jd.data['status_progress']).toFixed(2);
+                        var jd_job = json_decode(jd['data']['job'], true);
                         if (jd['data']['train_results'] != "") {
                             // 從 csv 內容解算進度
                             // 從 jobs 取出 epoch 總數
-                            var jd_job = json_decode(jd['data']['job'], true);
+
                             console.log(jd_job);
                             // 進度為
                             // 50~95 % 為 epoch 0~結束
@@ -199,11 +248,39 @@
                                 // 一樣代表已最後一筆或完成，照原進度走
                             }
                             // result to txt
-                            $("textarea[reqc='txtHistory']").val(jd['data']['train_results']);
+                            // 內容移除 train_get_task_status 有關的
+                            var _m = explode("\n", jd['data']['status_yolo_log']);
+                            var _mm = [];
+                            _m.map(function (v) {
+                                if (is_string_like(v, "%train_get_task_status%")) {
+                                    return;
+                                }
+                                if (is_string_like(v, "%\"POST %")) {
+                                    return;
+                                }
+                                if (is_string_like(v, "%\"GET %")) {
+                                    return;
+                                }
+                                if (is_string_like(v, "%\"[36mGET %")) {
+                                    return;
+                                }
+                                if (is_string_like(v, "%\"[33mGET %")) {
+                                    return;
+                                }
+                                _mm.push(v);
+                            });
+                            var mmstr = str_replace_deep("\n\n", "\n", _mm.join('\n'));
+                            mmstr = str_replace_deep("\t", " ", mmstr);
+                            mmstr = str_replace_deep("  ", " ", mmstr);
+                            mmstr = str_replace_deep("  ", " ", mmstr);
+                            mmstr = str_replace_deep("  ", " ", mmstr);
+                            mmstr = str_replace_deep("  ", " ", mmstr);
+                            $("textarea[reqc='txtHistory']").val(mmstr);
                             // 是否自動捲動
                             if ($("input[reqc='chkAutoScroll']").prop("checked")) {
                                 $("textarea[reqc='txtHistory']").scrollTop = 99999999999;
                             }
+
 
                             // 可以畫圖表
                             var csvArr = csvtoarray(jd['data']['train_results'], ",", true);
@@ -213,9 +290,49 @@
                         }
                         jd.data.imgs.map(function (v) {
                             console.log(v);
-                            $("div[reqc='divImgs']").html();
+                            //name : "val_batch2_pred.jpg"
+                            //path : "C:\\Users\\johnho\\Desktop\\my_yolo_train_tool\\data\\projects\\三國迷因\\train_project\\task_1752655939\\runs\\train\\output\\val_batch2_pred.jpg"
+                            v.imgPath = `/data/projects/${app.item.project_name}/train_project/${app.item.task_name}/runs/train/output/${v.name}`;
+                            if ($(`div[reqc='divImgs'] img[req_name='${v.name}']`).length == 0) {
+                                $("div[reqc='divImgs']").append(`
+                                <div class="divImgItem">
+                                    <img req_name="${v.name}" src="${v.imgPath}" reqc="imgItem">
+                                    <br>
+                                    <span class='spanFileSpan'>${v.name}</span>
+                                </div>
+                                `);
+                            }
+                            //$("div[reqc='divImgs']").html();
+                        });
+                        // 滑鼠移到可視
+                        img_mouseover_show($("img[reqc='imgItem"), {
 
                         });
+
+                        // 訓練項目
+                        if ($("div[reqc='divMetainfo_outer']").text().trim() == "") {
+                            var str = `
+                                <ul>
+                                    <li><span class="spanMetaTitle">圖片大小(imgz)：</span><span class="spanMetaValue">${jd_job['imgz']}</li>
+                                    <li><span class="spanMetaTitle">批次大小(batch)：</span><span class="spanMetaValue">${jd_job['batch']}</li>
+                                    <li><span class="spanMetaTitle">訓練次數(epoch)：</span><span class="spanMetaValue">${jd_job['epoch']}</li>
+                                    <li><span class="spanMetaTitle">優化器(optimizer)：</span><span class="spanMetaValue">${jd_job['optimizer']}</li>
+                                    <li><span class="spanMetaTitle">訓驗與驗證比例(train/val)：</span><span class="spanMetaValue">${jd_job['train_percent']} / ${jd_job['val_percent']}</li>
+                                </ul>
+                            `;
+                            $("div[reqc='divMetainfo_outer']").html(str);
+                        }
+                        if ($("div[reqc='divKinds']").text().trim() == "") {
+                            var mstr = [];
+                            console.log(jd_job);
+                            jd_job.m_kinds.map(function (v, index) {
+                                var d = `<span class="spanKindItem">(${index}) ${v}</span>`;
+                                mstr.push(d);
+                            });
+                            $("div[reqc='divKinds']").html(mstr.join(""));
+                        }
+
+
                         console.log(status_progress);
                         status_progress = sprintf("%.2f", status_progress);
                         $(`span[reqc='progressPercent']`).text(status_progress + " %");

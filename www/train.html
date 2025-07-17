@@ -261,10 +261,14 @@
                             "project_name": $(this).attr('req_project_name'),
                             "task_name": $(this).attr('req_task_name')
                         };
-                        var wh = getWindowSize();
-                        var w85px = wh['width'] * 0.85;
-                        var h75px = wh['height'] * 0.75;
-                        parent.dialogMyBoxOn(`<iframe style="width:${w85px}px;height:${h75px}px;" src="/www/show_detail.html?project_name=${encodeURIComponent(o.project_name)}&task_name=${encodeURIComponent(o.task_name)}"></iframe>`, true, function () { });
+                        
+                        var w95px = parent.$(window).width() * 0.95;
+                        var h95px = parent.$(window).height() * 0.95;
+                        
+                        parent.dialogMyBoxOn(`<iframe style="width:${w95px}px;height:${h95px}px;" src="/www/show_detail.html?project_name=${encodeURIComponent(o.project_name)}&task_name=${encodeURIComponent(o.task_name)}"></iframe>`, true, function () {
+                            
+                        });                        
+
                     });
 
                     // 按重新訓練

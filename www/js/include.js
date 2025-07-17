@@ -1,3 +1,19 @@
+$.fn.center = function () {
+    this.css("position", "absolute");
+    this.css("top", ($(window).height() - this.height()) / 2 + $(window).scrollTop() + "px");
+    this.css("left", ($(window).width() - this.width()) / 2 + $(window).scrollLeft() + "px");
+    return this;
+}
+$.fn.centerX = function () {
+    this.css("position", "absolute");    
+    this.css("left", ($(window).width() - this.width()) / 2 + $(window).scrollLeft() + "px");
+    return this;
+}
+$.fn.centerY = function () {
+    this.css("position", "absolute");
+    this.css("top", ($(window).height() - this.height()) / 2 + $(window).scrollTop() + "px");    
+    return this;
+}
 function getGET() {
     var output = {};
     output['hash'] = location.hash;
@@ -574,4 +590,207 @@ function csvtoarray(strData, strDelimiter, isToAssoc = false) {
         }
     }
     return arrData;
+}
+function is_string_like($data, $find_string) {
+    /*
+      is_string_like($data,$fine_string)
+    
+      $mystring = "Hi, this is good!";
+      $searchthis = "%thi% goo%";
+    
+      $resp = string_like($mystring,$searchthis);
+    
+    
+      if ($resp){
+         echo "milike = VERDADERO";
+      } else{
+         echo "milike = FALSO";
+      }
+    
+      Will print:
+      milike = VERDADERO
+    
+      and so on...
+    
+      this is the function:
+    */
+    $tieneini = 0;
+    if ($find_string == "") return 1;
+    $vi = explode("%", $find_string);
+    $offset = 0;
+    for ($n = 0, $max_n = count($vi); $n < $max_n; $n++) {
+        if ($vi[$n] == "") {
+            if ($vi[0] == "") {
+                $tieneini = 1;
+            }
+        } else {
+            $newoff = strpos($data, $vi[$n], $offset);
+            if ($newoff !== false) {
+                if (!$tieneini) {
+                    if ($offset != $newoff) {
+                        return false;
+                    }
+                }
+                if ($n == $max_n - 1) {
+                    if ($vi[$n] != substr($data, strlen($data) - strlen($vi[$n]), strlen($vi[$n]))) {
+                        return false;
+                    }
+
+                } else {
+                    $offset = $newoff + strlen($vi[$n]);
+                }
+            } else {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+function str_replace_deep(search, replace, subject) {
+    if (search === null || search === "") return subject;
+
+    if (Array.isArray(subject)) {
+        return subject.map(function (oneSubject) {
+            return str_replace_deep(search, replace, oneSubject);
+        });
+    } else {
+        return subject.replace(new RegExp(search, 'g'), replace);
+    }
+}
+function img_mouseover_show(dom, options = null) {
+    dom.unbind("mouseout").mouseout(function () {
+        $("#show_pic_div_img_mouseover_show").stop().fadeOut();
+    });
+
+    //for copy
+    dom.unbind("mousedown").mousedown(function () {
+        var o_w = $(this).width();
+        var o_h = $(this).height();
+        if ($(this).attr('bsrc') != null) {
+            $(this).attr('src', $(this).attr('bsrc')).width(o_w).height(o_h);
+        }
+    });
+
+    dom.unbind("mouseover").bind("mouseover", function () {
+        window['wh'] = getWindowSize();
+        console.log(window['wh']);
+        if ($("#show_pic_div_img_mouseover_show").length == 0) {
+            $("body").append("<div id='show_pic_div_img_mouseover_show'></div>");
+        }
+        //console.log($(this).css('width')+","+$(this).css('height'));
+        //var r = parseInt(str_replace("px","",$(this).css('height'))) / parseInt(str_replace("px","",$(this).css('width')));
+        if (window['wh']['width'] > window['wh']['height']) {
+            if (parseInt(str_replace("px", "", $(this).css('width'))) > parseInt(str_replace("px", "", $(this).css('height')))) {
+
+                console.log('ww1：一般電腦螢幕，橫圖');
+                $("#show_pic_div_img_mouseover_show").css({
+                    'position': 'fixed',
+                    'pointer-events': 'none',
+                    'max-width': (window['wh']['width'] * 80 / 100) + 'px',
+                    'max-height': (window['wh']['height'] * 80 / 100) + 'px',
+                    'height': (window['wh']['height'] * 80 / 100) + 'px',
+                    'background-color': '#dcdcdc',
+                    'box-shadow': '1px 1px 10px rgba(0,0,0,0.5)',
+                    'z-index': time() * 100,
+                    'opacity': 1,
+                    'padding': '15px',
+                    'display': 'none'
+                });
+            }
+            else {
+                //一般電腦螢幕-直圖
+                console.log('ww2：一般電腦螢幕，直圖');
+                $("#show_pic_div_img_mouseover_show").css({
+                    'position': 'fixed',
+                    'pointer-events': 'none',
+                    'max-width': (window['wh']['width'] * 80 / 100) + 'px',
+                    'max-height': (window['wh']['height'] * 80 / 100) + 'px',
+                    'height': (window['wh']['height'] * 80 / 100) + 'px',
+                    'background-color': '#dcdcdc',
+                    'box-shadow': '1px 1px 10px rgba(0,0,0,0.5)',
+                    'z-index': time() * 100,
+                    'opacity': 1,
+                    'padding': '15px',
+                    'display': 'none',
+                    'top': (window['wh']['height'] - window['wh']['height'] * 70 / 100) + 'px'
+                });
+            }
+        }
+        else {
+            //手機直螢幕-橫圖
+            if (parseInt(str_replace("px", "", $(this).css('width'))) > parseInt(str_replace("px", "", $(this).css('height')))) {
+                console.log('ww3：手機直螢幕-橫圖');
+                $("#show_pic_div_img_mouseover_show").css({
+                    'position': 'fixed',
+                    'pointer-events': 'none',
+                    'max-width': (window['wh']['width'] * 80 / 100) + 'px',
+                    'max-height': (window['wh']['height'] * 80 / 100) + 'px',
+                    'height': (window['wh']['height'] * 80 / 100) + 'px',
+                    'background-color': '#dcdcdc',
+                    'box-shadow': '1px 1px 10px rgba(0,0,0,0.5)',
+                    'z-index': time() * 100,
+                    'opacity': 1,
+                    'padding': '15px',
+                    'display': 'none',
+                    'top': (window['wh']['height'] - window['wh']['height'] * 70 / 100) + 'px'
+                });
+            }
+            else {
+                console.log('ww4：手機直螢幕-直圖');
+                $("#show_pic_div_img_mouseover_show").css({
+                    'position': 'fixed',
+                    'pointer-events': 'none',
+                    'max-width': (window['wh']['width'] * 80 / 100) + 'px',
+                    'max-height': (window['wh']['height'] * 80 / 100) + 'px',
+                    'background-color': '#dcdcdc',
+                    'box-shadow': '1px 1px 10px rgba(0,0,0,0.5)',
+                    'z-index': time() * 100,
+                    'opacity': 1,
+                    'padding': '15px',
+                    'display': 'none'
+                });
+            }
+
+        }
+        //$("#show_pic_div").center();
+        //$("#show_pic_div").corner();
+        var Img = new Image();
+        Img.onload = function () {
+            if (options != null) {
+                var w = "100%";
+                var h = "100%";
+                if (options['width'] != null) {
+                    w = options['width'];
+                }
+                if (options['height'] != null) {
+                    h = options['height'];
+                }
+                $("#show_pic_div_img_mouseover_show").css({
+                    "width": "auto",
+                    "height": "auto"
+                });
+                $('#show_pic_div_img_mouseover_show').html("<img src='" + this.src + "' style='pointer-events:none;width:" + w + ";height:" + h + ";'>");
+            }
+            else {
+                $('#show_pic_div_img_mouseover_show').html("<img src='" + this.src + "' style='pointer-events:none;width:100%;height:100%;'>");
+            }
+            $('#show_pic_div_img_mouseover_show').center();
+            if (this.width > window['wh']['width'] * 80 / 100) {
+                $('#show_pic_div_img_mouseover_show').html("<img src='" + this.src + "' style='pointer-events:none;width:" + (window['wh']['width'] * 80 / 100) + "px;height:auto;'>");
+            }
+            if (this.height > window['wh']['height'] * 77 / 100) {
+                $('#show_pic_div_img_mouseover_show').html("<img src='" + this.src + "' style='pointer-events:none;width:auto;height:" + (window['wh']['height'] * 77 / 100) + "px;'>");
+            }
+
+            $('#show_pic_div_img_mouseover_show').center();
+        };
+        Img.src = ($(this).attr('bsrc') != null) ? $(this).attr('bsrc') : $(this).attr('src');
+
+        var show_url = ($(this).attr('bsrc') != null) ? $(this).attr('bsrc') : $(this).attr('src');
+
+        $("#show_pic_div_img_mouseover_show").html("<img src=\"" + show_url + "\" onLoad=\"$('#show_pic_div_img_mouseover_show').center();\" style='pointer-events: none;width:100%;height:100%;'>");
+        $("#show_pic_div_img_mouseover_show").stop().fadeIn();
+        $("#show_pic_div_img_mouseover_show").center();
+        return true;
+    });
 }

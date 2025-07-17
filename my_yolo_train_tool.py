@@ -2544,6 +2544,7 @@ names_cht: {m_names_cht}
                                 filemode='a',
                                 level=logging.INFO,
                                 format='%(asctime)s %(message)s',
+                                datefmt='%Y-%m-%d %H:%M:%S',
                                 encoding='utf-8'
                             )
 
