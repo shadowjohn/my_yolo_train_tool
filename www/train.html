@@ -240,6 +240,14 @@
                                     <input type="button" class="btn btn-danger margin2px" value="刪除">
                                 `;
                                 break;
+                            case "3":
+                                v.fake_status = "異常";
+                                v.fake_options = `                                                                        
+                                    <input type="button" class="btn btn-info margin2px" value="細節" reqc="btnDetail" req_project_name="${project_name}" req_task_name="${v.task_name}">
+                                    <input type="button" class="btn btn-warning margin2px" value="重新訓練" reqc="btnRetrain" req_project_name="${project_name}" req_task_name="${v.task_name}">
+                                    <input type="button" class="btn btn-danger margin2px" value="刪除">
+                                `;
+                                break;
                         }
 
                     });

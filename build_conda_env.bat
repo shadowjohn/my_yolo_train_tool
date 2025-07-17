@@ -7,10 +7,13 @@ rem 4. ¦w¸Ë yolo
 SET mypath=%~dp0
 echo %mypath%
 mkdir binary
-call conda create --prefix "%mypath%\binary\Ultralytics" python=3.12 -y
+call conda create --prefix "%mypath%\binary\Ultralytics" python=3.9 -y
 call conda activate "%mypath%\binary\Ultralytics"
 cd /d "%mypath%\binary\Ultralytics"
 rem call scripts\pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-call scripts\pip install -r ..\..\requirements.txt
+rem call scripts\pip install -r ..\..\requirements.txt
+rem ultralytics ?
+call conda install -y pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+call scripts\pip install ultralytics pywin32 keyboard flask
 
 

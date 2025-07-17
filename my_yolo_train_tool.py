@@ -10,7 +10,13 @@ from tkinter import Menu
 from tkinter import simpledialog
 from tkinter import Label, Tk, StringVar
 import threading
+import torch
 import os
+#os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+print("CUDA 是否可用:", torch.cuda.is_available())
+print("可用 GPU 數量:", torch.cuda.device_count())
+print("GPU 名稱:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "N/A")
+
 import webbrowser
 import sys
 import base64
@@ -33,6 +39,7 @@ import zipfile
 import json
 import random
 import logging
+
 
 # 讓 canvas 滑鼠事件可以穿透用
 import ctypes
@@ -1899,8 +1906,11 @@ def run_flask():
                 if not train_val:
                     return jsonify({"status": "NO", "reason": "請輸入訓練與驗證比例"})
                 # o 要寫存入 job.txt
+                # 任務的資料夾
+                task_folder = "task_" + str(my.time())
                 o = {
                     "project_name": project_name,
+                    "task_name": task_folder,  # 任務名稱"
                     "kinds": kinds,
                     "m_kinds": my.explode("|||3WA|||", kinds),  # |||3WA|||分隔的類別
                     "train_percent": my.explode("/", train_val)[0],
@@ -1909,10 +1919,9 @@ def run_flask():
                     "imgz": imgz,
                     "batch": batch,
                     "learning_rate": learning_rate,
-                    "optimizer": optimizer
+                    "optimizer": optimizer,
                 }
-                # 任務的資料夾
-                task_folder = "task_" + str(my.time())
+                
                 _TASK_FOLDER = os.path.join(_TRAIN_FOLDER, task_folder)
                 if not my.is_dir(_TASK_FOLDER):
                     my.mkdir(_TASK_FOLDER)
@@ -1987,7 +1996,7 @@ def run_flask():
                     "status_yolo_log": str(my.file_get_contents(status_yolo_log_path)),
                     "train_results": "",
                     "job": "",
-                    "imgs": []
+                    "imgs": [],
                 }
                 # 如果有 runs/train/output/results.csv 則讀取
                 train_results_filepath = os.path.join(
@@ -2006,16 +2015,13 @@ def run_flask():
                     _TASK_FOLDER, "runs", "train", "output"
                 )
                 if my.is_dir(output_images_folder):
-                    output_images = my.glob(
-                        os.path.join(output_images_folder, "*.*")
-                    )
+                    output_images = my.glob(os.path.join(output_images_folder, "*.*"))
                     output_images = [
                         {"name": my.basename(img), "path": img}
                         for img in output_images
                         if img.lower().endswith((".jpg", ".png"))
                     ]
                     o["imgs"] = output_images
-                    
 
                 return jsonify(
                     {
@@ -2032,6 +2038,17 @@ def run_flask():
                 _PD = os.getcwd()
                 _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
                 _TASK_FOLDER = os.path.join(_PROJECT_FOLDER, "train_project", task_name)
+
+                # 已存在 runs/train 的話，重建
+                runs_train_folder = os.path.join(_TASK_FOLDER, "runs", "train")
+                if my.is_dir(runs_train_folder):
+                    # 刪除資料夾
+                    my.deltree(runs_train_folder)
+                # 建立新的任務資料夾
+                #if my.is_dir(runs_train_folder) == False:
+                #    my.mkdir(_TASK_FOLDER)
+                #    os.chmod(_TASK_FOLDER, 0o777)  # 0o777
+
                 status_txt_path = os.path.join(_TASK_FOLDER, "status.txt")
                 if not my.is_file(status_txt_path):
                     return jsonify({"status": "NO", "reason": "任務不存在"})
@@ -2098,6 +2115,16 @@ def reset_train_project_status():
                     # 如果是 1，則改成 0
                     my.file_put_contents(_STATUS_FILE, "0")
                     print("Reset status.txt to 0 for project: %s" % (project))
+
+                    # 已存在 runs/train 的話，重建
+                    runs_train_folder = os.path.join(_TASK_FOLDER, "runs", "train")
+                    if my.is_dir(runs_train_folder):
+                        # 刪除資料夾
+                        my.deltree(runs_train_folder)
+                    # 建立新的任務資料夾
+                    #if my.is_dir(runs_train_folder) == False:
+                    #    my.mkdir(_TASK_FOLDER, mode=0o777, recursive=True)
+                    #    #os.chmod(_TASK_FOLDER, 0o777)  # 0o777
 
 
 # 重置狀態為 1 → 0
@@ -2496,8 +2523,6 @@ names_cht: {m_names_cht}
                                 )
                             if "optimizer" in o:
                                 train_config["opt_optimizer"] = str(o["optimizer"])
-                                
-
 
                             train_config_file_path = os.path.join(
                                 _TASK_FOLDER, "train_config.json"
@@ -2514,6 +2539,8 @@ names_cht: {m_names_cht}
                                 cfg = json.load(f)
                             # 組合訓練參數
                             train_args = {
+                                "workers": 0,
+                                "device": 0,  # 使用第一個 GPU
                                 "data": cfg["data_yaml"],
                                 "epochs": cfg["opt_epoch_times"],
                                 "batch": cfg.get("opt_batch_size", 8),
@@ -2534,25 +2561,28 @@ names_cht: {m_names_cht}
                                 print(f"  {key}: {value}", flush=True)
 
                             print("🚀 開始訓練 YOLO 模型...", flush=True)
+
                             # 訓練過程中將訓練狀態寫入 log 檔案
-                            #sys.stdout = open(
+                            # sys.stdout = open(
                             #    _STATUS_FILE_YOLO_LOG, "a", encoding="utf-8"
-                            #)  # 重定向輸出至檔案
+                            # )  # 重定向輸出至檔案
                             # 建立 logger
                             logging.basicConfig(
                                 filename=_STATUS_FILE_YOLO_LOG,
-                                filemode='a',
+                                filemode="a",
                                 level=logging.INFO,
-                                format='%(asctime)s %(message)s',
-                                datefmt='%Y-%m-%d %H:%M:%S',
-                                encoding='utf-8'
+                                format="%(asctime)s %(message)s",
+                                datefmt="%Y-%m-%d %H:%M:%S",
+                                encoding="utf-8",
                             )
 
                             # 選擇性同步 stdout 到 log
                             class StreamToLogger:
                                 def __init__(self, logger_func, also_stdout=True):
                                     self.logger_func = logger_func
-                                    self.stdout = sys.__stdout__ if also_stdout else None
+                                    self.stdout = (
+                                        sys.__stdout__ if also_stdout else None
+                                    )
 
                                 def write(self, message):
                                     if message.strip():
@@ -2579,6 +2609,80 @@ names_cht: {m_names_cht}
                             )
                             my.file_put_contents(_STATUS_FILE_PROGRESS, str(95.0))
                             # 將訓練好的模型移動到專案資料夾
+                            # 將 best.pt 複製到 task 資料夾
+                            # 然後與 data_dict.json 一起打包成 zip 檔案
+                            # 命名為 project_name_task_name.zip
+                            # zip 最後放到 project_name 資料夾下
+                            best_model_path = os.path.join(
+                                _TASK_FOLDER, "runs", "train", "output", "weights", "best.pt"
+                            )
+                            if my.is_file(best_model_path):
+                                shutil.copy(
+                                    best_model_path,
+                                    os.path.join(_TASK_FOLDER, "best.pt"),
+                                )
+                            else:
+                                my.file_put_contents(
+                                    _STATUS_FILE_LOG,
+                                    "找不到 best.pt，請確認訓練是否成功。\r\n",
+                                    True,
+                                )
+                                my.file_put_contents(_STATUS_FILE, "3")
+                                my.file_put_contents(_STATUS_FILE_PROGRESS, str(100.0))
+                                # 失敗跳下一筆
+                                continue
+                            my.file_put_contents(_STATUS_FILE_PROGRESS, str("96.0"))
+                            my.file_put_contents(
+                                _STATUS_FILE_LOG,
+                                "將訓練模型 best.pt 與 data_dict.json 合併壓縮\r\n",
+                                True,
+                            )
+                            # 壓縮
+                            zip_filename = (
+                                f"{o['project_name']}_{o['task_name']}_"
+                                + my.date("Y_m_d_H_i")
+                                + ".zip"
+                            )
+                            zip_filepath = os.path.join(_TASK_FOLDER, zip_filename)
+                            with zipfile.ZipFile(zip_filepath, "w") as zipf:
+                                # 將 best.pt 和 data_dict.json 壓縮
+                                zipf.write(
+                                    os.path.join(_TASK_FOLDER, "best.pt"),
+                                    arcname="best.pt",
+                                )
+                                zipf.write(
+                                    data_dict_file_path, arcname="data_dict.json"
+                                )
+
+                            # 將壓縮檔移動到專案資料夾\訓練結果
+                            project_zip_folder = os.path.join(project, "train_results")
+                            my.mkdir(project_zip_folder, mode=0o777, recursive=True)
+
+                            project_zip_path = os.path.join(
+                                project, "train_results", zip_filename
+                            )
+                            shutil.move(zip_filepath, project_zip_path)
+
+                            my.file_put_contents(
+                                _STATUS_FILE_LOG,
+                                f"壓縮完成，檔案已儲存至 {project_zip_path}\r\n",
+                                True,
+                            )
+
+                            # 製作 pt -> tflite 的轉檔
+                            _model = YOLO(os.path.join(_TASK_FOLDER, "best.pt"))
+                            my.file_put_contents(
+                                _STATUS_FILE_LOG, "開始轉檔 best.pt 為 tflite\r\n", True
+                            )
+                            my.file_put_contents(_STATUS_FILE_PROGRESS, str(98.87))
+                            # 轉檔為 tflite
+                            _model.export(
+                                format="tflite",
+                                #dynamic=True,  # 動態輸入大小
+                                simplify=True,  # 簡化模型
+                                optimize=True,  # 優化模型
+                                opset=8,  # 使用的 opset 版本
+                            )
 
                             # 程式結束-------------------------------------------------------------End
 

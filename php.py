@@ -167,6 +167,10 @@ class kit:
                 return nowtime.strftime("%Y%m%d")
             elif args[0] == "Y/m/d H:i:s":
                 return nowtime.strftime("%Y/%m/%d %H:%M:%S")
+            elif args[0] == "Y_m_d_H_i_s":
+                return nowtime.strftime("%Y_%m_%d_%H_%M_%S")
+            elif args[0] == "Y_m_d_H_i":
+                return nowtime.strftime("%Y_%m_%d_%H_%M")
             elif args[0] == "Y/m/d":
                 return nowtime.strftime("%Y/%m/%d")
             else:

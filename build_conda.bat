@@ -8,7 +8,6 @@ C:\Windows\System32\chcp.com 65001 && set PYTHONIOENCODING=utf-8 && conda run --
 --exclude-module=_lzma ^
 --exclude-module=pyconfig ^
 --exclude-module=pytorch ^
---exclude-module=torch ^
 --exclude-module=sqlite3 ^
 --exclude-module=pandas ^
 --exclude-module=IPython ^
@@ -16,7 +15,6 @@ C:\Windows\System32\chcp.com 65001 && set PYTHONIOENCODING=utf-8 && conda run --
 --exclude-module=pygments ^
 --exclude-module=pyinstaller ^
 --exclude-module=tensorflow ^
---exclude-module=unittest ^
 --exclude-module=doctest ^
 --exclude-module=pillow ^
 --exclude-module=av ^
@@ -25,3 +23,5 @@ C:\Windows\System32\chcp.com 65001 && set PYTHONIOENCODING=utf-8 && conda run --
 my_yolo_train_tool.py
 
 rem --exclude-module=PIL ^
+rem --exclude-module=unittest ^
+rem --exclude-module=torch ^

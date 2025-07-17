@@ -97,6 +97,9 @@
             padding: 8px;
             font-size: 24px;
         }
+
+        .divChartClass {
+        }
     </style>
 </head>
 <body class="container mt-5">
@@ -123,7 +126,26 @@
     </div>
     <br />
     <!-- 畫布 -->
-    <div id="chart" style="width: 100%; height: 500px; display:none;border:1px solid #00f;"></div>
+    <div class="divChartClass">
+        <div id="chart" style="width: 100%; height: 500px; display:none;border:1px solid #00f;"></div>
+        <pre>
+        ✅ 1. Train box loss（訓練框損失）
+        意思：模型在訓練時預測的邊界框（bounding box）和實際框之間的誤差。
+        評估什麼：位置、大小的精確度。
+        常用損失函數：CIoU、DIoU、GIoU、IoU 等。
+        數值越低越好，代表預測框越接近真實框。
+
+        ✅ 2. Val box loss（驗證框損失）
+        意思：模型在驗證資料集上預測框的誤差（與訓練 box loss 同樣道理，但是在驗證集上算）。
+        用途：判斷是否過擬合。
+        如果訓練 loss ↓ 但 val loss ↑，可能過擬合。
+
+        ✅ 3. mAP@0.5（mean Average Precision @ IoU=0.5）
+        意思：平均精度（AP）的加權平均，判斷模型預測準不準。
+        @0.5 的意思是 IoU ≥ 0.5 才算正確預測
+        IoU（Intersection over Union）是預測框與真實框的交集除以聯集，0.5 代表至少有 50% 重疊。
+        </pre>
+    </div>
     <br />
     <!-- 訓練項目 index -->
     <div reqc="divKinds_outer">
@@ -228,7 +250,8 @@
                     if (jd['status'] == 'OK') {
                         var status_progress = parseFloat(jd.data['status_progress']).toFixed(2);
                         var jd_job = json_decode(jd['data']['job'], true);
-                        if (jd['data']['train_results'] != "") {
+                        if (jd['data']['train_results'] != "")
+                        {
                             // 從 csv 內容解算進度
                             // 從 jobs 取出 epoch 總數
 
@@ -249,7 +272,7 @@
                             }
                             // result to txt
                             // 內容移除 train_get_task_status 有關的
-                            var _m = explode("\n", jd['data']['status_yolo_log']);
+                            var _m = explode("\n", jd['data']['status_log'] + "\n" + jd['data']['status_yolo_log']);
                             var _mm = [];
                             _m.map(function (v) {
                                 if (is_string_like(v, "%train_get_task_status%")) {
@@ -278,7 +301,7 @@
                             $("textarea[reqc='txtHistory']").val(mmstr);
                             // 是否自動捲動
                             if ($("input[reqc='chkAutoScroll']").prop("checked")) {
-                                $("textarea[reqc='txtHistory']").scrollTop = 99999999999;
+                                $("textarea[reqc='txtHistory']").scrollTop(99999999999);
                             }
 
 
