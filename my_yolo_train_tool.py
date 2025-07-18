@@ -12,10 +12,13 @@ from tkinter import Label, Tk, StringVar
 import threading
 import torch
 import os
-#os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
+# os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 print("CUDA 是否可用:", torch.cuda.is_available())
 print("可用 GPU 數量:", torch.cuda.device_count())
-print("GPU 名稱:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "N/A")
+print(
+    "GPU 名稱:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "N/A"
+)
 
 import webbrowser
 import sys
@@ -1892,6 +1895,9 @@ def run_flask():
                 batch = POSTS["batch"]  # 批次大小
                 learning_rate = POSTS["learning_rate"]  # 學習率
                 optimizer = POSTS["optimizer"]  # 優化器
+                _model = POSTS["model"]  # 模型名稱
+                use_early_stopping = POSTS["use_early_stopping"]  # 是否使用早停法                
+                patience = POSTS["patience"]  # 早停法的耐心值
 
                 _PD = os.getcwd()
                 _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
@@ -1920,8 +1926,11 @@ def run_flask():
                     "batch": batch,
                     "learning_rate": learning_rate,
                     "optimizer": optimizer,
+                    "model": _model,
+                    "use_early_stopping": use_early_stopping,
+                    "patience": patience
                 }
-                
+
                 _TASK_FOLDER = os.path.join(_TRAIN_FOLDER, task_folder)
                 if not my.is_dir(_TASK_FOLDER):
                     my.mkdir(_TASK_FOLDER)
@@ -2045,7 +2054,7 @@ def run_flask():
                     # 刪除資料夾
                     my.deltree(runs_train_folder)
                 # 建立新的任務資料夾
-                #if my.is_dir(runs_train_folder) == False:
+                # if my.is_dir(runs_train_folder) == False:
                 #    my.mkdir(_TASK_FOLDER)
                 #    os.chmod(_TASK_FOLDER, 0o777)  # 0o777
 
@@ -2122,7 +2131,7 @@ def reset_train_project_status():
                         # 刪除資料夾
                         my.deltree(runs_train_folder)
                     # 建立新的任務資料夾
-                    #if my.is_dir(runs_train_folder) == False:
+                    # if my.is_dir(runs_train_folder) == False:
                     #    my.mkdir(_TASK_FOLDER, mode=0o777, recursive=True)
                     #    #os.chmod(_TASK_FOLDER, 0o777)  # 0o777
 
@@ -2481,36 +2490,32 @@ names_cht: {m_names_cht}
                             )
 
                             # 產出 train_config.json
-                            # 範例
-                            """
-                            {
-                                    "data_yaml": "data.yaml",
-                                    "model_arch": "yolov11n.pt",
-                                    "opt_epoch_times": 11,
-                                    "opt_batch_size": 10,
-                                    "opt_learning_rate": 0.005,
-                                    "opt_optimizer": "Adam",
-                                    "opt_use_augment": 1,
-                                    "opt_use_early_stopping": 1,
-                                    "opt_imgsz": 640      
-                                }
-                            """
                             _PD = os.getcwd()
                             train_config = {
                                 "data_yaml": yaml_file_path,  # "data.yaml",
                                 "model_arch": os.path.join(
-                                    _PD, "example_pt", "yolo11n.pt"
+                                    _PD, "example_pt", "yolov8n.pt"
                                 ),  # 預設模型
                                 "opt_epoch_times": 10,  # 預設訓練次數
                                 "opt_batch_size": 10,  # 預設批次大小
-                                "opt_learning_rate": 0.01,  # 預設學習率
+                                "opt_learning_rate": 0.001,  # 預設學習率
                                 "opt_optimizer": "Adam",  # 預設優化器
                                 "opt_use_augment": 1,  # 是否使用增強，1 是，0 否
                                 "opt_use_early_stopping": 1,  # 是否使用早停，1 是，0 否
                                 "opt_imgsz": 640,  # 圖片大小
+                                "opt_patience": 10,  # 早停的耐心次數
+                                "opt_weight_decay": 0.0005,
+                                "opt_imgsz_rect": True,  # 是否使用矩形圖片大小
                             }
 
                             # 從 job.txt 讀取設定
+                            # model
+                            if "model" in o:
+                                if o["model"] == "None":
+                                    train_config["model_arch"] = None
+                                else:
+                                    train_config["model_arch"] = str(o["model"])
+
                             if "epoch" in o:
                                 train_config["opt_epoch_times"] = int(o["epoch"])
                             if "imgz" in o:
@@ -2523,6 +2528,14 @@ names_cht: {m_names_cht}
                                 )
                             if "optimizer" in o:
                                 train_config["opt_optimizer"] = str(o["optimizer"])
+                            if "use_augment" in o:
+                                train_config["opt_use_augment"] = int(o["use_augment"])
+                            if "use_early_stopping" in o:
+                                train_config["opt_use_early_stopping"] = int(
+                                    o["use_early_stopping"]
+                                )
+                            if "patience" in o:
+                                train_config["opt_patience"] = int(o["patience"])
 
                             train_config_file_path = os.path.join(
                                 _TASK_FOLDER, "train_config.json"
@@ -2541,21 +2554,29 @@ names_cht: {m_names_cht}
                             train_args = {
                                 "workers": 0,
                                 "device": 0,  # 使用第一個 GPU
+                                "model": cfg["model_arch"],
                                 "data": cfg["data_yaml"],
                                 "epochs": cfg["opt_epoch_times"],
                                 "batch": cfg.get("opt_batch_size", 8),
                                 "imgsz": cfg.get("opt_imgsz", 640),
                                 "lr0": cfg.get("opt_learning_rate", 0.01),
                                 "optimizer": cfg.get("opt_optimizer", "Adam"),
-                                "augment": bool(cfg.get("opt_use_augment", 1)),
-                                "patience": (
-                                    20 if cfg.get("opt_use_early_stopping", 1) else 0
-                                ),
+                                "augment": bool(cfg.get("opt_use_augment", 1)),                                
+                                "patience": cfg.get("opt_patience", 10),
                                 "project": os.path.join(_TASK_FOLDER, "runs/train"),
                                 "name": "output",
                                 "verbose": True,
                                 "pretrained": True,
+                                "rect": cfg.get(
+                                    "opt_imgsz_rect", True
+                                ),  # 是否使用矩形圖片大小
+                                "save_period": 5,  # 每個 epoch 保存一次
                             }
+                            # 如果有 early_stopping，則 patience 改 0
+                            if str(cfg.get("opt_use_early_stopping", 1)) == "0":
+                                train_args["patience"] = "0"                            
+
+
                             print("🔧 訓練參數：", flush=True)
                             for key, value in train_args.items():
                                 print(f"  {key}: {value}", flush=True)
@@ -2587,6 +2608,12 @@ names_cht: {m_names_cht}
                                 def write(self, message):
                                     if message.strip():
                                         self.logger_func(message.strip())
+                                        # 直接寫我的
+                                        my.file_put_contents(
+                                            _STATUS_FILE_LOG,
+                                            message.strip() + "\r\n",
+                                            True,
+                                        )
                                     if self.stdout:
                                         self.stdout.write(message)
                                         self.stdout.flush()
@@ -2614,7 +2641,12 @@ names_cht: {m_names_cht}
                             # 命名為 project_name_task_name.zip
                             # zip 最後放到 project_name 資料夾下
                             best_model_path = os.path.join(
-                                _TASK_FOLDER, "runs", "train", "output", "weights", "best.pt"
+                                _TASK_FOLDER,
+                                "runs",
+                                "train",
+                                "output",
+                                "weights",
+                                "best.pt",
                             )
                             if my.is_file(best_model_path):
                                 shutil.copy(
@@ -2670,19 +2702,19 @@ names_cht: {m_names_cht}
                             )
 
                             # 製作 pt -> tflite 的轉檔
-                            _model = YOLO(os.path.join(_TASK_FOLDER, "best.pt"))
-                            my.file_put_contents(
-                                _STATUS_FILE_LOG, "開始轉檔 best.pt 為 tflite\r\n", True
-                            )
-                            my.file_put_contents(_STATUS_FILE_PROGRESS, str(98.87))
+                            #_model = YOLO(os.path.join(_TASK_FOLDER, "best.pt"))
+                            #my.file_put_contents(
+                            #    _STATUS_FILE_LOG, "開始轉檔 best.pt 為 tflite\r\n", True
+                            #)
+                            #my.file_put_contents(_STATUS_FILE_PROGRESS, str(98.87))
                             # 轉檔為 tflite
-                            _model.export(
-                                format="tflite",
-                                #dynamic=True,  # 動態輸入大小
-                                simplify=True,  # 簡化模型
-                                optimize=True,  # 優化模型
-                                opset=8,  # 使用的 opset 版本
-                            )
+                            #_model.export(
+                            #    format="tflite",
+                            #    # dynamic=True,  # 動態輸入大小
+                            #    simplify=True,  # 簡化模型
+                            #    optimize=True,  # 優化模型
+                            #    opset=8,  # 使用的 opset 版本
+                            #)
 
                             # 程式結束-------------------------------------------------------------End
 

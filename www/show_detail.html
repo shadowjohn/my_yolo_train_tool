@@ -272,7 +272,8 @@
                             }
                             // result to txt
                             // 內容移除 train_get_task_status 有關的
-                            var _m = explode("\n", jd['data']['status_log'] + "\n" + jd['data']['status_yolo_log']);
+                            //  + "\n" + jd['data']['status_yolo_log']
+                            var _m = explode("\n", jd['data']['status_log']);
                             var _mm = [];
                             _m.map(function (v) {
                                 if (is_string_like(v, "%train_get_task_status%")) {
@@ -334,13 +335,20 @@
 
                         // 訓練項目
                         if ($("div[reqc='divMetainfo_outer']").text().trim() == "") {
+                            if (jd_job['use_early_stopping'].toString() == "0") {
+                                jd_job['patience'] = "--";
+                            }
                             var str = `
                                 <ul>
+                                    <li><span class="spanMetaTitle">模型參的(model)：</span><span class="spanMetaValue">${jd_job['model']}</li>
                                     <li><span class="spanMetaTitle">圖片大小(imgz)：</span><span class="spanMetaValue">${jd_job['imgz']}</li>
                                     <li><span class="spanMetaTitle">批次大小(batch)：</span><span class="spanMetaValue">${jd_job['batch']}</li>
                                     <li><span class="spanMetaTitle">訓練次數(epoch)：</span><span class="spanMetaValue">${jd_job['epoch']}</li>
                                     <li><span class="spanMetaTitle">優化器(optimizer)：</span><span class="spanMetaValue">${jd_job['optimizer']}</li>
+                                    <li><span class="spanMetaTitle">學習率(learning_rate)：</span><span class="spanMetaValue">${jd_job['learning_rate']}</li>
                                     <li><span class="spanMetaTitle">訓驗與驗證比例(train/val)：</span><span class="spanMetaValue">${jd_job['train_percent']} / ${jd_job['val_percent']}</li>
+                                    <li><span class="spanMetaTitle">使用早停機制(use_early_stopping)：</span><span class="spanMetaValue">${jd_job['use_early_stopping']}</li>
+                                    <li><span class="spanMetaTitle">早停的耐心次數(patience)：</span><span class="spanMetaValue">${jd_job['patience']}</li>
                                 </ul>
                             `;
                             $("div[reqc='divMetainfo_outer']").html(str);

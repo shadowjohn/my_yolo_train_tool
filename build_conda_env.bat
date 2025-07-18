@@ -17,6 +17,6 @@ call conda install -y pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorc
 call scripts\pip install ultralytics pywin32 keyboard flask
 rem call scripts\pip install pywin32 keyboard flask ultralytics==8.0.186 torch==2.0.1 torchvision==0.15.2 tensorflow==2.13.0 onnx==1.13.1 onnx2tf==1.22.0 opencv-python==4.8.0.76 h5py==3.10.0 flatbuffers==24.3.25
 rem call conda install -y tensorflow
-call scripts\pip install tensorflow-cpu==2.10.0
+rem call scripts\pip install tensorflow-cpu==2.10.0
 
 

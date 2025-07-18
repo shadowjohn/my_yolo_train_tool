@@ -70,11 +70,23 @@
         <span class="bold">訓練與驗證比例(訓練/驗證)：</span>
         <br />
         <select reqc="selTrainVal">
-            <option value="100/0" selected>100/0</option>
-            <option value="90/10">90/10</option>
+            <option value="100/0">100/0</option>
+            <option value="90/10" selected>90/10</option>
             <option value="80/20">80/20</option>
             <option value="70/30">70/30</option>
         </select>
+    </p>
+    <p>
+        <span class="bold">模型參照</span>
+        <br />
+        <select reqc="selModel">
+            <option value="None">None 無參照</option>
+            <option value="yolov8n" selected>yolov8n (6.24mb)</option>
+            <option value="yolo11n">yolo11n (5.35mb)</option>
+            <option value="yolo11x">yolo11x (109mb)</option>
+        </select>
+        <br />
+        <span class="bold">備註：Chatgpt 說建議可以用 yolov8n 就好</span>
     </p>
     <p>
         <span class="bold">圖片大小</span>
@@ -112,11 +124,12 @@
             <option value="0.04">0.04</option>
             <option value="0.03">0.03</option>
             <option value="0.02">0.02</option>
-            <option value="0.01" selected>0.01</option>
+            <option value="0.01">0.01</option>
+            <option value="0.001" selected>0.001</option>
             <option value="0.005">0.005</option>
         </select>
         <br />
-        <span class="bold">備註：學習率，建議 0.005~0.01，太大容易不收斂，太小訓練慢</span>
+        <span class="bold">備註：學習率，建議 0.001~0.01，太大容易不收斂，太小訓練慢</span>
     </p>
     <p>
         <span class="bold">optimizer 優化器</span>
@@ -141,6 +154,20 @@
             3. 中大型資料集：100~300 (電腦慢可能會跑數日)<br />
             4. 建議：先用 10~30，觀察 loss 曲線再調整<br />
         </span>
+    </p>
+    <p>
+        <span class="bold">Epoch 早停機制</span>
+        <br />
+        <label>
+            <input type="checkbox" class="big-checkbox" reqc="chk_use_early_stopping" checked /> 是否啟用早停機制
+        </label>
+        <br />
+        <label>早停的耐心次數</label>
+        <br />
+        <span reqc="span_patience">10</span>
+        <input type="range" min="1" max="300" value="10" reqc="inp_patience" style="width:500px;">
+        <br />
+        <span class="bold">備註：需比 Epoch 少</span>
     </p>
     <hr />
     <div align="right">
@@ -188,17 +215,29 @@
         $("span[reqc='span_epoch']").text($(this).val());
     });
 
+    // 操作 chk_patience
+    $("input[reqc='chk_patience']").off().bind("change", function () {
+        $("input[reqc='inp_patience']").prop("disabled", !$(this).prop("checked"));
+    });
+    // 操作 inp_patience
+    $("input[reqc='inp_patience']").off().bind("input", function () {
+        $("span[reqc='span_patience']").text($(this).val());
+    });
+
     // 按下開始訓練
     $("input[reqc='btnStart']").off().click(function () {
         var o = {
             "project_name": project_name,
             "train_val": $("select[reqc='selTrainVal']").val(),
             "kinds": $("select[reqc='selKinds']").val().join("|||3WA|||"),
+            "model": $("select[reqc='selModel']").val(),
             "imgz": $("select[reqc='selImgz']").val(),
             "batch": $("select[reqc='selBatch']").val(),
             "learning_rate": $("select[reqc='sel_learning_rate']").val(),
             "optimizer": $("select[reqc='sel_optimizer']").val(),
-            "epoch": $("input[reqc='inp_epoch']").val()
+            "epoch": $("input[reqc='inp_epoch']").val(),
+            "use_early_stopping": ($("input[reqc='chk_use_early_stopping']").prop("checked")) ? "1" : "0",
+            "patience": $("input[reqc='inp_patience']").val()
         };
         console.log(o);
         // kinds 不可為空
@@ -206,6 +245,11 @@
             smallComment("至少選擇一種類別訓練...", 2000, false, {});
             return;
         }
+        if (parseInt(o['patience']) > parseInt(o['epoch'])) {
+            smallComment("早停的耐心次數 不能大於 訓練次數...", 2000, false, {});
+            return;
+        }
+        $(this).prop("disabled", true);
         myAjax_async_json("/api?mode=train_add", o, function (jd) {
             if (jd['status'] == "OK") {
                 // 關 dialogMyBox
@@ -213,8 +257,8 @@
                 setTimeout(function () {
                     parent.dialogMyBoxOff();
                     // 外層重啟
-                    parent.window.reload();
-                }, 2500);
+                    parent.window.location.reload();
+                }, 500);
             }
         });
 
