@@ -192,7 +192,7 @@
                 var o = {
                     "project_name": project_name
                 };
-                myAjax_async_json("/api?mode=train_lists", o, function (jd) {
+                myAjax_async_json("/api?mode=train_lists", o, function (jd) {                    
                     jd.data.map(function (v, i) {
                         v.step = (i + 1);
                         v.sdt = date("Y-m-d H:i:s", end(explode("_", v.task_name)));
@@ -201,7 +201,7 @@
                         for (var k in ojob_data) {
                             v[k] = ojob_data[k];
                         }
-                        v.fake_train_percent_val_percent = `${v.train_percent} / ${v.val_percent}`;
+                        v.fake_train_percent_val_percent = `${v.train_percent} / ${v.val_percent}<br>${v.epoch}`;
                         var mkinds = explode("|||3WA|||", v.kinds);
                         var mt = [];
                         mkinds.map(function (mkv, mkvi) {
@@ -214,6 +214,7 @@
                         v.fake_kinds = `<span req_html="${html}" reqc="spanDetail" class="blue underline bold">${mkinds.length}</span>`;
                         v.fake_status = "";
                         v.fake_options = "";
+                        //v.sdt_timestamp = 
                         switch (v.status.toString()) {
                             case "0":
                                 v.fake_status = "待命中";
@@ -249,12 +250,16 @@
                                 `;
                                 break;
                         }
-
+                        v.sdt_timestamp = strtotime(v.sdt);
                     });
+                    // 排序，新的在上
+                    console.log("GGGGGGGGGGGGGGGGGGGGGGGGGGGG");
+                    console.log(jd.data);
+                    jd.data = array_sort(jd.data, "sdt_timestamp", "DESC");
                     //table = print_table(jd.data);
                     var table = print_table(jd.data,
                         "step,task_name,sdt,edt,fake_kinds,fake_train_percent_val_percent,fake_status,fake_options",
-                        "項次,任務名稱,建立時間,完成時間,類別總數,訓驗/驗證比例,狀態,功能",
+                        "項次,任務名稱,建立時間,完成時間,類別總數,訓驗/驗證比例<br>Epoch,狀態,功能",
                         "thetable taskTableClass");
                     $("div[reqc='divTrainLists']").html(table);
 

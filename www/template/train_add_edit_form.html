@@ -80,7 +80,7 @@
         <span class="bold">模型參照</span>
         <br />
         <select reqc="selModel">
-            <option value="None">None 無參照</option>
+            <!--<option value="None">None 無參照</option>-->
             <option value="yolov8n" selected>yolov8n (6.24mb)</option>
             <option value="yolo11n">yolo11n (5.35mb)</option>
             <option value="yolo11x">yolo11x (109mb)</option>
@@ -125,8 +125,8 @@
             <option value="0.03">0.03</option>
             <option value="0.02">0.02</option>
             <option value="0.01">0.01</option>
-            <option value="0.001" selected>0.001</option>
             <option value="0.005">0.005</option>
+            <option value="0.001" selected>0.001</option>
         </select>
         <br />
         <span class="bold">備註：學習率，建議 0.001~0.01，太大容易不收斂，太小訓練慢</span>
@@ -135,8 +135,14 @@
         <span class="bold">optimizer 優化器</span>
         <br />
         <select reqc="sel_optimizer">
-            <option value="SDG">SGD</option>
+            <option value="auto">Auto</option>
+            <option value="SGD">SGD</option>
             <option value="Adam" selected>Adam</option>
+            <option value="Adamax">Adamax</option>
+            <option value="NAdam">NAdam</option>
+            <option value="RMSProp">RMSProp</option>
+            <option value="AdamW">AdamW</option>
+            <option value="RAdam">RAdam</option>
         </select>
         <br />
         <span class="bold">備註：建議：Adam（收斂較快，適合大多數情境)</span>
@@ -255,9 +261,9 @@
                 // 關 dialogMyBox
                 smallComment("訓練已建立，請稍候...", 2000, false, {});
                 setTimeout(function () {
-                    parent.dialogMyBoxOff();
                     // 外層重啟
-                    parent.window.location.reload();
+                    parent.$("input[reqc='btnRefresh']").trigger("click");
+                    parent.dialogMyBoxOff();
                 }, 500);
             }
         });

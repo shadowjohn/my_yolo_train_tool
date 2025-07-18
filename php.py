@@ -209,7 +209,12 @@ class kit:
         import shutil
 
         shutil.copytree(source_dir, target_dir)
-
+    def filemtime(self, filename):
+        if self.is_file(filename):
+            import os
+            return int(os.path.getmtime(filename))
+        else:
+            return -1
     def utf8tobig5(self, data):
         return data.encode("big5")
 

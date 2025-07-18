@@ -794,3 +794,35 @@ function img_mouseover_show(dom, options = null) {
         return true;
     });
 }
+//以後排序用這支
+function array_sort(arr, field, order) {
+    var array = arr.slice();
+    //order = ='SORT_DESC'
+    if (order == null) {
+        order = 'ASC';
+    }
+    //From : https://davidwalsh.name/array-sort
+    return array.sort(function (obj1, obj2) {
+        // Ascending: first age less than the previous
+        switch (order) {
+            case 'ASC':
+            case 'SORT_ASC':
+                if (!isNaN(obj1[field]) && !isNaN(obj2[field])) {
+                    return obj1[field] - obj2[field];
+                }
+                else {
+                    return obj1[field].replace("一", "1").replace("二", "2").replace("三", "3").replace("四", "4").replace("五", "5").replace("六", "6").replace("七", "7").replace("八", "8").replace("九", "9").localeCompare(obj2[field].replace("一", "1").replace("二", "2").replace("三", "3").replace("四", "4").replace("五", "5").replace("六", "6").replace("七", "7").replace("八", "8").replace("九", "9"), "zh-Hant");
+                }
+                break;
+            case 'DESC':
+            case 'SORT_DESC':
+                if (!isNaN(obj1[field]) && !isNaN(obj2[field])) {
+                    return obj2[field] - obj1[field];
+                }
+                else {
+                    return obj2[field].replace("一", "1").replace("二", "2").replace("三", "3").replace("四", "4").replace("五", "5").replace("六", "6").replace("七", "7").replace("八", "8").replace("九", "9").localeCompare(obj1[field].replace("一", "1").replace("二", "2").replace("三", "3").replace("四", "4").replace("五", "5").replace("六", "6").replace("七", "7").replace("八", "8").replace("九", "9"), "zh-Hant");
+                }
+                break;
+        }
+    });
+}

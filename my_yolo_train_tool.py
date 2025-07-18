@@ -1896,7 +1896,7 @@ def run_flask():
                 learning_rate = POSTS["learning_rate"]  # 學習率
                 optimizer = POSTS["optimizer"]  # 優化器
                 _model = POSTS["model"]  # 模型名稱
-                use_early_stopping = POSTS["use_early_stopping"]  # 是否使用早停法                
+                use_early_stopping = POSTS["use_early_stopping"]  # 是否使用早停法
                 patience = POSTS["patience"]  # 早停法的耐心值
 
                 _PD = os.getcwd()
@@ -1913,7 +1913,8 @@ def run_flask():
                     return jsonify({"status": "NO", "reason": "請輸入訓練與驗證比例"})
                 # o 要寫存入 job.txt
                 # 任務的資料夾
-                task_folder = "task_" + str(my.time())
+                dt_datetime = str(my.time()) # 取得當前時間戳
+                task_folder = "task_" + dt_datetime
                 o = {
                     "project_name": project_name,
                     "task_name": task_folder,  # 任務名稱"
@@ -1928,7 +1929,8 @@ def run_flask():
                     "optimizer": optimizer,
                     "model": _model,
                     "use_early_stopping": use_early_stopping,
-                    "patience": patience
+                    "patience": patience,
+                    "create_datetime": my.date("Y-m-d H:i:s",dt_datetime)
                 }
 
                 _TASK_FOLDER = os.path.join(_TRAIN_FOLDER, task_folder)
@@ -1937,7 +1939,7 @@ def run_flask():
                     os.chmod(_TASK_FOLDER, 0o777)
                 # 寫入 job.txt
                 job_txt_path = os.path.join(_TASK_FOLDER, "job.txt")
-                my.file_put_contents(job_txt_path, my.json_encode(o))
+                my.file_put_contents(job_txt_path, my.json_encode_utf8(o))
                 os.chmod(job_txt_path, 0o777)
 
                 # 寫入待處理 status.txt 內容 0
@@ -2031,7 +2033,14 @@ def run_flask():
                         if img.lower().endswith((".jpg", ".png"))
                     ]
                     o["imgs"] = output_images
-
+                o["end_datetime"] = ""
+                # 如果有結束時間，則取結束時間
+                sdt = my.explode("_",my.basename(_TASK_FOLDER))[1]
+                o["start_datetime"] = my.date("Y-m-d H:i:s",int(sdt))
+                o["during_time"] = int(my.time())-int(sdt)
+                if my.is_file(status_log_txt_path):
+                    o["end_datetime"] = my.date("Y-m-d H:i:s",my.filemtime(status_log_txt_path))
+                    o["during_time"] = int(my.strtotime(o["end_datetime"])) - int(sdt)
                 return jsonify(
                     {
                         "status": "OK",
@@ -2561,7 +2570,7 @@ names_cht: {m_names_cht}
                                 "imgsz": cfg.get("opt_imgsz", 640),
                                 "lr0": cfg.get("opt_learning_rate", 0.01),
                                 "optimizer": cfg.get("opt_optimizer", "Adam"),
-                                "augment": bool(cfg.get("opt_use_augment", 1)),                                
+                                "augment": bool(cfg.get("opt_use_augment", 1)),
                                 "patience": cfg.get("opt_patience", 10),
                                 "project": os.path.join(_TASK_FOLDER, "runs/train"),
                                 "name": "output",
@@ -2570,12 +2579,11 @@ names_cht: {m_names_cht}
                                 "rect": cfg.get(
                                     "opt_imgsz_rect", True
                                 ),  # 是否使用矩形圖片大小
-                                "save_period": 5,  # 每個 epoch 保存一次
+                                #"save_period": 5,  # 每個 epoch 保存一次
                             }
                             # 如果有 early_stopping，則 patience 改 0
                             if str(cfg.get("opt_use_early_stopping", 1)) == "0":
-                                train_args["patience"] = "0"                            
-
+                                train_args["patience"] = 0
 
                             print("🔧 訓練參數：", flush=True)
                             for key, value in train_args.items():
@@ -2622,8 +2630,20 @@ names_cht: {m_names_cht}
                                     if self.stdout:
                                         self.stdout.flush()
 
+                            # 印出訓練參數到 stdout
+                            print("訓練參數：", flush=True)
+                            for key, value in train_args.items():
+                                print(f"  {key}: {value}", flush=True)
+
                             sys.stdout = StreamToLogger(logging.info)
                             sys.stderr = StreamToLogger(logging.error)
+
+                            # 寫入執行參數到 log
+                            my.file_put_contents(
+                                _STATUS_FILE_LOG,
+                                "訓練參數：\r\n" + my.json_encode(train_args) + "\r\n",
+                                True,
+                            )
 
                             model.train(**train_args)
                             print("✅ 訓練完成。", flush=True)
@@ -2702,19 +2722,19 @@ names_cht: {m_names_cht}
                             )
 
                             # 製作 pt -> tflite 的轉檔
-                            #_model = YOLO(os.path.join(_TASK_FOLDER, "best.pt"))
-                            #my.file_put_contents(
+                            # _model = YOLO(os.path.join(_TASK_FOLDER, "best.pt"))
+                            # my.file_put_contents(
                             #    _STATUS_FILE_LOG, "開始轉檔 best.pt 為 tflite\r\n", True
-                            #)
-                            #my.file_put_contents(_STATUS_FILE_PROGRESS, str(98.87))
+                            # )
+                            # my.file_put_contents(_STATUS_FILE_PROGRESS, str(98.87))
                             # 轉檔為 tflite
-                            #_model.export(
+                            # _model.export(
                             #    format="tflite",
                             #    # dynamic=True,  # 動態輸入大小
                             #    simplify=True,  # 簡化模型
                             #    optimize=True,  # 優化模型
                             #    opset=8,  # 使用的 opset 版本
-                            #)
+                            # )
 
                             # 程式結束-------------------------------------------------------------End
 

@@ -250,8 +250,7 @@
                     if (jd['status'] == 'OK') {
                         var status_progress = parseFloat(jd.data['status_progress']).toFixed(2);
                         var jd_job = json_decode(jd['data']['job'], true);
-                        if (jd['data']['train_results'] != "")
-                        {
+                        if (jd['data']['train_results'] != "") {
                             // 從 csv 內容解算進度
                             // 從 jobs 取出 epoch 總數
 
@@ -266,7 +265,9 @@
                                 // 進度轉換
                                 now_epoch_step = m_csv_last[0];
                                 if (now_epoch_step != user_defind_epoch) {
-                                    status_progress = arduino_map(parseFloat(m_csv_last[0]), 1.0, user_defind_epoch, 50.0, 95.0);
+                                    if (jd['data']['status'].toString() == "1") {
+                                        status_progress = arduino_map(parseFloat(m_csv_last[0]), 1.0, user_defind_epoch, 50.0, 95.0);
+                                    }
                                 }
                                 // 一樣代表已最後一筆或完成，照原進度走
                             }
@@ -308,12 +309,12 @@
 
                             // 可以畫圖表
                             var csvArr = csvtoarray(jd['data']['train_results'], ",", true);
-                            console.log(csvArr);
+                            //console.log(csvArr);
                             $("#chart").fadeIn();
                             app.method.drawChart(csvArr);
                         }
                         jd.data.imgs.map(function (v) {
-                            console.log(v);
+                            //console.log(v);
                             //name : "val_batch2_pred.jpg"
                             //path : "C:\\Users\\johnho\\Desktop\\my_yolo_train_tool\\data\\projects\\三國迷因\\train_project\\task_1752655939\\runs\\train\\output\\val_batch2_pred.jpg"
                             v.imgPath = `/data/projects/${app.item.project_name}/train_project/${app.item.task_name}/runs/train/output/${v.name}`;
@@ -335,12 +336,18 @@
 
                         // 訓練項目
                         if ($("div[reqc='divMetainfo_outer']").text().trim() == "") {
+                            console.log(jd_job);
+                            if (jd_job['use_early_stopping'] == null) {
+                                jd_job['use_early_stopping'] = "1";
+                                jd_job['patience'] = 10;
+                                jd_job['model'] = "None";
+                            }
                             if (jd_job['use_early_stopping'].toString() == "0") {
                                 jd_job['patience'] = "--";
                             }
                             var str = `
                                 <ul>
-                                    <li><span class="spanMetaTitle">模型參的(model)：</span><span class="spanMetaValue">${jd_job['model']}</li>
+                                    <li><span class="spanMetaTitle">模型參照(model)：</span><span class="spanMetaValue">${jd_job['model']}</li>
                                     <li><span class="spanMetaTitle">圖片大小(imgz)：</span><span class="spanMetaValue">${jd_job['imgz']}</li>
                                     <li><span class="spanMetaTitle">批次大小(batch)：</span><span class="spanMetaValue">${jd_job['batch']}</li>
                                     <li><span class="spanMetaTitle">訓練次數(epoch)：</span><span class="spanMetaValue">${jd_job['epoch']}</li>
@@ -349,6 +356,9 @@
                                     <li><span class="spanMetaTitle">訓驗與驗證比例(train/val)：</span><span class="spanMetaValue">${jd_job['train_percent']} / ${jd_job['val_percent']}</li>
                                     <li><span class="spanMetaTitle">使用早停機制(use_early_stopping)：</span><span class="spanMetaValue">${jd_job['use_early_stopping']}</li>
                                     <li><span class="spanMetaTitle">早停的耐心次數(patience)：</span><span class="spanMetaValue">${jd_job['patience']}</li>
+                                    <li><span class="spanMetaTitle">開始時間(create_datetime)：</span><span class="spanMetaValue">${jd_job['create_datetime']}</li>
+                                    <li><span class="spanMetaTitle">經過時間(秒)：</span><span class="spanMetaValue" reqc="span_metatitle_during_time">${jd['data']['during_time']}</li>
+                                    <li class="none"><span class="spanMetaTitle">結束時間(end_datetime)：</span><span class="spanMetaValue" reqc="span_metatitle_end_datetime">${jd['data']['end_datetime']}</li>
                                 </ul>
                             `;
                             $("div[reqc='divMetainfo_outer']").html(str);
@@ -364,13 +374,18 @@
                         }
 
 
-                        console.log(status_progress);
+                        //console.log(status_progress);
                         status_progress = sprintf("%.2f", status_progress);
                         $(`span[reqc='progressPercent']`).text(status_progress + " %");
                         $("progress[reqc='theprogress']").val(status_progress);
 
+                        // 更新時間
+                        $("span[reqc='span_metatitle_during_time']").text(jd['data']['during_time']);
+
                         if (status_progress >= 100) {
-                            return;
+                            //return;
+                            // 結束時間才show
+                            $("span[reqc='span_metatitle_end_datetime']").closest("li").removeClass("none");
                         }
                         (function (_jd) {
                             setTimeout(function () {
