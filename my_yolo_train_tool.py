@@ -2514,7 +2514,7 @@ names_cht: {m_names_cht}
                                 "opt_imgsz": 640,  # 圖片大小
                                 "opt_patience": 10,  # 早停的耐心次數
                                 "opt_weight_decay": 0.0005,
-                                "opt_imgsz_rect": True,  # 是否使用矩形圖片大小
+                                "opt_imgsz_rect": False,  # 是否使用矩形圖片大小
                             }
 
                             # 從 job.txt 讀取設定
@@ -2577,7 +2577,7 @@ names_cht: {m_names_cht}
                                 "verbose": True,
                                 "pretrained": True,
                                 "rect": cfg.get(
-                                    "opt_imgsz_rect", True
+                                    "opt_imgsz_rect", False
                                 ),  # 是否使用矩形圖片大小
                                 #"save_period": 5,  # 每個 epoch 保存一次
                             }
