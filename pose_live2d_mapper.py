@@ -42,7 +42,7 @@ def build_motion3(live2d_params):
     total_segments = 0
     total_points = 0
     for param in live2d_params.get("parameters", []):
-        if not param.get("keys"):
+        if len(param.get("keys", [])) < 2:
             continue
         segments = []
         first = True

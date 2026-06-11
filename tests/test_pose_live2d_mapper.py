@@ -49,6 +49,18 @@ class Live2DMapperTests(unittest.TestCase):
         self.assertEqual(motion["Meta"]["TotalPointCount"], 0)
         self.assertEqual(motion["Curves"], [])
 
+    def test_build_motion3_skips_single_key_parameter_curves(self):
+        motion = build_motion3({
+            "version": 1,
+            "fps": 30,
+            "duration_ms": 0,
+            "parameters": [
+                {"id": "ParamBodyAngleX", "keys": [{"time_ms": 0, "value": 1.0}]},
+            ],
+        })
+        self.assertEqual(motion["Meta"]["CurveCount"], 0)
+        self.assertEqual(motion["Curves"], [])
+
     def test_build_live2d_params_supports_custom_source_name(self):
         params = build_live2d_params(
             self.sample_pose_record(),
