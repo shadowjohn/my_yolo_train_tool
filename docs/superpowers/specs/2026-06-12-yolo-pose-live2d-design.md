@@ -8,6 +8,7 @@ Add a motion workflow to `my_yolo_train_tool`:
 2. **A2: Screen ROI Pose Recorder** records a selected screen region, draws a live skeleton canvas/overlay when a person appears, and writes a clean skeleton time-series JSON.
 3. **B: Live2D Motion Mapper** reads the Stage A JSON and converts body rhythm into Live2D-friendly parameter curves, with `.motion3.json` export as the practical target.
 4. **C: Live2D Desktop Dancer** opens a desktop Live2D character, lets the user choose a recorded dance JSON/motion file, and experimentally applies the motion.
+5. **D: Face CopyCat** tracks a face from the same desktop ROI or a face-specific ROI, records facial expression time-series data, and maps expressions/head pose to Live2D face parameters.
 
 The first implementation should prioritize repeatable capture, inspectable data, and fast validation over perfect character retargeting. The broader product direction is an action library: dance moves first, then reusable daily motions such as drinking coffee, elegant coffee sip, shrug smile, and stretching.
 
@@ -21,6 +22,7 @@ The existing tool already has the core primitives needed for Stage A:
 - transparent overlay rendering through `OverlayWindow`.
 - project-scoped storage under `data/projects/{project_name}/`.
 - FastAPI and static Web UI for later review/preview screens.
+- Python/OpenCV/mss frame handling that can feed MediaPipe Face Landmarker without moving capture work into the browser.
 
 Stage A should reuse these patterns and avoid replacing the existing detection or training flows.
 
@@ -33,6 +35,9 @@ Implementation must keep a separate `pose_model_file` / `pose_model` and must no
 - Live2D Cubism can import/export `.motion3.json`; frame rate alignment matters when importing motion data.
 - Live2D SDK has consistency checks for `.motion3.json`, so exported files should stay simple and conservative at first.
 - YouTube URL mode must be limited to user-owned, licensed, or otherwise authorized videos. The tool must not bypass DRM, paywalls, login-only content, or access controls. If a URL cannot be processed safely, the UI should tell the user to use screen ROI recording or a local authorized video file instead.
+- MediaPipe Face Landmarker can return face landmarks, facial expression blendshapes, and a facial transformation matrix. It supports video/live-stream modes with timestamps, which fits screen ROI recording.
+- The GitHub `face-tracking` topic has several candidates. OpenSeeFace is strong for VTuber-style CPU tracking and UDP integration, Jeeliz is strong for browser/WebGL face filters, and VTuber-Python-Unity is useful as a Live2D mapping reference. For this app, MediaPipe Face Landmarker should be the first backend because it stays inside the Python desktop capture pipeline and outputs blendshapes that map directly to Live2D.
+- KennardWang/VTuber-MomoseHiyori is a useful Live2D VTuber reference. It tracks and sends a compact control set: head roll/pitch/yaw, left/right eye openness, eyeball X/Y, left/right eyebrow, mouth width, and mouth open. It also documents why calibration often needs linear, discrete, or piecewise mapping instead of directly applying raw face ratios.
 
 ## Stage A: Pose Extraction
 
@@ -297,6 +302,7 @@ The first version does not need perfect full-body dance. It should prove that a 
 - body bounce;
 - left/right arm rhythm if the model has compatible custom parameters;
 - mouth or message bubble when asking the user to choose a dance.
+- optional face parameter overlay from Stage D when a face record or live copycat stream is enabled.
 
 ### Live2D Integration Style
 
@@ -318,6 +324,108 @@ Parameter overrides must be reapplied during the Live2D model update loop becaus
 
 If no Live2D assets exist in this repository, first implementation may create the control page and loader contract, then require adding model/runtime assets before full playback verification.
 
+## Stage D: Face CopyCat
+
+### Recommended Backend
+
+Use **MediaPipe Face Landmarker** as the first implementation backend.
+
+Reasons:
+
+- It is Python-friendly and can consume the same OpenCV/mss frames as A2.
+- It returns 478 face landmarks, 52 blendshape scores, and a facial transform matrix, which is exactly the data shape needed for Live2D expression/head-pose mapping.
+- It supports live-stream processing with timestamps, so the UI can keep recording while inference skips frames if the tracker is busy.
+- It avoids moving the first implementation into a browser camera stack.
+
+Keep **OpenSeeFace** as a later optional backend when the goal becomes a VTuber-style tracker process with UDP, CPU robustness, calibration, or VTube Studio-like behavior. Use **Jeeliz** only if a pure web/browser face filter path becomes important. Use **VTuber-Python-Unity** and **VTuber-MomoseHiyori** as references for eye blink, iris/eyeball, mouth, calibration, and Live2D mapping concepts, not as main dependencies.
+
+### User Flow
+
+1. User clicks `表情 CopyCat`.
+2. Tool asks whether to use the current ROI or select a smaller face ROI.
+3. Tool captures frames from that ROI.
+4. MediaPipe Face Landmarker detects the primary face.
+5. The app writes `face_record.json` with timestamps, blendshapes, landmarks, and head transform data.
+6. The app maps face data to `live2d_face_params.json`.
+7. Live2D desktop character can load the face file or later receive live values to mirror the user's expression.
+
+### File Layout
+
+```text
+data/projects/{project_name}/face_record/record_{timestamp}/
+  face_record.json
+  live2d_face_params.json
+  preview.html
+```
+
+Stage D should also allow a dance `pose_record` folder to reference a face record later, so body dance and facial expression can be combined without forcing both to be captured at the same time.
+
+### Face JSON Contract
+
+```json
+{
+  "version": 1,
+  "created_at": "2026-06-12T00:00:00+08:00",
+  "project_name": "project",
+  "source": {
+    "type": "screen_roi",
+    "input_mode": "face_roi",
+    "roi": { "left": 0, "top": 0, "width": 640, "height": 480 },
+    "fps_target": 30,
+    "backend": "mediapipe_face_landmarker",
+    "model": "face_landmarker.task"
+  },
+  "frames": [
+    {
+      "frame_index": 0,
+      "time_ms": 0,
+      "face_detected": true,
+      "quality": { "blendshape_count": 52, "landmark_count": 478 },
+      "blendshapes": { "eyeBlinkLeft": 0.0, "eyeBlinkRight": 0.0, "jawOpen": 0.2 },
+      "head_pose": { "yaw": 0.0, "pitch": 0.0, "roll": 0.0 },
+      "facial_transformation_matrix": [1.0, 0.0, 0.0, 0.0],
+      "landmarks": [
+        { "x": 0.5, "y": 0.4, "z": -0.02 }
+      ]
+    }
+  ]
+}
+```
+
+The first implementation may store compact landmark arrays if JSON size becomes too large, but blendshapes and head pose must remain human-readable.
+
+### Live2D Face Mapping
+
+Write mapped values beside the face record:
+
+```text
+live2d_face_params.json
+```
+
+Recommended first mapping:
+
+| Face Source | Live2D Target |
+| --- | --- |
+| `eyeBlinkLeft` | `ParamEyeLOpen` inverted |
+| `eyeBlinkRight` | `ParamEyeROpen` inverted |
+| `jawOpen` | `ParamMouthOpenY` |
+| average `mouthSmileLeft` + `mouthSmileRight` | `ParamMouthForm` |
+| brow up/down blendshapes | `ParamBrowLY`, `ParamBrowRY` |
+| head yaw/pitch/roll | `ParamAngleX`, `ParamAngleY`, `ParamAngleZ` |
+| eye look blendshapes when stable | `ParamEyeBallX`, `ParamEyeBallY` |
+
+Because model parameter names vary, the mapper must use configurable parameter IDs. The defaults should match common Live2D/Cubism names but allow replacement later.
+
+MomoseHiyori's 11-control-value protocol is a good sanity target for the first practical Face CopyCat result: if our JSON can reliably drive head, eyes, brows, and mouth with those same conceptual controls, the Live2D side is on the right path even if exact parameter IDs differ by model.
+
+### Runtime Behavior
+
+- Default face FPS should be 15-30 FPS.
+- Use MediaPipe live-stream mode for live copycat and video mode for file processing.
+- If MediaPipe or `face_landmarker.task` is missing, show a clear UI message and keep the rest of A/B/C usable.
+- Face copycat and pose recording may run separately first. Running both at once is optional until the capture/inference budget is proven.
+- Live2D parameter overrides must be applied every animation frame, like body motion overrides, because model motions can reset parameters.
+
 ## Motion Library Direction
 
 Future action files should be organized as reusable motion assets:
@@ -327,6 +435,8 @@ data/projects/{project_name}/pose_record/{record_id}/
   pose_record.json
   live2d_params.json
   motion3.json
+  face_record.json
+  live2d_face_params.json
   action_meta.json
 ```
 
@@ -352,6 +462,7 @@ The first implementation only needs dance selection, but the storage should not 
 - If capture fails repeatedly, stop recording and write any usable partial data.
 - If YouTube URL processing fails or is not allowed, provide the screen ROI mode as the fastest fallback.
 - If Live2D assets are missing, keep B output valid and show that C requires model/runtime assets.
+- If MediaPipe or the face landmarker model is missing, show that Face CopyCat is unavailable and point to dependency setup.
 
 ## Performance Constraints
 
@@ -360,6 +471,7 @@ The first implementation only needs dance selection, but the storage should not 
 - Store pose data incrementally in memory and flush on stop for the first version.
 - Avoid retaining full raw frames in memory unless preview video generation needs them.
 - Use a small pose model first (`n` size) for interactive testing.
+- Store face landmarks/blendshapes instead of face images by default to reduce privacy and disk impact.
 
 ## Testing And Validation
 
@@ -373,6 +485,8 @@ Minimum validation:
 6. Smoke-test recording a short ROI clip and confirm live skeleton appears and `pose_record.json` has increasing `time_ms`.
 7. Smoke-test mapper output and confirm parameter values stay within configured clamps.
 8. Smoke-test Live2D desktop page loads or reports missing assets clearly.
+9. Unit-test face blendshape-to-Live2D mapping with synthetic blendshape values.
+10. Smoke-test face ROI capture and confirm `face_record.json` has increasing `time_ms` and readable blendshape keys.
 
 ## Out Of Scope For First Implementation
 
@@ -382,6 +496,8 @@ Minimum validation:
 - Physics baking.
 - Audio-driven lip-sync.
 - Training a custom pose model.
+- Full emotion classification beyond blendshape-driven expression copycat.
+- Multi-face expression mixing.
 - Downloading or archiving unauthorized third-party video content.
 - Bypassing YouTube DRM, login, paywall, or access controls.
 - Full production-quality Live2D retargeting.
@@ -392,6 +508,7 @@ Minimum validation:
 - Whether the pose model file should be bundled or selected manually.
 - Whether Stage B should expose mapping controls in Web UI immediately or start as a button/CLI-style backend action.
 - Whether Stage C should use a browser-served Live2D page first or a native desktop overlay wrapper.
+- Whether Face CopyCat should default to current ROI or ask for a separate smaller face ROI.
 
 Recommended defaults:
 
@@ -399,3 +516,4 @@ Recommended defaults:
 - Manual pose model path with a default `example_pt/yolo26n-pose.pt` or `example_pt/yolo11n-pose.pt`.
 - Start B as a backend converter triggered from the desktop tool or API; add a fuller mapping UI later.
 - Stage C starts as a locally served Live2D control page opened from the desktop app; native overlay polish can follow after motion playback is proven.
+- Face CopyCat starts with a separate face ROI option, because face tracking needs less screen area and lower inference cost than full-body pose.

@@ -2,25 +2,30 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build two Stage A pose input modes, shared pose JSON output, initial Live2D parameter mapping, and a desktop Live2D character launcher that can choose and try a recorded motion.
+**Goal:** Build two Stage A pose input modes, shared pose JSON output, initial Live2D body/face parameter mapping, a desktop Live2D character launcher, and a Face CopyCat path that can mirror desktop ROI facial expressions.
 
-**Architecture:** Add focused helper modules for pose geometry, JSON serialization, video/URL processing, and Live2D mapping. Keep `my_yolo_train_tool.py` as the tkinter/FastAPI integration shell, with separate `pose_model` state so existing object detection remains untouched. Use project-scoped output folders under `data/projects/{project}/pose_record/record_{timestamp}/`.
+**Architecture:** Add focused helper modules for pose geometry, face expression mapping, JSON serialization, video/URL processing, and Live2D mapping. Keep `my_yolo_train_tool.py` as the tkinter/FastAPI integration shell, with separate `pose_model` and `face_tracker` state so existing object detection remains untouched. Use project-scoped output folders under `data/projects/{project}/pose_record/record_{timestamp}/` and `data/projects/{project}/face_record/record_{timestamp}/`.
 
-**Tech Stack:** Python 3.12, tkinter, FastAPI, OpenCV, mss, Ultralytics YOLO pose, optional `yt-dlp`, local static HTML/JS for pose preview and Live2D v2 assets copied from `Z:\inc\javascript\live2d_demo`.
+**Tech Stack:** Python 3.12, tkinter, FastAPI, OpenCV, mss, Ultralytics YOLO pose, optional `yt-dlp`, optional `mediapipe` Face Landmarker, local static HTML/JS for pose/face preview and Live2D v2 assets copied from `Z:\inc\javascript\live2d_demo`.
 
 ---
 
 ## File Structure
 
 - Create `pose_motion_core.py`: COCO17 constants, bounded frame buffer, ROI normalization, geometry helpers, main dancer selection, JSON builders, HTML skeleton preview builder.
+- Create `face_motion_core.py`: face record JSON builder, blendshape-to-Live2D mapping, face parameter JSON builder.
+- Create `face_tracking_source.py`: optional MediaPipe Face Landmarker wrapper for ROI frames.
 - Create `pose_video_source.py`: authorized YouTube URL/local video frame extraction into the shared pose pipeline.
 - Create `pose_live2d_mapper.py`: converts `pose_record.json` into `live2d_params.json` and simple `.motion3.json`.
+- Reference KennardWang/VTuber-MomoseHiyori for the Face CopyCat control set: head roll/pitch/yaw, eye openness, eyeball X/Y, eyebrows, mouth width, and mouth open. Do not copy its dlib/FAN pipeline into this project.
+- Create `tests/__init__.py`: ensures local `tests` package wins over installed site-package `tests`.
 - Create `tests/test_pose_motion_core.py`: unit tests for core pose helpers.
+- Create `tests/test_face_motion_core.py`: unit tests for face mapping helpers.
 - Create `tests/test_pose_live2d_mapper.py`: unit tests for Stage B mapper.
-- Modify `requirements.txt`: add optional URL-mode dependency `yt-dlp`.
+- Modify `requirements.txt`: add optional URL-mode dependency `yt-dlp` and optional face dependency `mediapipe`.
 - Modify `my_yolo_train_tool.py`: add pose model state, tkinter buttons, screen ROI pose recording loop, URL prompt mode, Live2D launcher, and FastAPI pose endpoints.
 - Create `www/pose_record.html`: list pose records and open preview JSON/HTML.
-- Create `www/live2d_dancer.html`: local Live2D desktop dancer control page.
+- Create `www/live2d_dancer.html`: local Live2D desktop dancer control page with body and face parameter playback.
 - Copy required local Live2D assets from `Z:\inc\javascript\live2d_demo` into `www/live2d/` if the source exists.
 
 Do not stage unrelated generated files under `dist/`, `example_pt/`, `.superpowers/`, `.claude/`, or model binaries unless explicitly requested.
@@ -360,6 +365,40 @@ git -c gc.auto=0 commit -m "feat: add pose motion core helpers"
 ```
 
 Expected: commit only these two files.
+
+## Task 1A: Local Test Package Marker
+
+**Files:**
+- Create: `tests/__init__.py`
+
+- [ ] **Step 1: Write package marker**
+
+Create `tests/__init__.py`:
+
+```python
+"""Local test package for my_yolo_train_tool."""
+```
+
+- [ ] **Step 2: Run dotted unittest command**
+
+Run:
+
+```powershell
+python -m unittest tests.test_pose_motion_core -v
+```
+
+Expected: PASS. This prevents the installed `site-packages/tests` package from shadowing the local tests folder.
+
+- [ ] **Step 3: Commit scoped file**
+
+Run:
+
+```powershell
+git add -- tests/__init__.py
+git -c gc.auto=0 commit -m "test: make local tests package importable"
+```
+
+Expected: commit only `tests/__init__.py`.
 
 ## Task 2: Live2D Mapper Core
 
@@ -1147,7 +1186,550 @@ git -c gc.auto=0 commit -m "feat: add live2d dancer launcher"
 
 Expected: do not add `dist/`, `example_pt/`, `.superpowers/`, `.claude/`, or model binaries outside `www/live2d`.
 
-## Task 9: Final Verification and History
+## Task 9: Face CopyCat Core Mapping
+
+**Files:**
+- Create: `face_motion_core.py`
+- Create: `tests/test_face_motion_core.py`
+
+- [ ] **Step 1: Write failing tests for face record and Live2D mapping**
+
+Create `tests/test_face_motion_core.py`:
+
+```python
+import json
+import unittest
+
+from face_motion_core import (
+    build_face_frame,
+    build_face_record,
+    build_live2d_face_params,
+    matrix_to_euler_degrees,
+)
+
+
+class FaceMotionCoreTests(unittest.TestCase):
+    def test_build_face_frame_is_readable(self):
+        frame = build_face_frame(
+            frame_index=0,
+            time_ms=33,
+            blendshapes={"eyeBlinkLeft": 0.8, "eyeBlinkRight": 0.2, "jawOpen": 0.5},
+            landmarks=[{"x": 0.5, "y": 0.4, "z": -0.01}],
+            facial_transformation_matrix=[1.0, 0.0, 0.0, 0.0] * 4,
+        )
+        self.assertTrue(frame["face_detected"])
+        self.assertEqual(frame["quality"]["blendshape_count"], 3)
+        self.assertEqual(frame["quality"]["landmark_count"], 1)
+
+    def test_live2d_face_params_invert_eye_blink(self):
+        record = {
+            "version": 1,
+            "source": {"fps_target": 30},
+            "frames": [
+                build_face_frame(
+                    frame_index=0,
+                    time_ms=0,
+                    blendshapes={
+                        "eyeBlinkLeft": 1.0,
+                        "eyeBlinkRight": 0.0,
+                        "jawOpen": 0.25,
+                        "eyeLookUpLeft": 0.4,
+                        "eyeLookUpRight": 0.4,
+                    },
+                    landmarks=[],
+                    head_pose={"yaw": 10.0, "pitch": -5.0, "roll": 2.0},
+                )
+            ],
+        }
+        params = build_live2d_face_params(record)
+        by_id = {item["id"]: item for item in params["parameters"]}
+        self.assertEqual(by_id["ParamEyeLOpen"]["keys"][0]["value"], 0.0)
+        self.assertEqual(by_id["ParamEyeROpen"]["keys"][0]["value"], 1.0)
+        self.assertEqual(by_id["ParamMouthOpenY"]["keys"][0]["value"], 0.25)
+        self.assertEqual(by_id["ParamAngleX"]["keys"][0]["value"], 10.0)
+        self.assertGreater(by_id["ParamEyeBallY"]["keys"][0]["value"], 0.0)
+
+    def test_build_face_record_is_json_serializable(self):
+        frame = build_face_frame(
+            frame_index=0,
+            time_ms=0,
+            blendshapes={"mouthSmileLeft": 0.5, "mouthSmileRight": 0.5},
+            landmarks=[],
+        )
+        record = build_face_record(
+            project_name="demo",
+            source={"type": "screen_roi", "input_mode": "face_roi"},
+            roi={"left": 0, "top": 0, "width": 640, "height": 480},
+            fps_target=15,
+            backend="mediapipe_face_landmarker",
+            model_name="face_landmarker.task",
+            frames=[frame],
+        )
+        encoded = json.dumps(record, ensure_ascii=False)
+        self.assertIn("face_record", record["record_type"])
+        self.assertIn("mouthSmileLeft", encoded)
+
+    def test_matrix_to_euler_degrees_identity(self):
+        pose = matrix_to_euler_degrees([1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0])
+        self.assertAlmostEqual(pose["yaw"], 0.0, places=4)
+        self.assertAlmostEqual(pose["pitch"], 0.0, places=4)
+        self.assertAlmostEqual(pose["roll"], 0.0, places=4)
+
+
+if __name__ == "__main__":
+    unittest.main()
+```
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run:
+
+```powershell
+python -m unittest tests.test_face_motion_core -v
+```
+
+Expected: FAIL because `face_motion_core.py` does not exist.
+
+- [ ] **Step 3: Implement `face_motion_core.py`**
+
+Create `face_motion_core.py`:
+
+```python
+import datetime
+import json
+import math
+import os
+
+
+DEFAULT_FACE_MAPPING = [
+    {"id": "ParamEyeLOpen", "source": "eyeBlinkLeft", "scale": -1.0, "offset": 1.0, "clamp": [0.0, 1.0], "bucket": "blendshapes"},
+    {"id": "ParamEyeROpen", "source": "eyeBlinkRight", "scale": -1.0, "offset": 1.0, "clamp": [0.0, 1.0], "bucket": "blendshapes"},
+    {"id": "ParamEyeBallX", "source": {"positive": ["eyeLookOutRight", "eyeLookInLeft"], "negative": ["eyeLookOutLeft", "eyeLookInRight"]}, "scale": 1.0, "offset": 0.0, "clamp": [-1.0, 1.0], "bucket": "blendshapes"},
+    {"id": "ParamEyeBallY", "source": {"positive": ["eyeLookUpLeft", "eyeLookUpRight"], "negative": ["eyeLookDownLeft", "eyeLookDownRight"]}, "scale": 1.0, "offset": 0.0, "clamp": [-1.0, 1.0], "bucket": "blendshapes"},
+    {"id": "ParamMouthOpenY", "source": "jawOpen", "scale": 1.0, "offset": 0.0, "clamp": [0.0, 1.0], "bucket": "blendshapes"},
+    {"id": "ParamMouthForm", "source": ["mouthSmileLeft", "mouthSmileRight"], "scale": 2.0, "offset": -1.0, "clamp": [-1.0, 1.0], "bucket": "blendshapes"},
+    {"id": "ParamBrowLY", "source": ["browInnerUp", "browOuterUpLeft"], "scale": 1.0, "offset": 0.0, "clamp": [-1.0, 1.0], "bucket": "blendshapes"},
+    {"id": "ParamBrowRY", "source": ["browInnerUp", "browOuterUpRight"], "scale": 1.0, "offset": 0.0, "clamp": [-1.0, 1.0], "bucket": "blendshapes"},
+    {"id": "ParamAngleX", "source": "yaw", "scale": 1.0, "offset": 0.0, "clamp": [-30.0, 30.0], "bucket": "head_pose"},
+    {"id": "ParamAngleY", "source": "pitch", "scale": 1.0, "offset": 0.0, "clamp": [-30.0, 30.0], "bucket": "head_pose"},
+    {"id": "ParamAngleZ", "source": "roll", "scale": 1.0, "offset": 0.0, "clamp": [-30.0, 30.0], "bucket": "head_pose"},
+]
+
+
+def now_iso_taipei():
+    tz = datetime.timezone(datetime.timedelta(hours=8))
+    return datetime.datetime.now(tz).isoformat(timespec="seconds")
+
+
+def clamp(value, min_value, max_value):
+    if value is None:
+        return 0.0
+    return max(min_value, min(max_value, float(value)))
+
+
+def source_value(frame, spec):
+    bucket = frame.get(spec.get("bucket", "blendshapes"), {})
+    source = spec["source"]
+    if isinstance(source, dict):
+        positive = [float(bucket.get(name, 0.0)) for name in source.get("positive", [])]
+        negative = [float(bucket.get(name, 0.0)) for name in source.get("negative", [])]
+        positive_mean = sum(positive) / max(1, len(positive))
+        negative_mean = sum(negative) / max(1, len(negative))
+        return positive_mean - negative_mean
+    if isinstance(source, list):
+        values = [float(bucket.get(name, 0.0)) for name in source]
+        return sum(values) / max(1, len(values))
+    return float(bucket.get(source, 0.0))
+
+
+def matrix_to_euler_degrees(matrix):
+    if not matrix:
+        return {"yaw": 0.0, "pitch": 0.0, "roll": 0.0}
+    flat = list(matrix)
+    if len(flat) < 16:
+        return {"yaw": 0.0, "pitch": 0.0, "roll": 0.0}
+    r00, r01, r02 = flat[0], flat[1], flat[2]
+    r10, r11, r12 = flat[4], flat[5], flat[6]
+    r20, r21, r22 = flat[8], flat[9], flat[10]
+    sy = math.sqrt(r00 * r00 + r10 * r10)
+    if sy >= 1e-6:
+        pitch = math.degrees(math.atan2(r21, r22))
+        yaw = math.degrees(math.atan2(-r20, sy))
+        roll = math.degrees(math.atan2(r10, r00))
+    else:
+        pitch = math.degrees(math.atan2(-r12, r11))
+        yaw = math.degrees(math.atan2(-r20, sy))
+        roll = 0.0
+    return {"yaw": yaw, "pitch": pitch, "roll": roll}
+
+
+def build_face_frame(frame_index, time_ms, blendshapes=None, landmarks=None, head_pose=None, facial_transformation_matrix=None):
+    blendshapes = blendshapes or {}
+    landmarks = landmarks or []
+    matrix = facial_transformation_matrix or []
+    if head_pose is None:
+        head_pose = matrix_to_euler_degrees(matrix)
+    return {
+        "frame_index": int(frame_index),
+        "time_ms": int(time_ms),
+        "face_detected": bool(blendshapes or landmarks or matrix),
+        "quality": {"blendshape_count": len(blendshapes), "landmark_count": len(landmarks)},
+        "blendshapes": {str(k): float(v) for k, v in blendshapes.items()},
+        "head_pose": {
+            "yaw": float(head_pose.get("yaw", 0.0)),
+            "pitch": float(head_pose.get("pitch", 0.0)),
+            "roll": float(head_pose.get("roll", 0.0)),
+        },
+        "facial_transformation_matrix": [float(v) for v in matrix],
+        "landmarks": landmarks,
+    }
+
+
+def build_face_record(project_name, source, roi, fps_target, backend, model_name, frames):
+    source_data = dict(source)
+    source_data.update({"roi": roi, "fps_target": fps_target, "backend": backend, "model": model_name})
+    return {
+        "version": 1,
+        "record_type": "face_record",
+        "created_at": now_iso_taipei(),
+        "project_name": project_name,
+        "source": source_data,
+        "frames": frames,
+    }
+
+
+def build_live2d_face_params(face_record, mapping=None):
+    mapping = mapping or DEFAULT_FACE_MAPPING
+    fps = int(face_record.get("source", {}).get("fps_target", 30) or 30)
+    frames = face_record.get("frames", [])
+    duration_ms = int(frames[-1]["time_ms"]) if frames else 0
+    parameters = []
+    for spec in mapping:
+        lo, hi = spec["clamp"]
+        keys = []
+        for frame in frames:
+            raw = source_value(frame, spec)
+            value = clamp(raw * float(spec["scale"]) + float(spec["offset"]), lo, hi)
+            keys.append({"time_ms": int(frame["time_ms"]), "value": value})
+        parameters.append(dict(spec, keys=keys))
+    return {
+        "version": 1,
+        "record_type": "live2d_face_params",
+        "fps": fps,
+        "duration_ms": duration_ms,
+        "parameters": parameters,
+    }
+
+
+def write_json_atomic(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp_path = path + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    os.replace(tmp_path, path)
+    return path
+```
+
+- [ ] **Step 4: Run tests and syntax check**
+
+Run:
+
+```powershell
+python -m unittest tests.test_face_motion_core -v
+python -m py_compile face_motion_core.py
+```
+
+Expected: PASS.
+
+- [ ] **Step 5: Commit scoped files**
+
+Run:
+
+```powershell
+git add -- face_motion_core.py tests/test_face_motion_core.py
+git -c gc.auto=0 commit -m "feat: add face copycat mapping core"
+```
+
+Expected: commit only these two files.
+
+## Task 10: MediaPipe Face Tracking Source
+
+**Files:**
+- Create: `face_tracking_source.py`
+- Modify: `requirements.txt`
+
+- [ ] **Step 1: Add optional MediaPipe dependency**
+
+Modify `requirements.txt` to include:
+
+```text
+mediapipe==0.10.35
+```
+
+This version is available for the current Python environment. If install conflicts with the existing TensorFlow stack, keep the import optional and record the conflict in `history.md`.
+
+- [ ] **Step 2: Implement MediaPipe wrapper**
+
+Create `face_tracking_source.py`:
+
+```python
+import cv2
+
+from face_motion_core import build_face_frame
+
+
+def mediapipe_available():
+    try:
+        import mediapipe  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+class MediaPipeFaceTracker:
+    def __init__(self, model_path, running_mode="VIDEO", num_faces=1):
+        if not mediapipe_available():
+            raise RuntimeError("mediapipe 未安裝，無法啟用表情 CopyCat。")
+        import mediapipe as mp
+        from mediapipe.tasks import python
+        from mediapipe.tasks.python import vision
+
+        mode = getattr(vision.RunningMode, running_mode)
+        base_options = python.BaseOptions(model_asset_path=model_path)
+        options = vision.FaceLandmarkerOptions(
+            base_options=base_options,
+            running_mode=mode,
+            num_faces=num_faces,
+            output_face_blendshapes=True,
+            output_facial_transformation_matrixes=True,
+        )
+        self._mp = mp
+        self._vision = vision
+        self._running_mode = running_mode
+        self._landmarker = vision.FaceLandmarker.create_from_options(options)
+
+    def close(self):
+        if self._landmarker:
+            self._landmarker.close()
+            self._landmarker = None
+
+    def detect_frame(self, frame_bgr, frame_index, time_ms):
+        rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+        mp_image = self._mp.Image(image_format=self._mp.ImageFormat.SRGB, data=rgb)
+        if self._running_mode == "IMAGE":
+            result = self._landmarker.detect(mp_image)
+        else:
+            result = self._landmarker.detect_for_video(mp_image, int(time_ms))
+        return face_result_to_frame(result, frame_index, time_ms)
+
+
+def face_result_to_frame(result, frame_index, time_ms):
+    if not result or not result.face_landmarks:
+        return build_face_frame(frame_index=frame_index, time_ms=time_ms, blendshapes={}, landmarks=[])
+
+    landmarks = []
+    for item in result.face_landmarks[0]:
+        landmarks.append({"x": float(item.x), "y": float(item.y), "z": float(item.z)})
+
+    blendshapes = {}
+    if result.face_blendshapes:
+        for category in result.face_blendshapes[0]:
+            blendshapes[category.category_name] = float(category.score)
+
+    matrix = []
+    if result.facial_transformation_matrixes:
+        raw_matrix = result.facial_transformation_matrixes[0]
+        matrix = [float(v) for row in raw_matrix for v in row]
+
+    return build_face_frame(
+        frame_index=frame_index,
+        time_ms=time_ms,
+        blendshapes=blendshapes,
+        landmarks=landmarks,
+        facial_transformation_matrix=matrix,
+    )
+```
+
+- [ ] **Step 3: Run import/syntax smoke**
+
+Run:
+
+```powershell
+python -m py_compile face_tracking_source.py
+python - <<'PY'
+from face_tracking_source import mediapipe_available
+print("mediapipe_available=", mediapipe_available())
+PY
+```
+
+Expected: syntax PASS. `mediapipe_available` may print `False` until requirements are installed.
+
+- [ ] **Step 4: Commit scoped files**
+
+Run:
+
+```powershell
+git add -- face_tracking_source.py requirements.txt
+git -c gc.auto=0 commit -m "feat: add mediapipe face tracking source"
+```
+
+Expected: commit only these files.
+
+## Task 11: Face CopyCat UI and Live2D Face Playback
+
+**Files:**
+- Modify: `my_yolo_train_tool.py`
+- Modify: `www/live2d_dancer.html`
+
+- [ ] **Step 1: Add face imports and globals**
+
+In `my_yolo_train_tool.py`, add:
+
+```python
+from face_motion_core import build_face_record, build_live2d_face_params, write_json_atomic as write_face_json_atomic
+from face_tracking_source import MediaPipeFaceTracker, mediapipe_available
+```
+
+Add globals near pose state:
+
+```python
+face_model_file = os.path.join(basedir, "models", "face_landmarker.task")
+face_tracker = None
+face_fps_target = 15
+```
+
+Extend `GDATA`:
+
+```python
+"face_recording": False,
+"face_stop_in_progress": False,
+"face_frames": [],
+"face_record_folder": None,
+"face_last_output_file": "",
+```
+
+- [ ] **Step 2: Add face tracker helpers**
+
+Add:
+
+```python
+def ensure_face_tracker():
+    global face_tracker
+    if face_tracker is None:
+        if not mediapipe_available():
+            raise RuntimeError("mediapipe 未安裝，請先安裝 requirements 或暫時使用骨架錄製。")
+        if not os.path.isfile(face_model_file):
+            raise RuntimeError("找不到 face landmarker model: %s" % face_model_file)
+        face_tracker = MediaPipeFaceTracker(face_model_file, running_mode="VIDEO", num_faces=1)
+    return face_tracker
+
+
+def create_face_record_folder(project_folder):
+    folder = os.path.join(project_folder, "face_record", "record_%s" % int(time.time()))
+    os.makedirs(folder, exist_ok=True)
+    os.chmod(folder, 0o777)
+    return folder
+```
+
+- [ ] **Step 3: Add recording toggle**
+
+Add:
+
+```python
+def toggle_face_copycat_recording():
+    if GDATA["face_recording"]:
+        stop_face_copycat_recording()
+    else:
+        start_face_copycat_recording()
+```
+
+`start_face_copycat_recording()` must:
+
+- require selected project and ROI;
+- call `ensure_face_tracker()`;
+- create `face_record_folder`;
+- clear `face_frames`;
+- start a worker thread that captures ROI frames with `mss(with_cursor=False)`;
+- sample at `face_fps_target`;
+- call `ensure_face_tracker().detect_frame(frame_bgr, frame_index, time_ms)`;
+- append frames to `GDATA["face_frames"]`;
+- set the button text to `表情 CopyCat(停止)`.
+
+`stop_face_copycat_recording()` must set `face_recording` false and finalize on a worker thread.
+
+Finalize must write:
+
+```python
+face_record = build_face_record(
+    project_name=GDATA.get("project_name", ""),
+    source={"type": "screen_roi", "input_mode": "face_roi"},
+    roi=roi,
+    fps_target=face_fps_target,
+    backend="mediapipe_face_landmarker",
+    model_name=os.path.basename(face_model_file),
+    frames=GDATA["face_frames"],
+)
+face_path = os.path.join(GDATA["face_record_folder"], "face_record.json")
+write_face_json_atomic(face_path, face_record)
+params = build_live2d_face_params(face_record)
+write_face_json_atomic(os.path.join(GDATA["face_record_folder"], "live2d_face_params.json"), params)
+```
+
+Then report `face_record.json` path with `messagebox.showinfo`.
+
+- [ ] **Step 4: Add tkinter button**
+
+Add a `表情 CopyCat` button next to `骨架錄製(開始)` and bind it to `toggle_face_copycat_recording`.
+
+- [ ] **Step 5: Add Live2D face parameter playback**
+
+In `www/live2d_dancer.html`, add support for loading `live2d_face_params.json` with the same `setParam` API:
+
+```js
+function playLive2DFaceParams(params) {
+  var start = performance.now();
+  function tick() {
+    var elapsedMs = performance.now() - start;
+    (params.parameters || []).forEach(function (param) {
+      var keys = param.keys || [];
+      var current = keys[0];
+      for (var i = 0; i < keys.length; i++) {
+        if (keys[i].time_ms <= elapsedMs) current = keys[i];
+        else break;
+      }
+      if (current) setParam(param.id, current.value, 1);
+    });
+    if (elapsedMs <= (params.duration_ms || 0)) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+```
+
+The page can decide whether loaded JSON is body or face by checking `record_type === "live2d_face_params"`.
+
+- [ ] **Step 6: Run checks**
+
+Run:
+
+```powershell
+python -m py_compile my_yolo_train_tool.py face_motion_core.py face_tracking_source.py
+python -m unittest tests.test_face_motion_core -v
+```
+
+Expected: PASS. Manual face smoke may report missing `face_landmarker.task`; that is acceptable if the UI message is clear.
+
+- [ ] **Step 7: Commit scoped files**
+
+Run:
+
+```powershell
+git add -- my_yolo_train_tool.py www/live2d_dancer.html
+git -c gc.auto=0 commit -m "feat: add face copycat live2d playback"
+```
+
+Expected: commit only these files.
+
+## Task 12: Final Verification and History
 
 **Files:**
 - Modify: `history.md`
@@ -1157,7 +1739,7 @@ Expected: do not add `dist/`, `example_pt/`, `.superpowers/`, `.claude/`, or mod
 Run:
 
 ```powershell
-python -m unittest tests.test_pose_motion_core tests.test_pose_live2d_mapper -v
+python -m unittest tests.test_pose_motion_core tests.test_pose_live2d_mapper tests.test_face_motion_core -v
 ```
 
 Expected: PASS.
@@ -1167,7 +1749,7 @@ Expected: PASS.
 Run:
 
 ```powershell
-python -m py_compile my_yolo_train_tool.py pose_motion_core.py pose_video_source.py pose_live2d_mapper.py
+python -m py_compile my_yolo_train_tool.py pose_motion_core.py pose_video_source.py pose_live2d_mapper.py face_motion_core.py face_tracking_source.py
 ```
 
 Expected: PASS.
@@ -1183,6 +1765,7 @@ Manual smoke checklist:
 5. Web pose list loads.
 6. Conversion writes `live2d_params.json` and `motion3.json`.
 7. Live2D dancer page opens and either loads a character or reports missing assets.
+8. Face CopyCat writes `face_record.json` and `live2d_face_params.json`, or clearly reports missing MediaPipe/model setup.
 
 - [ ] **Step 4: Update `history.md`**
 
@@ -1192,6 +1775,7 @@ Add a dated section summarizing:
 - shared pose JSON output;
 - Live2D mapper output;
 - Live2D dancer launcher status;
+- Face CopyCat backend choice and output status;
 - known limitations.
 
 - [ ] **Step 5: Commit final docs**
