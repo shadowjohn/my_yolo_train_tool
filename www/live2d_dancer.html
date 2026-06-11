@@ -562,11 +562,13 @@
         $.getJSON("/www/live2d/default_model/index.json")
           .done(function () {
             $("#live2d").show();
+            $("#fallbackCharacter").hide();
             try {
               loadlive2d("live2d", "/www/live2d/default_model/index.json");
               state.live2dReady = true;
               setStatus("Live2D default_model 已載入");
             } catch (err) {
+              $("#fallbackCharacter").show();
               setStatus("Live2D runtime 已載入，default_model 初始化失敗");
             }
           })
@@ -575,7 +577,7 @@
           });
       }
 
-      $("#btnChoose, #fallbackCharacter").on("click", function () {
+      $("#btnChoose, #fallbackCharacter, #live2d").on("click", function () {
         say("要跳哪支舞？");
         $("#motionFile").trigger("click");
       });
