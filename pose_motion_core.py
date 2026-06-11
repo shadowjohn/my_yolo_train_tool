@@ -102,9 +102,13 @@ def keypoint_by_name(keypoints, name):
 
 
 def safe_midpoint(a, b):
-    if not a or not b:
+    if not a or not b or a.get("x") is None or a.get("y") is None or b.get("x") is None or b.get("y") is None:
         return None
     return {"x": (float(a["x"]) + float(b["x"])) / 2.0, "y": (float(a["y"]) + float(b["y"])) / 2.0}
+
+
+def has_xy(point):
+    return bool(point) and point.get("x") is not None and point.get("y") is not None
 
 
 def normalize_keypoints(keypoints, roi):
@@ -134,15 +138,15 @@ def compute_pose_features(keypoints, roi):
     hip_center = safe_midpoint(lh, rh)
     body_center = safe_midpoint(shoulder_center, hip_center)
     features = {
-        "shoulder_angle_deg": angle_deg(ls["x"], ls["y"], rs["x"], rs["y"]) if ls and rs else None,
-        "hip_angle_deg": angle_deg(lh["x"], lh["y"], rh["x"], rh["y"]) if lh and rh else None,
+        "shoulder_angle_deg": angle_deg(ls["x"], ls["y"], rs["x"], rs["y"]) if has_xy(ls) and has_xy(rs) else None,
+        "hip_angle_deg": angle_deg(lh["x"], lh["y"], rh["x"], rh["y"]) if has_xy(lh) and has_xy(rh) else None,
         "torso_angle_deg": angle_deg(hip_center["x"], hip_center["y"], shoulder_center["x"], shoulder_center["y"]) if hip_center and shoulder_center else None,
         "body_center_x": None if not body_center else body_center["x"] / float(roi["width"]),
         "body_center_y": None if not body_center else body_center["y"] / float(roi["height"]),
-        "left_arm_angle_deg": angle_deg(ls["x"], ls["y"], lw["x"], lw["y"]) if ls and lw else None,
-        "right_arm_angle_deg": angle_deg(rs["x"], rs["y"], rw["x"], rw["y"]) if rs and rw else None,
-        "left_leg_angle_deg": angle_deg(lh["x"], lh["y"], la["x"], la["y"]) if lh and la else None,
-        "right_leg_angle_deg": angle_deg(rh["x"], rh["y"], ra["x"], ra["y"]) if rh and ra else None,
+        "left_arm_angle_deg": angle_deg(ls["x"], ls["y"], lw["x"], lw["y"]) if has_xy(ls) and has_xy(lw) else None,
+        "right_arm_angle_deg": angle_deg(rs["x"], rs["y"], rw["x"], rw["y"]) if has_xy(rs) and has_xy(rw) else None,
+        "left_leg_angle_deg": angle_deg(lh["x"], lh["y"], la["x"], la["y"]) if has_xy(lh) and has_xy(la) else None,
+        "right_leg_angle_deg": angle_deg(rh["x"], rh["y"], ra["x"], ra["y"]) if has_xy(rh) and has_xy(ra) else None,
     }
     return features
 

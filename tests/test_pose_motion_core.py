@@ -59,6 +59,15 @@ class PoseMotionCoreTests(unittest.TestCase):
         self.assertIn("torso_angle_deg", features)
         self.assertIn("body_center_x", features)
 
+    def test_features_tolerate_missing_keypoint_coordinates(self):
+        kpts = [{"name": name, "x": 0.0, "y": 0.0, "confidence": 1.0} for name in COCO17_KEYPOINTS]
+        kpts[COCO17_KEYPOINTS.index("left_shoulder")]["x"] = None
+        kpts[COCO17_KEYPOINTS.index("left_shoulder")]["y"] = None
+        features = compute_pose_features(kpts, roi={"left": 0, "top": 0, "width": 100, "height": 100})
+        self.assertIsNone(features["shoulder_angle_deg"])
+        self.assertIsNone(features["left_arm_angle_deg"])
+        self.assertIsNone(features["torso_angle_deg"])
+
     def test_build_pose_record_is_json_serializable(self):
         frame = {
             "frame_index": 0,
