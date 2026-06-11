@@ -42,6 +42,7 @@ import zipfile
 import json
 import random
 import logging
+from urllib.parse import quote
 from pose_motion_core import (
     COCO17_KEYPOINTS,
     COCO17_SKELETON,
@@ -1230,6 +1231,31 @@ def build_pose_frame(frame_index, time_ms, person, roi):
     }
 
 
+def convert_pose_record_to_live2d_files(pose_record_path):
+    with open(pose_record_path, "r", encoding="utf-8") as f:
+        pose_record = json.load(f)
+    folder = os.path.dirname(pose_record_path)
+    live2d_params = build_live2d_params(
+        pose_record,
+        source_pose_record=os.path.basename(pose_record_path),
+    )
+    motion3 = build_motion3(live2d_params)
+    live2d_params_path = os.path.join(folder, "live2d_params.json")
+    motion3_path = os.path.join(folder, "motion3.json")
+    write_json_atomic(live2d_params_path, live2d_params)
+    write_json_atomic(motion3_path, motion3)
+    return {"live2d_params": live2d_params_path, "motion3": motion3_path}
+
+
+def path_to_data_url(file_path):
+    data_root = os.path.abspath(os.path.join(basedir, "data"))
+    abs_path = os.path.abspath(file_path)
+    if not abs_path.startswith(data_root + os.sep):
+        return None
+    rel_path = os.path.relpath(abs_path, data_root).replace("\\", "/")
+    return "/data/" + quote(rel_path, safe="/")
+
+
 def get_current_pose_roi():
     return normalize_roi(GDATA["x1"], GDATA["y1"], GDATA["x2"], GDATA["y2"])
 
@@ -1351,6 +1377,7 @@ def finalize_screen_pose_record(error_message=None):
             frames=GDATA["pose_frames"],
         )
         write_json_atomic(output_path, record)
+        convert_pose_record_to_live2d_files(output_path)
         GDATA["pose_last_output_file"] = output_path
         set_pose_status("骨架錄製完成：%s" % output_path)
         if error_message:
@@ -1618,9 +1645,12 @@ def run_youtube_pose_worker(url, record_folder):
             frames=frames,
         )
         write_json_atomic(output_path, record)
+        motion_files = convert_pose_record_to_live2d_files(output_path)
         source_info.update({
             "status": "complete",
             "pose_record": output_path,
+            "live2d_params": motion_files["live2d_params"],
+            "motion3": motion_files["motion3"],
             "total_frame_count": total_frame_count,
             "detected_frame_count": len(frames),
             "missing_frame_count": missing_frame_count,
@@ -1640,7 +1670,23 @@ def run_youtube_pose_worker(url, record_folder):
 
 
 def open_live2d_dancer():
-    messagebox.showinfo("提示", "Live2D 人物下一步接上；預設角色方向：黑長髮馬尾妹。")
+    url = "http://127.0.0.1:9487/www/live2d_dancer.html"
+    params = []
+    pose_record_path = GDATA.get("pose_last_output_file")
+    if pose_record_path and os.path.isfile(pose_record_path):
+        try:
+            motion_files = convert_pose_record_to_live2d_files(pose_record_path)
+            pose_url = path_to_data_url(pose_record_path)
+            motion_url = path_to_data_url(motion_files["live2d_params"])
+            if pose_url:
+                params.append("pose_url=%s" % quote(pose_url, safe="/"))
+            if motion_url:
+                params.append("motion_url=%s" % quote(motion_url, safe="/"))
+        except Exception as e:
+            messagebox.showwarning("提示", "Live2D motion 轉換失敗，仍會開啟人物頁：\n%s" % e)
+    if params:
+        url += "?" + "&".join(params)
+    webbrowser.open(url)
 
 
 def on_message():

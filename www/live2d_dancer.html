@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Live2D Dancer</title>
+  <link rel="icon" href="data:,">
+  <script src="/www/js/jquery.min.js"></script>
+  <script src="/www/live2d/assets/live2d.min.js"></script>
+  <script src="/www/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <link href="/www/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #667085;
+      --line: #d7dde8;
+      --panel: #ffffff;
+      --stage: #eef3f8;
+      --mint: #18a999;
+      --rose: #d14d72;
+      --amber: #c47d16;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #f6f7fb;
+      color: var(--ink);
+      font-family: "Microsoft JhengHei", "Segoe UI", system-ui, sans-serif;
+      letter-spacing: 0;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 320px minmax(360px, 1fr);
+      gap: 14px;
+      min-height: 100vh;
+      padding: 14px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .title {
+      margin: 0 0 10px;
+      font-size: 1.08rem;
+      font-weight: 700;
+    }
+
+    .meta {
+      min-height: 26px;
+      color: var(--muted);
+      font-size: .9rem;
+      word-break: break-all;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .stage {
+      position: relative;
+      overflow: hidden;
+      min-height: calc(100vh - 28px);
+      background:
+        linear-gradient(0deg, rgba(23, 32, 51, .04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23, 32, 51, .04) 1px, transparent 1px),
+        var(--stage);
+      background-size: 36px 36px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    #live2d {
+      position: absolute;
+      right: 58px;
+      bottom: 34px;
+      width: 360px;
+      height: 520px;
+      z-index: 2;
+      display: none;
+    }
+
+    .character {
+      --body-tilt: 0deg;
+      --bounce: 0px;
+      --arm-l: -10deg;
+      --arm-r: 10deg;
+      position: absolute;
+      right: 88px;
+      bottom: 38px;
+      width: 220px;
+      height: 430px;
+      transform: translateY(var(--bounce)) rotate(var(--body-tilt));
+      transform-origin: 50% 80%;
+      transition: transform 80ms linear;
+      cursor: pointer;
+      z-index: 3;
+    }
+
+    .pony {
+      position: absolute;
+      right: -26px;
+      top: 54px;
+      width: 76px;
+      height: 168px;
+      background: #111827;
+      border-radius: 52% 48% 48% 52%;
+      transform: rotate(11deg);
+      box-shadow: inset -10px 0 0 rgba(255, 255, 255, .06);
+    }
+
+    .hair {
+      position: absolute;
+      left: 42px;
+      top: 18px;
+      width: 128px;
+      height: 166px;
+      background: #111827;
+      border-radius: 56% 56% 44% 44%;
+      box-shadow: inset -12px 0 0 rgba(255, 255, 255, .06);
+      z-index: 2;
+    }
+
+    .face {
+      position: absolute;
+      left: 58px;
+      top: 48px;
+      width: 98px;
+      height: 116px;
+      background: #ffd8bd;
+      border-radius: 46% 46% 50% 50%;
+      z-index: 3;
+    }
+
+    .bang {
+      position: absolute;
+      left: 52px;
+      top: 28px;
+      width: 108px;
+      height: 54px;
+      background: #111827;
+      border-radius: 52% 48% 55% 42%;
+      z-index: 4;
+    }
+
+    .eye {
+      position: absolute;
+      top: 74px;
+      width: 10px;
+      height: 15px;
+      background: #172033;
+      border-radius: 999px;
+      z-index: 5;
+    }
+
+    .eye.left { left: 82px; }
+    .eye.right { left: 124px; }
+
+    .mouth {
+      position: absolute;
+      left: 101px;
+      top: 117px;
+      width: 22px;
+      height: 9px;
+      border-bottom: 3px solid #b2455c;
+      border-radius: 0 0 999px 999px;
+      z-index: 5;
+    }
+
+    .torso {
+      position: absolute;
+      left: 62px;
+      top: 168px;
+      width: 104px;
+      height: 130px;
+      background: #f6fbff;
+      border: 4px solid #253858;
+      border-radius: 30px 30px 18px 18px;
+      z-index: 2;
+    }
+
+    .neckline {
+      position: absolute;
+      left: 88px;
+      top: 172px;
+      width: 50px;
+      height: 32px;
+      background: var(--mint);
+      clip-path: polygon(0 0, 100% 0, 50% 100%);
+      z-index: 3;
+    }
+
+    .arm {
+      position: absolute;
+      top: 190px;
+      width: 34px;
+      height: 128px;
+      background: #ffd8bd;
+      border-radius: 999px;
+      transform-origin: 50% 12%;
+      z-index: 1;
+    }
+
+    .arm.left {
+      left: 44px;
+      transform: rotate(var(--arm-l));
+    }
+
+    .arm.right {
+      left: 152px;
+      transform: rotate(var(--arm-r));
+    }
+
+    .skirt {
+      position: absolute;
+      left: 54px;
+      top: 284px;
+      width: 122px;
+      height: 56px;
+      background: #253858;
+      clip-path: polygon(15% 0, 85% 0, 100% 100%, 0 100%);
+      z-index: 3;
+    }
+
+    .leg {
+      position: absolute;
+      top: 328px;
+      width: 32px;
+      height: 94px;
+      background: #293a60;
+      border-radius: 999px;
+      z-index: 1;
+    }
+
+    .leg.left { left: 78px; }
+    .leg.right { left: 124px; }
+
+    .bubble {
+      position: absolute;
+      right: 282px;
+      bottom: 392px;
+      max-width: 260px;
+      min-height: 42px;
+      padding: 9px 12px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 10px 24px rgba(23, 32, 51, .1);
+      font-weight: 700;
+      z-index: 5;
+    }
+
+    .meter {
+      height: 10px;
+      background: #eef2f6;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .meter > div {
+      width: 0;
+      height: 100%;
+      background: var(--mint);
+    }
+
+    @media (max-width: 760px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .stage {
+        min-height: 520px;
+      }
+
+      .character {
+        right: 48px;
+        transform: translateY(var(--bounce)) rotate(var(--body-tilt)) scale(.82);
+      }
+
+      .bubble {
+        right: 24px;
+        bottom: 432px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="panel">
+      <h1 class="title">Live2D Dancer</h1>
+      <div id="status" class="meta">未載入舞步</div>
+      <div class="toolbar">
+        <button id="btnChoose" class="btn btn-primary btn-sm" type="button">選舞步</button>
+        <button id="btnPlay" class="btn btn-success btn-sm" type="button" disabled>播放</button>
+        <button id="btnStop" class="btn btn-outline-secondary btn-sm" type="button" disabled>停止</button>
+      </div>
+      <input id="motionFile" type="file" accept=".json,application/json" hidden>
+      <div class="mb-2">
+        <div class="d-flex justify-content-between small text-muted">
+          <span id="motionName">-</span>
+          <span id="motionTime">0.00s</span>
+        </div>
+        <div class="meter"><div id="progress"></div></div>
+      </div>
+      <div class="small text-muted">
+        default_model：黑長髮馬尾妹 / 可替換
+      </div>
+    </section>
+    <section class="stage">
+      <canvas id="live2d" width="360" height="520"></canvas>
+      <div id="fallbackCharacter" class="character" role="button" tabindex="0" aria-label="Live2D dancer placeholder">
+        <div class="pony"></div>
+        <div class="hair"></div>
+        <div class="face"></div>
+        <div class="bang"></div>
+        <div class="eye left"></div>
+        <div class="eye right"></div>
+        <div class="mouth"></div>
+        <div class="arm left"></div>
+        <div class="arm right"></div>
+        <div class="torso"></div>
+        <div class="neckline"></div>
+        <div class="skirt"></div>
+        <div class="leg left"></div>
+        <div class="leg right"></div>
+      </div>
+      <div id="bubble" class="bubble">要跳哪支舞？</div>
+    </section>
+  </main>
+  <script>
+    (function () {
+      var state = {
+        params: null,
+        fileName: "",
+        raf: 0,
+        startedAt: 0,
+        live2dReady: false,
+        overrides: {}
+      };
+
+      var mapping = [
+        { id: "ParamBodyAngleX", source: "torso_angle_deg", scale: 0.5, offset: 0, min: -30, max: 30 },
+        { id: "ParamBodyBounce", source: "body_center_y", scale: -60, offset: 30, min: -30, max: 30 },
+        { id: "ParamArmL", source: "left_arm_angle_deg", scale: 0.5, offset: 0, min: -30, max: 30 },
+        { id: "ParamArmR", source: "right_arm_angle_deg", scale: 0.5, offset: 0, min: -30, max: 30 }
+      ];
+
+      var live2dAliases = {
+        ParamBodyAngleX: ["PARAM_BODY_ANGLE_X", "PARAM_ANGLE_Z", "ParamBodyAngleX"],
+        ParamBodyBounce: ["PARAM_BREATH", "PARAM_BODY_ANGLE_Y", "ParamBodyBounce"],
+        ParamArmL: ["ParamArmL"],
+        ParamArmR: ["ParamArmR"]
+      };
+
+      function clamp(value, min, max) {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) return 0;
+        return Math.max(min, Math.min(max, Number(value)));
+      }
+
+      function getQuery() {
+        var out = {};
+        window.location.search.replace(/^\?/, "").split("&").forEach(function (part) {
+          if (!part) return;
+          var kv = part.split("=");
+          out[decodeURIComponent(kv[0])] = decodeURIComponent(kv.slice(1).join("=") || "");
+        });
+        return out;
+      }
+
+      function say(text) {
+        $("#bubble").text(text || "要跳哪支舞？");
+      }
+
+      function setStatus(text) {
+        $("#status").text(text);
+      }
+
+      function convertPoseRecord(record, sourceName) {
+        var frames = record.frames || [];
+        var parameters = mapping.map(function (spec) {
+          return {
+            id: spec.id,
+            source: spec.source,
+            scale: spec.scale,
+            offset: spec.offset,
+            clamp: [spec.min, spec.max],
+            keys: frames.map(function (frame) {
+              var raw = frame.features ? frame.features[spec.source] : null;
+              return {
+                time_ms: Number(frame.time_ms || 0),
+                value: clamp((raw === null || raw === undefined ? 0 : raw) * spec.scale + spec.offset, spec.min, spec.max)
+              };
+            })
+          };
+        });
+        return {
+          version: 1,
+          source_pose_record: sourceName || "pose_record.json",
+          fps: Number((record.source && record.source.fps_target) || 30),
+          duration_ms: frames.length ? Number(frames[frames.length - 1].time_ms || 0) : 0,
+          parameters: parameters
+        };
+      }
+
+      function convertMotion3(motion) {
+        var parameters = (motion.Curves || []).map(function (curve) {
+          var keys = [];
+          var segments = curve.Segments || [];
+          if (segments.length >= 2) {
+            keys.push({ time_ms: Math.round(Number(segments[0]) * 1000), value: Number(segments[1]) });
+            for (var i = 2; i + 2 < segments.length; i += 3) {
+              keys.push({ time_ms: Math.round(Number(segments[i + 1]) * 1000), value: Number(segments[i + 2]) });
+            }
+          }
+          return { id: curve.Id, keys: keys };
+        });
+        return {
+          version: 1,
+          source_pose_record: "motion3.json",
+          fps: Number((motion.Meta && motion.Meta.Fps) || 30),
+          duration_ms: Math.round(Number((motion.Meta && motion.Meta.Duration) || 0) * 1000),
+          parameters: parameters
+        };
+      }
+
+      function normalizeInput(data, sourceName) {
+        if (data.parameters) return data;
+        if (data.Curves) return convertMotion3(data);
+        if (data.frames) return convertPoseRecord(data, sourceName);
+        throw new Error("JSON 格式不是 pose_record / live2d_params / motion3");
+      }
+
+      function valueAt(keys, timeMs) {
+        if (!keys || !keys.length) return 0;
+        if (timeMs <= keys[0].time_ms) return Number(keys[0].value || 0);
+        for (var i = 1; i < keys.length; i++) {
+          if (timeMs <= keys[i].time_ms) {
+            var a = keys[i - 1];
+            var b = keys[i];
+            var span = Math.max(1, Number(b.time_ms) - Number(a.time_ms));
+            var t = (timeMs - Number(a.time_ms)) / span;
+            return Number(a.value || 0) + (Number(b.value || 0) - Number(a.value || 0)) * t;
+          }
+        }
+        return Number(keys[keys.length - 1].value || 0);
+      }
+
+      function attachLive2DHook(model) {
+        if (!model || model.__dancerHooked) return;
+        var originalUpdate = model.update;
+        model.update = function () {
+          originalUpdate.call(this);
+          Object.keys(state.overrides).forEach(function (id) {
+            var aliases = live2dAliases[id] || [id];
+            for (var i = 0; i < aliases.length; i++) {
+              this.live2DModel.setParamFloat(aliases[i], state.overrides[id], 1);
+            }
+          }, this);
+          if (Object.keys(state.overrides).length) this.live2DModel.update();
+        };
+        model.__dancerHooked = true;
+      }
+
+      function getCurrentModel() {
+        if (!window.live2dManager || !window.live2dManager.getModel) return null;
+        var model = window.live2dManager.getModel(0);
+        if (model) attachLive2DHook(model);
+        return model;
+      }
+
+      function applyValues(values) {
+        var bodyAngle = clamp(values.ParamBodyAngleX || 0, -30, 30);
+        var bounce = clamp(values.ParamBodyBounce || 0, -24, 24);
+        var armL = clamp(values.ParamArmL || 0, -45, 45);
+        var armR = clamp(values.ParamArmR || 0, -45, 45);
+        state.overrides = values;
+        $("#fallbackCharacter").css({
+          "--body-tilt": (bodyAngle * 0.45).toFixed(2) + "deg",
+          "--bounce": (-bounce * 0.45).toFixed(2) + "px",
+          "--arm-l": (-18 + armL * 0.7).toFixed(2) + "deg",
+          "--arm-r": (18 + armR * 0.7).toFixed(2) + "deg"
+        });
+        getCurrentModel();
+      }
+
+      function tick() {
+        if (!state.params) return;
+        var duration = Math.max(1, Number(state.params.duration_ms || 0));
+        var elapsed = (performance.now() - state.startedAt) % duration;
+        var values = {};
+        (state.params.parameters || []).forEach(function (param) {
+          values[param.id] = valueAt(param.keys, elapsed);
+        });
+        applyValues(values);
+        $("#motionTime").text((elapsed / 1000).toFixed(2) + "s");
+        $("#progress").css("width", Math.min(100, elapsed / duration * 100).toFixed(2) + "%");
+        state.raf = requestAnimationFrame(tick);
+      }
+
+      function play() {
+        if (!state.params) return;
+        cancelAnimationFrame(state.raf);
+        state.startedAt = performance.now();
+        $("#btnPlay").prop("disabled", true);
+        $("#btnStop").prop("disabled", false);
+        say("開始跳囉");
+        tick();
+      }
+
+      function stop() {
+        cancelAnimationFrame(state.raf);
+        state.raf = 0;
+        $("#btnPlay").prop("disabled", !state.params);
+        $("#btnStop").prop("disabled", true);
+        $("#progress").css("width", "0");
+        applyValues({});
+        say("要跳哪支舞？");
+      }
+
+      function loadJsonObject(data, sourceName) {
+        state.params = normalizeInput(data, sourceName);
+        state.fileName = sourceName || state.params.source_pose_record || "motion.json";
+        $("#motionName").text(state.fileName);
+        $("#btnPlay").prop("disabled", false);
+        setStatus("已載入：" + state.fileName);
+        say("這支可以跳");
+      }
+
+      function loadFile(file) {
+        var reader = new FileReader();
+        reader.onload = function () {
+          try {
+            loadJsonObject(JSON.parse(reader.result), file.name);
+            play();
+          } catch (err) {
+            setStatus(err.message || String(err));
+            say("這支舞讀不起來");
+          }
+        };
+        reader.readAsText(file, "utf-8");
+      }
+
+      function loadFromUrl(url) {
+        $.getJSON(url)
+          .done(function (data) {
+            loadJsonObject(data, url.split("/").pop());
+          })
+          .fail(function () {
+            setStatus("舞步檔載入失敗");
+          });
+      }
+
+      function tryInitLive2D() {
+        $.getJSON("/www/live2d/default_model/index.json")
+          .done(function () {
+            $("#live2d").show();
+            try {
+              loadlive2d("live2d", "/www/live2d/default_model/index.json");
+              state.live2dReady = true;
+              setStatus("Live2D default_model 已載入");
+            } catch (err) {
+              setStatus("Live2D runtime 已載入，default_model 初始化失敗");
+            }
+          })
+          .fail(function () {
+            setStatus("使用 default_model placeholder");
+          });
+      }
+
+      $("#btnChoose, #fallbackCharacter").on("click", function () {
+        say("要跳哪支舞？");
+        $("#motionFile").trigger("click");
+      });
+      $("#fallbackCharacter").on("keydown", function (event) {
+        if (event.key === "Enter" || event.key === " ") $("#motionFile").trigger("click");
+      });
+      $("#btnPlay").on("click", play);
+      $("#btnStop").on("click", stop);
+      $("#motionFile").on("change", function () {
+        if (this.files && this.files[0]) loadFile(this.files[0]);
+      });
+
+      var query = getQuery();
+      tryInitLive2D();
+      if (query.pose_url) loadFromUrl(query.pose_url);
+      if (query.motion_url) loadFromUrl(query.motion_url);
+    })();
+  </script>
+</body>
+</html>
