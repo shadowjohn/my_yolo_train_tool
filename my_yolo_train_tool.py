@@ -42,6 +42,25 @@ import zipfile
 import json
 import random
 import logging
+from pose_motion_core import (
+    COCO17_KEYPOINTS,
+    COCO17_SKELETON,
+    FrameBuffer,
+    bbox_center,
+    build_pose_record,
+    compute_pose_features,
+    normalize_keypoints,
+    normalize_roi,
+    select_main_person,
+    write_json_atomic,
+)
+from pose_live2d_mapper import build_live2d_params, build_motion3
+from pose_video_source import (
+    download_authorized_youtube_video,
+    is_probable_youtube_url,
+    iter_video_frames,
+    write_source_video_info,
+)
 
 
 # 讓 canvas 滑鼠事件可以穿透用
@@ -139,6 +158,10 @@ model_file = os.path.join(basedir, "example_pt", "best.pt")
 model = None
 # 信心度
 model_confidence = 0.6
+
+pose_model_file = os.path.join(basedir, "example_pt", "yolo26n-pose.pt")
+pose_model = None
+pose_confidence = 0.35
 
 
 # Windows 專用功能：設置窗口滑鼠穿透
@@ -598,6 +621,14 @@ GDATA = {
     "y1_model": None,  # 模型框選的 y1
     "x2_model": None,  # 模型框選的 x2
     "y2_model": None,  # 模型框選的 y2
+    "pose_recording": False,
+    "pose_stop_in_progress": False,
+    "pose_frame_buffer": None,
+    "pose_frames": [],
+    "pose_record_folder": None,
+    "pose_last_output_file": "",
+    "pose_previous_center": None,
+    "pose_fps_target": 15,
 }
 
 lock_file = os.path.join(basedir, "lock.txt")
@@ -1078,6 +1109,75 @@ def run_update_confidence(input):
     model_confidence = confidence
     # label
     GDATA["UI"]["confidence_label"].config(text="信心值: %.1f" % confidence)
+
+
+def ensure_pose_model():
+    global pose_model
+    if pose_model is None:
+        if not os.path.isfile(pose_model_file):
+            raise RuntimeError("找不到 pose model: %s" % pose_model_file)
+        pose_model = YOLO(pose_model_file)
+    return pose_model
+
+
+def get_current_project_folder():
+    if "project_folder" in GDATA and GDATA.get("project_folder") and os.path.isdir(GDATA["project_folder"]):
+        return GDATA["project_folder"]
+    raise RuntimeError("請先選擇專案")
+
+
+def create_pose_record_folder(project_folder):
+    folder = os.path.join(project_folder, "pose_record", "record_%s" % int(time.time()))
+    os.makedirs(folder, exist_ok=True)
+    os.chmod(folder, 0o777)
+    return folder
+
+
+def yolo_pose_result_to_people(result, roi):
+    people = []
+    if result.keypoints is None or result.boxes is None:
+        return people
+    kpt_data = result.keypoints.data.cpu().numpy()
+    boxes = result.boxes
+    xyxy = boxes.xyxy.cpu().numpy()
+    confs = boxes.conf.cpu().numpy() if boxes.conf is not None else [0.0] * len(xyxy)
+    for person_index, points in enumerate(kpt_data):
+        if person_index >= len(xyxy):
+            break
+        keypoints = []
+        confidences = []
+        for idx, name in enumerate(COCO17_KEYPOINTS):
+            row = points[idx]
+            conf = float(row[2]) if len(row) > 2 else 1.0
+            keypoints.append({"name": name, "x": float(row[0]), "y": float(row[1]), "confidence": conf})
+            confidences.append(conf)
+        box = xyxy[person_index]
+        people.append({
+            "bbox": {"x1": float(box[0]), "y1": float(box[1]), "x2": float(box[2]), "y2": float(box[3]), "confidence": float(confs[person_index])},
+            "keypoints": keypoints,
+            "mean_keypoint_confidence": sum(confidences) / max(1, len(confidences)),
+        })
+    return people
+
+
+def build_pose_frame(frame_index, time_ms, person, roi):
+    keypoints = person["keypoints"]
+    center_x, center_y = bbox_center(person["bbox"])
+    return {
+        "frame_index": frame_index,
+        "time_ms": int(time_ms),
+        "bbox": person["bbox"],
+        "center": {"x": center_x, "y": center_y},
+        "scale": 1.0,
+        "quality": {
+            "mean_keypoint_confidence": float(person.get("mean_keypoint_confidence", 0.0)),
+            "visible_keypoints": len([p for p in keypoints if p.get("confidence", 0.0) >= pose_confidence]),
+            "is_interpolated": False,
+        },
+        "keypoints": keypoints,
+        "normalized_keypoints": normalize_keypoints(keypoints, roi),
+        "features": compute_pose_features(keypoints, roi),
+    }
 
 
 def on_message():
