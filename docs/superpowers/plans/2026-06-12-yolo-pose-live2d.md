@@ -27,6 +27,7 @@
 - Create `www/pose_record.html`: list pose records and open preview JSON/HTML.
 - Create `www/live2d_dancer.html`: local Live2D desktop dancer control page with body and face parameter playback.
 - Copy required local Live2D assets from `Z:\inc\javascript\live2d_demo` into `www/live2d/` if the source exists.
+- Keep the Live2D model slot named generically as `default_model`. Hiyori sample data may be used for local verification, but the product-facing default character direction is an original black long-haired ponytail girl that can replace the sample model later.
 
 Do not stage unrelated generated files under `dist/`, `example_pt/`, `.superpowers/`, `.claude/`, or model binaries unless explicitly requested.
 
@@ -1116,6 +1117,14 @@ window.ScreenAiLive2D = {
 ```
 
 Add a file input or record selector. On click/tap character, show `要跳哪支舞？` and open the selector.
+
+Use a generic model configuration variable:
+
+```js
+var DEFAULT_MODEL_SLOT = "default_model";
+```
+
+If Hiyori sample assets are used during development, display them as sample/demo assets only. Do not hard-code Hiyori as the product character name; the future intended default is an original black long-haired ponytail character.
 
 - [ ] **Step 3: Apply Live2D params from JSON**
 

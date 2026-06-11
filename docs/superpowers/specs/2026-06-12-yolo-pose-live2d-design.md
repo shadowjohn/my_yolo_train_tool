@@ -38,6 +38,7 @@ Implementation must keep a separate `pose_model_file` / `pose_model` and must no
 - MediaPipe Face Landmarker can return face landmarks, facial expression blendshapes, and a facial transformation matrix. It supports video/live-stream modes with timestamps, which fits screen ROI recording.
 - The GitHub `face-tracking` topic has several candidates. OpenSeeFace is strong for VTuber-style CPU tracking and UDP integration, Jeeliz is strong for browser/WebGL face filters, and VTuber-Python-Unity is useful as a Live2D mapping reference. For this app, MediaPipe Face Landmarker should be the first backend because it stays inside the Python desktop capture pipeline and outputs blendshapes that map directly to Live2D.
 - KennardWang/VTuber-MomoseHiyori is a useful Live2D VTuber reference. It tracks and sends a compact control set: head roll/pitch/yaw, left/right eye openness, eyeball X/Y, left/right eyebrow, mouth width, and mouth open. It also documents why calibration often needs linear, discrete, or piecewise mapping instead of directly applying raw face ratios.
+- FIND's VTuber technology overview is useful product context: the practical workflow still depends on role/model creation, Live2D/VRoid-style rigging, and real-time tracking/driver software. AI-generated VTuber assets are useful for early visual ideation, but should not be treated as ready-to-drive Live2D models in the first implementation.
 
 ## Stage A: Pose Extraction
 
@@ -324,6 +325,21 @@ Parameter overrides must be reapplied during the Live2D model update loop becaus
 
 If no Live2D assets exist in this repository, first implementation may create the control page and loader contract, then require adding model/runtime assets before full playback verification.
 
+### Character Source Policy
+
+The default character should be replaceable. The desired original character direction is a black long-haired ponytail girl. For local development, Hiyori Momose can be used as a sample reference because Live2D lists it as sample data for avatars, game apps, and Cubism SDK testing, with both PRO and FREE variants. The app should not present Hiyori as an original project character.
+
+If Hiyori sample data is bundled or shown in a distributable build, the app must keep a visible attribution/notice path and follow the Live2D sample model terms:
+
+- do not alter Hiyori's character design;
+- include the required Live2D sample-data notice in app/about/license text;
+- treat Hiyori as demo/sample data, not as the final product identity;
+- allow the user to select another local Live2D model later.
+
+The Live2D launcher should name the default configurable slot generically, such as `default_model`, so replacing the demo sample with the future black-ponytail character does not require changing motion, pose, or face-copycat data formats.
+
+If the current environment only has runtime assets and not an explicitly reviewed sample-model folder, Stage C should load a local configured model if present and otherwise show a clear "請放入 Live2D model" message.
+
 ## Stage D: Face CopyCat
 
 ### Recommended Backend
@@ -496,6 +512,7 @@ Minimum validation:
 - Physics baking.
 - Audio-driven lip-sync.
 - Training a custom pose model.
+- Treating AI-generated character images as immediately usable Live2D models.
 - Full emotion classification beyond blendshape-driven expression copycat.
 - Multi-face expression mixing.
 - Downloading or archiving unauthorized third-party video content.
