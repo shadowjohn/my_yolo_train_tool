@@ -1140,20 +1140,27 @@ def yolo_pose_result_to_people(result, roi):
     kpt_data = result.keypoints.data.cpu().numpy()
     boxes = result.boxes
     xyxy = boxes.xyxy.cpu().numpy()
-    confs = boxes.conf.cpu().numpy() if boxes.conf is not None else [0.0] * len(xyxy)
+    confs = boxes.conf.cpu().numpy() if boxes.conf is not None else []
     for person_index, points in enumerate(kpt_data):
         if person_index >= len(xyxy):
             break
         keypoints = []
         confidences = []
         for idx, name in enumerate(COCO17_KEYPOINTS):
-            row = points[idx]
-            conf = float(row[2]) if len(row) > 2 else 1.0
-            keypoints.append({"name": name, "x": float(row[0]), "y": float(row[1]), "confidence": conf})
+            if idx < len(points):
+                row = points[idx]
+                conf = float(row[2]) if len(row) > 2 else 1.0
+                x = float(row[0]) if len(row) > 0 else None
+                y = float(row[1]) if len(row) > 1 else None
+            else:
+                conf = 0.0
+                x = None
+                y = None
+            keypoints.append({"name": name, "x": x, "y": y, "confidence": conf})
             confidences.append(conf)
         box = xyxy[person_index]
         people.append({
-            "bbox": {"x1": float(box[0]), "y1": float(box[1]), "x2": float(box[2]), "y2": float(box[3]), "confidence": float(confs[person_index])},
+            "bbox": {"x1": float(box[0]), "y1": float(box[1]), "x2": float(box[2]), "y2": float(box[3]), "confidence": float(confs[person_index]) if person_index < len(confs) else 0.0},
             "keypoints": keypoints,
             "mean_keypoint_confidence": sum(confidences) / max(1, len(confidences)),
         })
@@ -1164,7 +1171,7 @@ def build_pose_frame(frame_index, time_ms, person, roi):
     keypoints = person["keypoints"]
     center_x, center_y = bbox_center(person["bbox"])
     return {
-        "frame_index": frame_index,
+        "frame_index": int(frame_index),
         "time_ms": int(time_ms),
         "bbox": person["bbox"],
         "center": {"x": center_x, "y": center_y},
