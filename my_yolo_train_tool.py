@@ -1377,11 +1377,18 @@ def finalize_screen_pose_record(error_message=None):
             frames=GDATA["pose_frames"],
         )
         write_json_atomic(output_path, record)
-        convert_pose_record_to_live2d_files(output_path)
         GDATA["pose_last_output_file"] = output_path
+        live2d_error = None
+        try:
+            convert_pose_record_to_live2d_files(output_path)
+        except Exception as e:
+            live2d_error = str(e)
+            logging.exception("convert pose record to live2d failed")
         set_pose_status("骨架錄製完成：%s" % output_path)
         if error_message:
             messagebox.showwarning("提示", "骨架錄製已停止並輸出部分資料：\n%s\n\n%s" % (output_path, error_message))
+        elif live2d_error:
+            messagebox.showwarning("提示", "骨架錄製完成，但 Live2D motion 轉換失敗：\n%s\n\n%s" % (output_path, live2d_error))
         else:
             messagebox.showinfo("提示", "骨架錄製完成：\n%s" % output_path)
     except Exception as e:
@@ -1559,7 +1566,7 @@ def start_youtube_pose_recording():
         messagebox.showerror("YouTube Pose 啟動失敗", str(ex))
 
 
-def finish_youtube_pose_recording(output_path=None, error_message=None):
+def finish_youtube_pose_recording(output_path=None, error_message=None, live2d_error=None):
     GDATA["pose_url_processing"] = False
     set_youtube_pose_processing_buttons(False)
     if error_message:
@@ -1568,6 +1575,9 @@ def finish_youtube_pose_recording(output_path=None, error_message=None):
         return
     GDATA["pose_last_output_file"] = output_path or ""
     set_pose_status("YouTube Pose 完成：%s" % output_path)
+    if live2d_error:
+        messagebox.showwarning("提示", "YouTube Pose 完成，但 Live2D motion 轉換失敗：\n%s\n\n%s" % (output_path, live2d_error))
+        return
     messagebox.showinfo("提示", "YouTube Pose 完成：\n%s" % output_path)
 
 
@@ -1645,18 +1655,29 @@ def run_youtube_pose_worker(url, record_folder):
             frames=frames,
         )
         write_json_atomic(output_path, record)
-        motion_files = convert_pose_record_to_live2d_files(output_path)
+        motion_files = None
+        live2d_error = None
+        try:
+            motion_files = convert_pose_record_to_live2d_files(output_path)
+        except Exception as e:
+            live2d_error = str(e)
+            logging.exception("convert youtube pose record to live2d failed")
         source_info.update({
             "status": "complete",
             "pose_record": output_path,
-            "live2d_params": motion_files["live2d_params"],
-            "motion3": motion_files["motion3"],
             "total_frame_count": total_frame_count,
             "detected_frame_count": len(frames),
             "missing_frame_count": missing_frame_count,
         })
+        if motion_files:
+            source_info.update({
+                "live2d_params": motion_files["live2d_params"],
+                "motion3": motion_files["motion3"],
+            })
+        if live2d_error:
+            source_info["live2d_error"] = live2d_error
         write_source_video_info(record_folder, source_info)
-        root.after(0, lambda path=output_path: finish_youtube_pose_recording(path, None))
+        root.after(0, lambda path=output_path, warning=live2d_error: finish_youtube_pose_recording(path, None, warning))
     except Exception as ex:
         error_message = str(ex)
         source_info.update({"status": "error", "error": error_message})
