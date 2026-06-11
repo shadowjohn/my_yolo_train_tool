@@ -2,12 +2,14 @@
 
 ## Purpose
 
-Add a two-stage motion workflow to `my_yolo_train_tool`:
+Add a motion workflow to `my_yolo_train_tool`:
 
-1. **A: Pose Recorder** records a selected screen region, detects the main dancer with YOLO pose, and writes a clean skeleton time-series JSON.
-2. **B: Live2D Motion Mapper** reads that JSON and converts body rhythm into Live2D-friendly parameter curves, with `.motion3.json` export as the practical target.
+1. **A1: YouTube URL Pose** accepts a YouTube URL, obtains an authorized local working copy, detects pose frames, and writes a clean skeleton time-series JSON.
+2. **A2: Screen ROI Pose Recorder** records a selected screen region, draws a live skeleton canvas/overlay when a person appears, and writes a clean skeleton time-series JSON.
+3. **B: Live2D Motion Mapper** reads the Stage A JSON and converts body rhythm into Live2D-friendly parameter curves, with `.motion3.json` export as the practical target.
+4. **C: Live2D Desktop Dancer** opens a desktop Live2D character, lets the user choose a recorded dance JSON/motion file, and experimentally applies the motion.
 
-The first implementation should prioritize repeatable capture, inspectable data, and fast validation over perfect character retargeting.
+The first implementation should prioritize repeatable capture, inspectable data, and fast validation over perfect character retargeting. The broader product direction is an action library: dance moves first, then reusable daily motions such as drinking coffee, elegant coffee sip, shrug smile, and stretching.
 
 ## Current Project Fit
 
@@ -22,25 +24,89 @@ The existing tool already has the core primitives needed for Stage A:
 
 Stage A should reuse these patterns and avoid replacing the existing detection or training flows.
 
+Implementation must keep a separate `pose_model_file` / `pose_model` and must not reuse or overwrite the current object-detection `model`.
+
 ## External References
 
 - Ultralytics pose models expose detected person instances with `result.keypoints.xy`, `result.keypoints.xyn`, and `result.keypoints.data`.
 - The default human pose layout has 17 COCO keypoints: nose, eyes, ears, shoulders, elbows, wrists, hips, knees, and ankles.
 - Live2D Cubism can import/export `.motion3.json`; frame rate alignment matters when importing motion data.
 - Live2D SDK has consistency checks for `.motion3.json`, so exported files should stay simple and conservative at first.
+- YouTube URL mode must be limited to user-owned, licensed, or otherwise authorized videos. The tool must not bypass DRM, paywalls, login-only content, or access controls. If a URL cannot be processed safely, the UI should tell the user to use screen ROI recording or a local authorized video file instead.
 
-## Stage A: Pose Recorder
+## Stage A: Pose Extraction
 
-### User Flow
+### Shared Output Contract
+
+Both A1 and A2 write the same JSON shape:
+
+```text
+data/projects/{project_name}/pose_record/{record_id}/pose_record.json
+```
+
+This makes B independent of the capture source.
+
+### A1: YouTube URL Pose
+
+#### User Flow
+
+1. User clicks `YouTube URL Pose`.
+2. Tool asks for a YouTube URL.
+3. Tool validates the URL shape and shows a short notice that the user should only process authorized content.
+4. Tool obtains a temporary local working video when permitted by the environment and site access.
+5. Tool samples frames at a target FPS, runs YOLO pose, selects the main person, and writes `pose_record.json`.
+6. Tool reports the generated JSON path.
+
+#### File Layout
+
+```text
+data/projects/{project_name}/pose_record/record_{timestamp}/
+  source_video_info.json
+  pose_record.json
+  preview.html
+```
+
+`source_video_info.json` should store URL, title if available, duration if available, tool status, and a note that the user is responsible for content rights. The first version should not retain the downloaded video after pose extraction unless the user explicitly enables a debug option.
+
+#### Failure Handling
+
+- If download/access fails, show a clear message and do not mark the recording as complete.
+- If the video is too long, cap default processing to a configurable maximum duration.
+- If no person is detected, still write a diagnostic `source_video_info.json` and show the failure reason.
+
+### A2: Screen ROI Pose Recorder
+
+#### User Flow
 
 1. User selects or reuses the current screen ROI.
 2. User clicks a new pose-recording button such as `骨架錄製(開始)`.
 3. The tool captures frames from the ROI with monotonic timestamps.
 4. YOLO pose runs on each sampled frame.
-5. The main dancer is selected from detected people.
-6. Keypoints are normalized, smoothed, and stored.
-7. User clicks stop.
-8. The tool writes `pose_record.json` and an optional skeleton preview.
+5. When a person is detected, the tool draws a live skeleton on a canvas/overlay.
+6. The main dancer is selected from detected people.
+7. Keypoints are normalized, smoothed, and stored with time coordinates.
+8. User clicks stop.
+9. The tool drains the queue, writes `pose_record.json`, and reports the generated file path.
+
+#### Live Skeleton Canvas
+
+The recorder should draw COCO17 keypoint lines over the ROI preview or a transparent overlay. The first version only needs one active skeleton for the selected main person. If multiple people are detected, draw the selected person strongly and either ignore or faintly draw others.
+
+The live view is a verification surface, not the source of truth. `pose_record.json` remains the source of truth.
+
+#### Recorder Robustness
+
+The recorder should reuse proven patterns from `D:\mytools\my_cam_py`:
+
+- bounded frame queue instead of unbounded `frame_list`;
+- `time.monotonic()` for timestamps;
+- `mss` preflight before starting;
+- `with_cursor=False`;
+- stop/finalize path with `recording` and `stop_in_progress`;
+- repeated capture error guard, treating GDI `GetDIBits` / `BitBlt` failures as unsafe and stopping cleanly;
+- worker threads must not update Tkinter directly, and should use `root.after`.
+
+Pose recording and existing desktop object detection should be mutually exclusive unless separate overlays and model state are implemented.
 
 ### Main Dancer Selection
 
@@ -55,12 +121,6 @@ This handles the reference hallway video where a second person appears in the ba
 
 ### Pose JSON Contract
 
-Write Stage A output to:
-
-```text
-data/projects/{project_name}/pose_record/{record_id}/pose_record.json
-```
-
 Recommended schema:
 
 ```json
@@ -70,7 +130,9 @@ Recommended schema:
   "project_name": "project",
   "source": {
     "type": "screen_roi",
+    "input_mode": "screen_roi",
     "roi": { "left": 0, "top": 0, "width": 720, "height": 1280 },
+    "url": null,
     "fps_target": 30,
     "model": "yolo26n-pose.pt"
   },
@@ -215,6 +277,72 @@ The export should include:
 - parameter curves for the configured Live2D parameter IDs;
 - no audio, expression, or physics baking in the first version.
 
+## Stage C: Live2D Desktop Dancer
+
+### User Flow
+
+1. User clicks a button such as `Live2D 人物`.
+2. A desktop Live2D character appears.
+3. The default character can be replaced later.
+4. User clicks the character.
+5. Character asks `要跳哪支舞？`.
+6. User selects a Stage A `pose_record.json`, `live2d_params.json`, or `motion3.json`.
+7. The character attempts to play the mapped motion.
+
+### First Version Target
+
+The first version does not need perfect full-body dance. It should prove that a recorded motion file can drive visible Live2D parameters:
+
+- head/body angle;
+- body bounce;
+- left/right arm rhythm if the model has compatible custom parameters;
+- mouth or message bubble when asking the user to choose a dance.
+
+### Live2D Integration Style
+
+Prefer a local explicit Live2D loader page and small public API:
+
+```js
+window.ScreenAiLive2D = {
+  speak,
+  stopSpeak,
+  setExpression,
+  startMotion,
+  setParam,
+  clearParams,
+  getCurrentModel
+};
+```
+
+Parameter overrides must be reapplied during the Live2D model update loop because stock motions can reset values every frame.
+
+If no Live2D assets exist in this repository, first implementation may create the control page and loader contract, then require adding model/runtime assets before full playback verification.
+
+## Motion Library Direction
+
+Future action files should be organized as reusable motion assets:
+
+```text
+data/projects/{project_name}/pose_record/{record_id}/
+  pose_record.json
+  live2d_params.json
+  motion3.json
+  action_meta.json
+```
+
+`action_meta.json` can later categorize motions:
+
+- dance;
+- coffee;
+- elegant coffee sip;
+- shrug smile;
+- stretch;
+- idle;
+- greeting;
+- custom.
+
+The first implementation only needs dance selection, but the storage should not block these later categories.
+
 ## Error Handling
 
 - If no ROI is selected, prompt the user to select a region first.
@@ -222,10 +350,13 @@ The export should include:
 - If the pose model cannot be loaded, show a clear error and do not start recording.
 - If no person is detected for several consecutive frames, keep recording but mark those frames with quality flags.
 - If capture fails repeatedly, stop recording and write any usable partial data.
+- If YouTube URL processing fails or is not allowed, provide the screen ROI mode as the fastest fallback.
+- If Live2D assets are missing, keep B output valid and show that C requires model/runtime assets.
 
 ## Performance Constraints
 
 - Default target should be 15-30 FPS for pose recording, not 60 FPS.
+- YouTube URL mode should sample frames at the target FPS instead of processing every source frame by default.
 - Store pose data incrementally in memory and flush on stop for the first version.
 - Avoid retaining full raw frames in memory unless preview video generation needs them.
 - Use a small pose model first (`n` size) for interactive testing.
@@ -238,8 +369,10 @@ Minimum validation:
 2. Unit-test main dancer selection with two-person synthetic detections.
 3. Unit-test JSON writer shape and required fields.
 4. Unit-test Live2D parameter mapper with a small synthetic `pose_record.json`.
-5. Smoke-test recording a short ROI clip and confirm `pose_record.json` has increasing `time_ms`.
-6. Smoke-test mapper output and confirm parameter values stay within configured clamps.
+5. Smoke-test YouTube URL mode with an authorized short test video or local equivalent and confirm output path is reported.
+6. Smoke-test recording a short ROI clip and confirm live skeleton appears and `pose_record.json` has increasing `time_ms`.
+7. Smoke-test mapper output and confirm parameter values stay within configured clamps.
+8. Smoke-test Live2D desktop page loads or reports missing assets clearly.
 
 ## Out Of Scope For First Implementation
 
@@ -249,16 +382,20 @@ Minimum validation:
 - Physics baking.
 - Audio-driven lip-sync.
 - Training a custom pose model.
-- Downloading or archiving third-party video content.
+- Downloading or archiving unauthorized third-party video content.
+- Bypassing YouTube DRM, login, paywall, or access controls.
+- Full production-quality Live2D retargeting.
 
 ## Open Implementation Choices
 
 - Whether Stage A preview should be MP4 or HTML first.
 - Whether the pose model file should be bundled or selected manually.
 - Whether Stage B should expose mapping controls in Web UI immediately or start as a button/CLI-style backend action.
+- Whether Stage C should use a browser-served Live2D page first or a native desktop overlay wrapper.
 
 Recommended defaults:
 
 - HTML skeleton preview first, because it is lightweight and uses the JSON directly.
 - Manual pose model path with a default `example_pt/yolo26n-pose.pt` or `example_pt/yolo11n-pose.pt`.
 - Start B as a backend converter triggered from the desktop tool or API; add a fuller mapping UI later.
+- Stage C starts as a locally served Live2D control page opened from the desktop app; native overlay polish can follow after motion playback is proven.
