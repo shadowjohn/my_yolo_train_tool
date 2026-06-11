@@ -5,6 +5,8 @@ import os
 import queue
 import time
 
+from PIL import Image, ImageDraw
+
 COCO17_KEYPOINTS = [
     "nose", "left_eye", "right_eye", "left_ear", "right_ear",
     "left_shoulder", "right_shoulder", "left_elbow", "right_elbow",
@@ -123,6 +125,36 @@ def normalize_keypoints(keypoints, roi):
             "confidence": float(kp.get("confidence", 0.0)),
         })
     return output
+
+
+def draw_pose_skeleton_image(keypoints, roi, lines, confidence_threshold=0.2):
+    point_map = {item.get("name"): item for item in keypoints}
+    image = Image.new("RGBA", (roi["width"], roi["height"]), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+
+    for start_name, end_name in lines:
+        start = point_map.get(start_name)
+        end = point_map.get(end_name)
+        if not has_xy(start) or not has_xy(end):
+            continue
+        if start.get("confidence", 0.0) < confidence_threshold or end.get("confidence", 0.0) < confidence_threshold:
+            continue
+        draw.line(
+            [(float(start["x"]), float(start["y"])), (float(end["x"]), float(end["y"]))],
+            fill=(0, 255, 180, 240),
+            width=5,
+        )
+
+    for point in keypoints:
+        if not has_xy(point):
+            continue
+        if point.get("confidence", 0.0) < confidence_threshold:
+            continue
+        x = float(point["x"])
+        y = float(point["y"])
+        draw.ellipse([x - 4, y - 4, x + 4, y + 4], fill=(255, 255, 255, 255), outline=(0, 80, 255, 255), width=2)
+
+    return image
 
 
 def compute_pose_features(keypoints, roi):

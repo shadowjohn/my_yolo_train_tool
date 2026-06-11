@@ -6,6 +6,7 @@ from pose_motion_core import (
     FrameBuffer,
     build_pose_record,
     compute_pose_features,
+    draw_pose_skeleton_image,
     normalize_keypoints,
     normalize_roi,
     select_main_person,
@@ -67,6 +68,30 @@ class PoseMotionCoreTests(unittest.TestCase):
         self.assertIsNone(features["shoulder_angle_deg"])
         self.assertIsNone(features["left_arm_angle_deg"])
         self.assertIsNone(features["torso_angle_deg"])
+
+    def test_draw_pose_skeleton_image_draws_visible_pixels(self):
+        kpts = [{"name": name, "x": None, "y": None, "confidence": 0.0} for name in COCO17_KEYPOINTS]
+        kpts[COCO17_KEYPOINTS.index("left_shoulder")].update({"x": 10, "y": 20, "confidence": 0.9})
+        kpts[COCO17_KEYPOINTS.index("right_shoulder")].update({"x": 60, "y": 20, "confidence": 0.9})
+        image = draw_pose_skeleton_image(
+            kpts,
+            {"left": 0, "top": 0, "width": 80, "height": 60},
+            [("left_shoulder", "right_shoulder")],
+            confidence_threshold=0.2,
+        )
+        self.assertIsNotNone(image.getchannel("A").getbbox())
+
+    def test_draw_pose_skeleton_image_skips_low_confidence_pixels(self):
+        kpts = [{"name": name, "x": None, "y": None, "confidence": 0.0} for name in COCO17_KEYPOINTS]
+        kpts[COCO17_KEYPOINTS.index("left_shoulder")].update({"x": 10, "y": 20, "confidence": 0.1})
+        kpts[COCO17_KEYPOINTS.index("right_shoulder")].update({"x": 60, "y": 20, "confidence": 0.1})
+        image = draw_pose_skeleton_image(
+            kpts,
+            {"left": 0, "top": 0, "width": 80, "height": 60},
+            [("left_shoulder", "right_shoulder")],
+            confidence_threshold=0.2,
+        )
+        self.assertIsNone(image.getchannel("A").getbbox())
 
     def test_build_pose_record_is_json_serializable(self):
         frame = {

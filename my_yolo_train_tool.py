@@ -50,6 +50,7 @@ from pose_motion_core import (
     bbox_center,
     build_pose_record,
     compute_pose_features,
+    draw_pose_skeleton_image,
     normalize_keypoints,
     normalize_roi,
     select_main_person,
@@ -527,35 +528,7 @@ class OverlayWindow:
         )
 
     def create_pose_skeleton(self, keypoints, roi, lines, confidence_threshold=0.2):
-        point_map = {item.get("name"): item for item in keypoints}
-        image = Image.new("RGBA", (roi["width"], roi["height"]), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(image)
-
-        # 只畫信心度足夠的線段，避免骨架抖動時畫出錯誤連線。
-        for start_name, end_name in lines:
-            start = point_map.get(start_name)
-            end = point_map.get(end_name)
-            if not start or not end:
-                continue
-            if start.get("x") is None or start.get("y") is None or end.get("x") is None or end.get("y") is None:
-                continue
-            if start.get("confidence", 0.0) < confidence_threshold or end.get("confidence", 0.0) < confidence_threshold:
-                continue
-            draw.line(
-                [(float(start["x"]), float(start["y"])), (float(end["x"]), float(end["y"]))],
-                fill=(0, 255, 180, 240),
-                width=5,
-            )
-
-        for point in keypoints:
-            if point.get("x") is None or point.get("y") is None:
-                continue
-            if point.get("confidence", 0.0) < confidence_threshold:
-                continue
-            x = float(point["x"])
-            y = float(point["y"])
-            draw.ellipse([x - 4, y - 4, x + 4, y + 4], fill=(255, 255, 255, 255), outline=(0, 80, 255, 255), width=2)
-
+        image = draw_pose_skeleton_image(keypoints, roi, lines, confidence_threshold)
         self.pose_photo = ImageTk.PhotoImage(image)
         self.clear()
         self.canvas.create_image(roi["left"], roi["top"], image=self.pose_photo, anchor="nw")
