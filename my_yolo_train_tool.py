@@ -193,6 +193,9 @@ def run_desktop_example():
         # 結束 run_keep_screen_predict 裡的 while True
         is_run_keep_screen_predict = False
         return
+    if GDATA.get("pose_recording") or GDATA.get("pose_stop_in_progress") or GDATA.get("pose_url_processing"):
+        messagebox.showwarning("警告", "Pose 處理中，請先停止或等待完成後再啟動桌面辨識。")
+        return
     # 按鈕名稱變成 - 運作中
     GDATA["UI"]["btn_desktop_example_button"].config(text="桌面辨識範例(運作中)")
 
@@ -1254,6 +1257,8 @@ def set_pose_recording_buttons(is_recording):
         GDATA["UI"]["btn_youtube_pose"].config(state=tk.DISABLED if is_recording else tk.NORMAL)
     if "btn_live2d_dancer" in GDATA["UI"]:
         GDATA["UI"]["btn_live2d_dancer"].config(state=tk.DISABLED if is_recording else tk.NORMAL)
+    if "btn_desktop_example_button" in GDATA["UI"]:
+        GDATA["UI"]["btn_desktop_example_button"].config(state=tk.DISABLED if is_recording else tk.NORMAL)
 
 
 def set_capture_overlays_visible(visible):
@@ -1489,11 +1494,16 @@ def set_youtube_pose_processing_buttons(is_processing):
         GDATA["UI"]["btn_screen_pose_record"].config(state=state, text="骨架錄製(開始)")
     if "btn_live2d_dancer" in GDATA["UI"]:
         GDATA["UI"]["btn_live2d_dancer"].config(state=state)
+    if "btn_desktop_example_button" in GDATA["UI"]:
+        GDATA["UI"]["btn_desktop_example_button"].config(state=state)
 
 
 def start_youtube_pose_recording():
     if GDATA["pose_recording"] or GDATA.get("pose_url_processing"):
         messagebox.showwarning("警告", "Pose 處理已經在進行中！")
+        return
+    if is_run_keep_screen_predict:
+        messagebox.showwarning("警告", "請先停止桌面辨識範例，再開始 YouTube Pose。")
         return
     try:
         project_folder = get_current_project_folder()
