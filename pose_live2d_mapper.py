@@ -12,11 +12,12 @@ DEFAULT_MAPPING = [
 ]
 
 
-def build_live2d_params(pose_record, mapping=None):
+def build_live2d_params(pose_record, mapping=None, source_pose_record="pose_record.json"):
     mapping = mapping or DEFAULT_MAPPING
     fps = int(pose_record.get("source", {}).get("fps_target", 30) or 30)
     frames = pose_record.get("frames", [])
     duration_ms = frames[-1]["time_ms"] if frames else 0
+    source_name = pose_record.get("source_pose_record", source_pose_record)
     parameters = []
     for spec in mapping:
         lo, hi = spec["clamp"]
@@ -27,7 +28,13 @@ def build_live2d_params(pose_record, mapping=None):
             value = clamp((0.0 if raw_value is None else raw_value) * spec["scale"] + spec["offset"], lo, hi)
             keys.append({"time_ms": int(frame["time_ms"]), "value": value})
         parameters.append(dict(spec, keys=keys))
-    return {"version": 1, "fps": fps, "duration_ms": int(duration_ms), "parameters": parameters}
+    return {
+        "version": 1,
+        "source_pose_record": source_name,
+        "fps": fps,
+        "duration_ms": int(duration_ms),
+        "parameters": parameters,
+    }
 
 
 def build_motion3(live2d_params):
@@ -35,6 +42,8 @@ def build_motion3(live2d_params):
     total_segments = 0
     total_points = 0
     for param in live2d_params.get("parameters", []):
+        if not param.get("keys"):
+            continue
         segments = []
         first = True
         for key in param.get("keys", []):
