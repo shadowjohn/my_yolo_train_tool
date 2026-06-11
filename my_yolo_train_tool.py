@@ -667,6 +667,8 @@ GDATA = {
     "pose_capture_total_frames": 0,
     "pose_missing_frames": 0,
     "pose_capture_error": None,
+    "pose_url_processing": False,
+    "pose_video_max_duration_seconds": 300,
 }
 
 lock_file = os.path.join(basedir, "lock.txt")
@@ -1479,8 +1481,152 @@ def toggle_screen_pose_recording():
         start_screen_pose_recording()
 
 
+def set_youtube_pose_processing_buttons(is_processing):
+    state = tk.DISABLED if is_processing else tk.NORMAL
+    if "btn_youtube_pose" in GDATA["UI"]:
+        GDATA["UI"]["btn_youtube_pose"].config(state=state)
+    if "btn_screen_pose_record" in GDATA["UI"]:
+        GDATA["UI"]["btn_screen_pose_record"].config(state=state, text="骨架錄製(開始)")
+    if "btn_live2d_dancer" in GDATA["UI"]:
+        GDATA["UI"]["btn_live2d_dancer"].config(state=state)
+
+
 def start_youtube_pose_recording():
-    messagebox.showinfo("提示", "YouTube URL Pose 下一步接上。")
+    if GDATA["pose_recording"] or GDATA.get("pose_url_processing"):
+        messagebox.showwarning("警告", "Pose 處理已經在進行中！")
+        return
+    try:
+        project_folder = get_current_project_folder()
+        url = simpledialog.askstring("YouTube URL Pose", "請貼上已授權可處理的 YouTube URL：")
+        if not url:
+            return
+        url = url.strip()
+        if not is_probable_youtube_url(url):
+            messagebox.showwarning("URL 格式不正確", "請輸入 YouTube URL，或改用螢幕框選模式。")
+            return
+        if not messagebox.askokcancel("授權確認", "請只處理你擁有、已授權或可合法使用的影片。\n\n確定要繼續？"):
+            return
+        record_folder = create_pose_record_folder(project_folder)
+        GDATA["pose_url_processing"] = True
+        set_youtube_pose_processing_buttons(True)
+        set_pose_status("YouTube Pose 處理中...")
+        GDATA["THREAD"]["youtube_pose_thread"] = threading.Thread(
+            target=run_youtube_pose_worker,
+            args=(url, record_folder),
+            daemon=True,
+        )
+        GDATA["THREAD"]["youtube_pose_thread"].start()
+    except Exception as ex:
+        GDATA["pose_url_processing"] = False
+        set_youtube_pose_processing_buttons(False)
+        messagebox.showerror("YouTube Pose 啟動失敗", str(ex))
+
+
+def finish_youtube_pose_recording(output_path=None, error_message=None):
+    GDATA["pose_url_processing"] = False
+    set_youtube_pose_processing_buttons(False)
+    if error_message:
+        set_pose_status("YouTube Pose 失敗：%s" % error_message)
+        messagebox.showerror("YouTube Pose 失敗", str(error_message))
+        return
+    GDATA["pose_last_output_file"] = output_path or ""
+    set_pose_status("YouTube Pose 完成：%s" % output_path)
+    messagebox.showinfo("提示", "YouTube Pose 完成：\n%s" % output_path)
+
+
+def run_youtube_pose_worker(url, record_folder):
+    tmp_dir = tempfile.mkdtemp(prefix="youtube_pose_")
+    output_path = None
+    source_info = {
+        "url": url,
+        "status": "started",
+        "rights_note": "請只處理你擁有、已授權或可合法使用的影片。",
+        "max_duration_seconds": GDATA["pose_video_max_duration_seconds"],
+    }
+    try:
+        write_source_video_info(record_folder, source_info)
+        model_instance = ensure_pose_model()
+        video_path, video_info = download_authorized_youtube_video(
+            url,
+            tmp_dir,
+            max_duration_seconds=GDATA["pose_video_max_duration_seconds"],
+        )
+        source_info.update({
+            "status": "downloaded",
+            "title": video_info.get("title"),
+            "duration": video_info.get("duration"),
+            "extractor": video_info.get("extractor"),
+        })
+        write_source_video_info(record_folder, source_info)
+
+        frames = []
+        roi = None
+        previous_center = None
+        total_frame_count = 0
+        missing_frame_count = 0
+
+        for frame_index, time_ms, frame in iter_video_frames(
+            video_path,
+            fps_target=GDATA["pose_fps_target"],
+            max_duration_seconds=GDATA["pose_video_max_duration_seconds"],
+        ):
+            total_frame_count += 1
+            roi = {"left": 0, "top": 0, "width": int(frame.shape[1]), "height": int(frame.shape[0])}
+            result = model_instance.predict(frame, imgsz=1024, conf=pose_confidence, verbose=False)[0]
+            people = yolo_pose_result_to_people(result, roi)
+            person = select_main_person(
+                people,
+                roi_center=(roi["width"] / 2.0, roi["height"] / 2.0),
+                previous_center=previous_center,
+            )
+            if person is None:
+                missing_frame_count += 1
+                continue
+            previous_center = bbox_center(person["bbox"])
+            frames.append(build_pose_frame(frame_index, time_ms, person, roi))
+
+        if roi is None:
+            raise RuntimeError("影片沒有可處理的影格，請改用螢幕框選模式。")
+
+        output_path = os.path.join(record_folder, "pose_record.json")
+        source = {
+            "type": "youtube_url",
+            "input_mode": "youtube_url",
+            "url": url,
+            "title": source_info.get("title"),
+            "duration": source_info.get("duration"),
+            "total_frame_count": total_frame_count,
+            "detected_frame_count": len(frames),
+            "missing_frame_count": missing_frame_count,
+        }
+        record = build_pose_record(
+            project_name=GDATA.get("project", ""),
+            source=source,
+            roi=roi,
+            fps_target=GDATA["pose_fps_target"],
+            model_name=os.path.basename(pose_model_file),
+            frames=frames,
+        )
+        write_json_atomic(output_path, record)
+        source_info.update({
+            "status": "complete",
+            "pose_record": output_path,
+            "total_frame_count": total_frame_count,
+            "detected_frame_count": len(frames),
+            "missing_frame_count": missing_frame_count,
+        })
+        write_source_video_info(record_folder, source_info)
+        root.after(0, lambda path=output_path: finish_youtube_pose_recording(path, None))
+    except Exception as ex:
+        error_message = str(ex)
+        source_info.update({"status": "error", "error": error_message})
+        try:
+            write_source_video_info(record_folder, source_info)
+        except Exception:
+            logging.exception("write source_video_info failed")
+        root.after(0, lambda path=output_path, message=error_message: finish_youtube_pose_recording(path, message))
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 def open_live2d_dancer():
