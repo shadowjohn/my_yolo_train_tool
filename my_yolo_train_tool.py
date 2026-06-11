@@ -522,6 +522,40 @@ class OverlayWindow:
             GDATA["x1_model"], GDATA["y1_model"], image=self.photo, anchor="nw"
         )
 
+    def create_pose_skeleton(self, keypoints, roi, lines, confidence_threshold=0.2):
+        point_map = {item.get("name"): item for item in keypoints}
+        image = Image.new("RGBA", (roi["width"], roi["height"]), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+
+        # 只畫信心度足夠的線段，避免骨架抖動時畫出錯誤連線。
+        for start_name, end_name in lines:
+            start = point_map.get(start_name)
+            end = point_map.get(end_name)
+            if not start or not end:
+                continue
+            if start.get("x") is None or start.get("y") is None or end.get("x") is None or end.get("y") is None:
+                continue
+            if start.get("confidence", 0.0) < confidence_threshold or end.get("confidence", 0.0) < confidence_threshold:
+                continue
+            draw.line(
+                [(float(start["x"]), float(start["y"])), (float(end["x"]), float(end["y"]))],
+                fill=(0, 255, 180, 240),
+                width=5,
+            )
+
+        for point in keypoints:
+            if point.get("x") is None or point.get("y") is None:
+                continue
+            if point.get("confidence", 0.0) < confidence_threshold:
+                continue
+            x = float(point["x"])
+            y = float(point["y"])
+            draw.ellipse([x - 4, y - 4, x + 4, y + 4], fill=(255, 255, 255, 255), outline=(0, 80, 255, 255), width=2)
+
+        self.pose_photo = ImageTk.PhotoImage(image)
+        self.clear()
+        self.canvas.create_image(roi["left"], roi["top"], image=self.pose_photo, anchor="nw")
+
     def create_rectangle(self, x1, y1, x2, y2, labelName=None):
         # 繪製矩形框並儲存矩形對象
         rect = self.canvas.create_rectangle(x1, y1, x2, y2, outline="red", width=2)
@@ -628,7 +662,11 @@ GDATA = {
     "pose_record_folder": None,
     "pose_last_output_file": "",
     "pose_previous_center": None,
+    "pose_current_roi": None,
     "pose_fps_target": 15,
+    "pose_capture_total_frames": 0,
+    "pose_missing_frames": 0,
+    "pose_capture_error": None,
 }
 
 lock_file = os.path.join(basedir, "lock.txt")
@@ -1187,6 +1225,268 @@ def build_pose_frame(frame_index, time_ms, person, roi):
     }
 
 
+def get_current_pose_roi():
+    return normalize_roi(GDATA["x1"], GDATA["y1"], GDATA["x2"], GDATA["y2"])
+
+
+def preflight_pose_capture(roi):
+    monitor = {"left": roi["left"], "top": roi["top"], "width": roi["width"], "height": roi["height"]}
+    with mss.mss(with_cursor=False) as sct:
+        sct.grab(monitor)
+    return True
+
+
+def set_pose_status(message):
+    if "pose_status_label" in GDATA["UI"]:
+        GDATA["UI"]["pose_status_label"].config(text=message)
+    elif "status_label" in GDATA["UI"]:
+        GDATA["UI"]["status_label"].config(text=message)
+
+
+def set_pose_recording_buttons(is_recording):
+    if "btn_screen_pose_record" not in GDATA["UI"]:
+        return
+    button_text = "骨架錄製(停止)" if is_recording else "骨架錄製(開始)"
+    GDATA["UI"]["btn_screen_pose_record"].config(text=button_text, state=tk.NORMAL)
+    if "btn_youtube_pose" in GDATA["UI"]:
+        GDATA["UI"]["btn_youtube_pose"].config(state=tk.DISABLED if is_recording else tk.NORMAL)
+    if "btn_live2d_dancer" in GDATA["UI"]:
+        GDATA["UI"]["btn_live2d_dancer"].config(state=tk.DISABLED if is_recording else tk.NORMAL)
+
+
+def set_capture_overlays_visible(visible):
+    alpha = 0.5 if visible else 0.0
+    if "overlay" in GDATA and GDATA["overlay"] is not None:
+        GDATA["overlay"].attributes("-alpha", alpha)
+    if "overlay_model" in GDATA and GDATA["overlay_model"] is not None:
+        GDATA["overlay_model"].attributes("-alpha", alpha)
+    if "overlay_window" in globals():
+        if visible:
+            overlay_window.showAll()
+        else:
+            overlay_window.hideAll()
+
+
+def run_on_ui_thread_and_wait(callback, timeout=0.3):
+    done = threading.Event()
+
+    def wrapper():
+        try:
+            callback()
+        finally:
+            done.set()
+
+    root.after(0, wrapper)
+    done.wait(timeout)
+
+
+def schedule_pose_overlay(person, roi):
+    keypoints = [dict(item) for item in person["keypoints"]]
+    roi_copy = dict(roi)
+    root.after(
+        0,
+        lambda: overlay_window.create_pose_skeleton(keypoints, roi_copy, COCO17_SKELETON, pose_confidence),
+    )
+
+
+def schedule_pose_overlay_clear():
+    root.after(0, overlay_window.clear)
+
+
+def process_pose_capture_item(item, roi, model_instance):
+    image = cv2.cvtColor(item["frame"], cv2.COLOR_BGRA2BGR)
+    result = model_instance.predict(image, imgsz=1024, conf=pose_confidence, verbose=False)[0]
+    people = yolo_pose_result_to_people(result, roi)
+    person = select_main_person(
+        people,
+        roi_center=(roi["width"] / 2.0, roi["height"] / 2.0),
+        previous_center=GDATA["pose_previous_center"],
+    )
+    if person is None:
+        GDATA["pose_missing_frames"] += 1
+        schedule_pose_overlay_clear()
+        return False
+
+    GDATA["pose_previous_center"] = bbox_center(person["bbox"])
+    GDATA["pose_frames"].append(build_pose_frame(item["frame_index"], item["time_ms"], person, roi))
+    schedule_pose_overlay(person, roi)
+    return True
+
+
+def finalize_screen_pose_record(error_message=None):
+    GDATA["pose_recording"] = False
+    GDATA["pose_stop_in_progress"] = False
+    set_pose_recording_buttons(False)
+    set_capture_overlays_visible(True)
+
+    record_folder = GDATA.get("pose_record_folder")
+    if not record_folder:
+        set_pose_status("骨架錄製未產生資料夾")
+        return
+
+    try:
+        output_path = os.path.join(record_folder, "pose_record.json")
+        roi = GDATA.get("pose_current_roi") or get_current_pose_roi()
+        source = {
+            "type": "screen_roi",
+            "input_mode": "screen_roi",
+            "total_frame_count": GDATA["pose_capture_total_frames"],
+            "detected_frame_count": len(GDATA["pose_frames"]),
+            "missing_frame_count": GDATA["pose_missing_frames"],
+            "capture_error": error_message,
+        }
+        record = build_pose_record(
+            project_name=GDATA.get("project", ""),
+            source=source,
+            roi=roi,
+            fps_target=GDATA["pose_fps_target"],
+            model_name=os.path.basename(pose_model_file),
+            frames=GDATA["pose_frames"],
+        )
+        write_json_atomic(output_path, record)
+        GDATA["pose_last_output_file"] = output_path
+        set_pose_status("骨架錄製完成：%s" % output_path)
+        if error_message:
+            messagebox.showwarning("提示", "骨架錄製已停止並輸出部分資料：\n%s\n\n%s" % (output_path, error_message))
+        else:
+            messagebox.showinfo("提示", "骨架錄製完成：\n%s" % output_path)
+    except Exception as e:
+        set_pose_status("骨架錄製輸出失敗：%s" % e)
+        messagebox.showerror("錯誤", "骨架錄製輸出失敗：\n%s" % e)
+
+
+def screen_pose_record_worker(roi, record_folder):
+    monitor = {"left": roi["left"], "top": roi["top"], "width": roi["width"], "height": roi["height"]}
+    frame_interval = 1.0 / max(1, int(GDATA["pose_fps_target"]))
+    start_time = time.monotonic()
+    next_frame_time = start_time
+    frame_index = 0
+    consecutive_errors = 0
+    model_instance = ensure_pose_model()
+
+    try:
+        with mss.mss(with_cursor=False) as sct:
+            while GDATA["pose_recording"]:
+                now = time.monotonic()
+                if now < next_frame_time:
+                    time.sleep(min(0.01, next_frame_time - now))
+                    continue
+
+                try:
+                    run_on_ui_thread_and_wait(lambda: set_capture_overlays_visible(False))
+                    sct_img = sct.grab(monitor)
+                    run_on_ui_thread_and_wait(lambda: set_capture_overlays_visible(True))
+                    frame_time_ms = int((now - start_time) * 1000)
+                    GDATA["pose_capture_total_frames"] += 1
+                    GDATA["pose_frame_buffer"].put(
+                        now,
+                        np.array(sct_img),
+                        frame_index=frame_index,
+                        time_ms=frame_time_ms,
+                    )
+                    frame_index += 1
+                    next_frame_time += frame_interval
+                    consecutive_errors = 0
+                except Exception as e:
+                    consecutive_errors += 1
+                    GDATA["pose_capture_error"] = str(e)
+                    run_on_ui_thread_and_wait(lambda: set_capture_overlays_visible(True))
+                    if consecutive_errors >= 5:
+                        GDATA["pose_recording"] = False
+                        break
+                    time.sleep(0.05)
+                    continue
+
+                item = GDATA["pose_frame_buffer"].get(timeout=0.0)
+                if item is None:
+                    continue
+                try:
+                    process_pose_capture_item(item, roi, model_instance)
+                except Exception as e:
+                    GDATA["pose_capture_error"] = str(e)
+                    logging.exception("pose capture inference failed")
+                    GDATA["pose_missing_frames"] += 1
+
+        while GDATA["pose_frame_buffer"] is not None and not GDATA["pose_frame_buffer"].empty():
+            item = GDATA["pose_frame_buffer"].get(timeout=0.0)
+            if item is None:
+                break
+            try:
+                process_pose_capture_item(item, roi, model_instance)
+            except Exception as e:
+                GDATA["pose_capture_error"] = str(e)
+                logging.exception("pose capture drain failed")
+                GDATA["pose_missing_frames"] += 1
+    finally:
+        root.after(0, lambda: finalize_screen_pose_record(GDATA.get("pose_capture_error")))
+
+
+def start_screen_pose_recording():
+    global is_run_keep_screen_predict
+    if GDATA["pose_recording"]:
+        messagebox.showwarning("警告", "骨架錄製已經在進行中！")
+        return
+    if is_run_keep_screen_predict:
+        messagebox.showwarning("警告", "請先停止桌面辨識範例，再開始骨架錄製。")
+        return
+
+    try:
+        project_folder = get_current_project_folder()
+        roi = get_current_pose_roi()
+        preflight_pose_capture(roi)
+        ensure_pose_model()
+        record_folder = create_pose_record_folder(project_folder)
+    except Exception as e:
+        messagebox.showerror("錯誤", str(e))
+        return
+
+    GDATA["pose_recording"] = True
+    GDATA["pose_stop_in_progress"] = False
+    GDATA["pose_frame_buffer"] = FrameBuffer(max_frames=max(5, int(GDATA["pose_fps_target"]) * 5))
+    GDATA["pose_frames"] = []
+    GDATA["pose_record_folder"] = record_folder
+    GDATA["pose_last_output_file"] = ""
+    GDATA["pose_previous_center"] = None
+    GDATA["pose_current_roi"] = dict(roi)
+    GDATA["pose_capture_total_frames"] = 0
+    GDATA["pose_missing_frames"] = 0
+    GDATA["pose_capture_error"] = None
+    set_pose_recording_buttons(True)
+    set_pose_status("骨架錄製中...")
+    GDATA["THREAD"]["pose_record_thread"] = threading.Thread(
+        target=screen_pose_record_worker,
+        args=(roi, record_folder),
+        daemon=True,
+    )
+    GDATA["THREAD"]["pose_record_thread"].start()
+
+
+def stop_screen_pose_recording():
+    if not GDATA["pose_recording"]:
+        messagebox.showwarning("警告", "骨架錄製未開始！")
+        return
+    GDATA["pose_stop_in_progress"] = True
+    GDATA["pose_recording"] = False
+    if "btn_screen_pose_record" in GDATA["UI"]:
+        GDATA["UI"]["btn_screen_pose_record"].config(text="骨架錄製(停止中)", state=tk.DISABLED)
+    set_pose_status("骨架錄製停止中，正在輸出 JSON...")
+
+
+def toggle_screen_pose_recording():
+    if GDATA["pose_recording"]:
+        stop_screen_pose_recording()
+    else:
+        start_screen_pose_recording()
+
+
+def start_youtube_pose_recording():
+    messagebox.showinfo("提示", "YouTube URL Pose 下一步接上。")
+
+
+def open_live2d_dancer():
+    messagebox.showinfo("提示", "Live2D 人物下一步接上；預設角色方向：黑長髮馬尾妹。")
+
+
 def on_message():
     global MESSAGE
     messagebox.showinfo("說明", MESSAGE)
@@ -1419,8 +1719,8 @@ if os.path.isfile(GDATA["basedir"] + "\\tmp_icon.ico"):
 # 計算窗口位置
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
-window_width = 420  # 假設窗口寬度為 420
-window_height = 250  # 假設窗口高度為  160
+window_width = 560  # 增加 Pose / Live2D 控制按鈕寬度
+window_height = 310  # 增加骨架錄製控制列
 
 # 計算窗口位置: 右下角150px，距離底部30%
 x = screen_width - window_width - 150
@@ -1582,7 +1882,35 @@ GDATA["UI"]["confidence_scale"].set(model_confidence)
 GDATA["UI"]["confidence_scale"].pack(side=tk.LEFT, padx=5)
 
 
-# 第六列，狀態列
+# 第六列，Pose / Live2D
+GDATA["UI"]["pose_frame"] = tk.Frame(root)
+GDATA["UI"]["pose_frame"].pack(padx=5, pady=5, fill=tk.X)
+
+GDATA["UI"]["btn_youtube_pose"] = tk.Button(
+    GDATA["UI"]["pose_frame"],
+    text="YouTube Pose",
+    command=start_youtube_pose_recording,
+)
+GDATA["UI"]["btn_youtube_pose"].pack(side=tk.LEFT, padx=5)
+
+GDATA["UI"]["btn_screen_pose_record"] = tk.Button(
+    GDATA["UI"]["pose_frame"],
+    text="骨架錄製(開始)",
+    command=toggle_screen_pose_recording,
+)
+GDATA["UI"]["btn_screen_pose_record"].pack(side=tk.LEFT, padx=5)
+
+GDATA["UI"]["btn_live2d_dancer"] = tk.Button(
+    GDATA["UI"]["pose_frame"],
+    text="Live2D 人物",
+    command=open_live2d_dancer,
+)
+GDATA["UI"]["btn_live2d_dancer"].pack(side=tk.LEFT, padx=5)
+
+GDATA["UI"]["pose_status_label"] = tk.Label(GDATA["UI"]["pose_frame"], text="", anchor=tk.W)
+GDATA["UI"]["pose_status_label"].pack(side=tk.LEFT, padx=5)
+
+# 第七列，狀態列
 GDATA["UI"]["sixth_frame"] = tk.Frame(root)
 GDATA["UI"]["sixth_frame"].pack(padx=5, pady=5, fill=tk.X)
 
