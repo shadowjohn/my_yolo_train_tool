@@ -160,7 +160,7 @@ model = None
 # 信心度
 model_confidence = 0.6
 
-pose_model_file = os.path.join(basedir, "example_pt", "yolo26n-pose.pt")
+pose_model_file = os.path.join(basedir, "example_pt", "yolo11n-pose.pt")
 pose_model = None
 pose_confidence = 0.35
 
@@ -1155,13 +1155,65 @@ def run_update_confidence(input):
     GDATA["UI"]["confidence_label"].config(text="信心值: %.1f" % confidence)
 
 
+def get_pose_model_candidates():
+    candidates = []
+    for candidate in [
+        pose_model_file,
+        os.path.join(basedir, "yolo11n-pose.pt"),
+        os.path.join(basedir, "example_pt", "yolo11n-pose.pt"),
+        "yolo11n-pose.pt",
+        os.path.join(basedir, "yolov8n-pose.pt"),
+        os.path.join(basedir, "example_pt", "yolov8n-pose.pt"),
+        "yolov8n-pose.pt",
+    ]:
+        if candidate and candidate not in candidates:
+            candidates.append(candidate)
+    return candidates
+
+
 def ensure_pose_model():
     global pose_model
+    global pose_model_file
     if pose_model is None:
-        if not os.path.isfile(pose_model_file):
-            raise RuntimeError("找不到 pose model: %s" % pose_model_file)
-        pose_model = YOLO(pose_model_file)
+        last_error = None
+        tried = []
+        for candidate in get_pose_model_candidates():
+            needs_local_file = os.path.isabs(candidate) or os.sep in candidate or "/" in candidate
+            if needs_local_file and not os.path.isfile(candidate):
+                tried.append(candidate)
+                continue
+            try:
+                pose_model = YOLO(candidate)
+                pose_model_file = candidate
+                return pose_model
+            except Exception as e:
+                last_error = e
+                tried.append(candidate)
+        reason = "找不到可用 pose model，請按「選Pose模型」指定 *-pose.pt"
+        if last_error:
+            reason += "\n最後錯誤：%s" % last_error
+        reason += "\n已嘗試：\n%s" % "\n".join(tried)
+        raise RuntimeError(reason)
     return pose_model
+
+
+def run_choice_pose_pt():
+    global pose_model_file
+    global pose_model
+    file_path = filedialog.askopenfilename(
+        title="選擇 YOLO Pose 模型檔",
+        filetypes=(("pose pt files", "*-pose.pt"), ("pt files", "*.pt")),
+    )
+    if not file_path:
+        return
+    try:
+        pose_model_file = file_path
+        pose_model = YOLO(pose_model_file)
+        set_pose_status("Pose 模型：%s" % os.path.basename(pose_model_file))
+        messagebox.showinfo("提示", "Pose 模型已載入：\n%s" % pose_model_file)
+    except Exception as e:
+        pose_model = None
+        messagebox.showerror("錯誤", "Pose 模型載入失敗：\n%s" % e)
 
 
 def get_current_project_folder():
@@ -1285,6 +1337,8 @@ def set_pose_recording_buttons(is_recording):
         GDATA["UI"]["btn_live2d_dancer"].config(state=tk.DISABLED if is_recording else tk.NORMAL)
     if "btn_desktop_example_button" in GDATA["UI"]:
         GDATA["UI"]["btn_desktop_example_button"].config(state=tk.DISABLED if is_recording else tk.NORMAL)
+    if "btn_pose_model" in GDATA["UI"]:
+        GDATA["UI"]["btn_pose_model"].config(state=tk.DISABLED if is_recording else tk.NORMAL)
 
 
 def set_capture_overlays_visible(visible):
@@ -1530,6 +1584,8 @@ def set_youtube_pose_processing_buttons(is_processing):
         GDATA["UI"]["btn_live2d_dancer"].config(state=state)
     if "btn_desktop_example_button" in GDATA["UI"]:
         GDATA["UI"]["btn_desktop_example_button"].config(state=state)
+    if "btn_pose_model" in GDATA["UI"]:
+        GDATA["UI"]["btn_pose_model"].config(state=state)
 
 
 def start_youtube_pose_recording():
@@ -2108,6 +2164,13 @@ GDATA["UI"]["confidence_scale"].pack(side=tk.LEFT, padx=5)
 # 第六列，Pose / Live2D
 GDATA["UI"]["pose_frame"] = tk.Frame(root)
 GDATA["UI"]["pose_frame"].pack(padx=5, pady=5, fill=tk.X)
+
+GDATA["UI"]["btn_pose_model"] = tk.Button(
+    GDATA["UI"]["pose_frame"],
+    text="選Pose模型",
+    command=run_choice_pose_pt,
+)
+GDATA["UI"]["btn_pose_model"].pack(side=tk.LEFT, padx=5)
 
 GDATA["UI"]["btn_youtube_pose"] = tk.Button(
     GDATA["UI"]["pose_frame"],
