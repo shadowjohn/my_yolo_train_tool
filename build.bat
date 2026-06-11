@@ -1,6 +1,10 @@
 rem rd /S build
 rem -w --clean
 c:\python312_64\scripts\pyinstaller -F --onefile --icon="pic\icon.ico" --version-file=metadata.txt ^
+--hidden-import=fastapi ^
+--hidden-import=uvicorn ^
+--hidden-import=python_multipart ^
+--hidden-import=starlette ^
 --exclude-module=_ssl ^
 --exclude-module=_bz2 ^
 --exclude-module=_lzma ^

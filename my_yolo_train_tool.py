@@ -23,11 +23,17 @@ print(
 import webbrowser
 import sys
 import base64
+import mimetypes
 import portalocker
 import mss
 import php
 import keyboard
-from flask import Flask, render_template, jsonify, request, send_from_directory
+import asyncio
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.gzip import GZipMiddleware
+import uvicorn
 from ctypes import windll, byref, sizeof, c_int, wintypes
 from ctypes.wintypes import HWND, LONG, RECT
 import requests
@@ -43,6 +49,8 @@ import json
 import random
 import logging
 from urllib.parse import quote
+from urllib.parse import parse_qs
+
 from pose_motion_core import (
     COCO17_KEYPOINTS,
     COCO17_SKELETON,
@@ -226,6 +234,36 @@ def run_desktop_example():
 
 is_run_keep_screen_predict = False
 run_desktop_flask_example_PID = None
+
+is_auto_click = False
+auto_click_delay_ms = 150  # 每次點擊間隔 ms，避免遊戲來不及回應
+
+click_history = []       # [(abs_x, abs_y, timestamp_ms), ...]
+click_debounce_ms = 800  # 同位置 debounce 時間窗口（ms）
+click_debounce_px = 30   # 判定「同一位置」的像素半徑
+
+
+def do_auto_click(abs_x, abs_y):
+    global click_history
+    now_ms = time.time() * 1000
+    # 清除過期記錄
+    click_history = [(x, y, t) for x, y, t in click_history if now_ms - t < click_debounce_ms]
+    # 30px 內有近期點擊紀錄就跳過，避免對同一隻老鼠重複點擊
+    for cx, cy, _ in click_history:
+        if abs(abs_x - cx) < click_debounce_px and abs(abs_y - cy) < click_debounce_px:
+            return
+    # 記錄 + 點擊
+    click_history.append((abs_x, abs_y, now_ms))
+    ctypes.windll.user32.SetCursorPos(abs_x, abs_y)
+    ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)  # left button down
+    ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)  # left button up
+
+
+def toggle_auto_click():
+    global is_auto_click
+    is_auto_click = not is_auto_click
+    txt = "自動點擊(開)" if is_auto_click else "自動點擊(關)"
+    GDATA["UI"]["btn_auto_click"].config(text=txt)
 
 
 def get_dynamic_imgsz(image_path):
@@ -417,6 +455,15 @@ def run_keep_screen_predict():
                 #    overlay_window.create_rectangle(x1, y1, x2, y2)
             # overlay_window.clear()
             overlay_window.create_multi_rectangle(bboxes)
+
+            # 自動點擊：將 bbox 相對座標轉成螢幕絕對座標後點擊
+            if is_auto_click and bboxes:
+                for box in bboxes:
+                    bx1, by1, bx2, by2 = box[0], box[1], box[2], box[3]
+                    abs_x = GDATA["x1_model"] + (bx1 + bx2) // 2
+                    abs_y = GDATA["y1_model"] + (by1 + by2) // 2
+                    do_auto_click(abs_x, abs_y)
+                    time.sleep(auto_click_delay_ms / 1000.0)
         except Exception as e:
             print(e)
             pass
@@ -2109,6 +2156,13 @@ GDATA["UI"]["btn_desktop_example_button"] = tk.Button(
 )
 GDATA["UI"]["btn_desktop_example_button"].pack(side=tk.LEFT, padx=5)
 
+GDATA["UI"]["btn_auto_click"] = tk.Button(
+    GDATA["UI"]["fourth_frame"],
+    text="自動點擊(關)",
+    command=toggle_auto_click,
+)
+GDATA["UI"]["btn_auto_click"].pack(side=tk.LEFT, padx=5)
+
 # 第五列，信心度
 GDATA["UI"]["fifth_frame"] = tk.Frame(root)
 GDATA["UI"]["fifth_frame"].pack(padx=5, pady=5, fill=tk.X)
@@ -2132,7 +2186,6 @@ GDATA["UI"]["confidence_scale"] = tk.Scale(
 )
 GDATA["UI"]["confidence_scale"].set(model_confidence)
 GDATA["UI"]["confidence_scale"].pack(side=tk.LEFT, padx=5)
-
 
 # 第六列，Pose / Live2D
 GDATA["UI"]["pose_frame"] = tk.Frame(root)
@@ -2190,7 +2243,7 @@ root.bind("<B1-Motion>", win_do_move)
 # 這樣就可以在網頁上看到 www/index.html 的畫面
 # 程式開始
 # 用 thread 跑
-def run_flask():
+def _legacy_run_flask_unused():
     app = Flask(__name__, template_folder="www", static_folder="www")
 
     @app.route("/")
@@ -2798,11 +2851,526 @@ def run_flask():
     app.run(debug=True, host="127.0.0.1", port=9487, threaded=True, use_reloader=False)
 
 
-threading.Thread(target=run_flask).start()
+def create_fastapi_app():
+    app = FastAPI()
+    app.add_middleware(GZipMiddleware, minimum_size=500)
+    www_folder = os.path.join(os.getcwd(), "www")
+
+    # HTML 不允許瀏覽器快取，確保修改立即生效
+    from starlette.middleware.base import BaseHTTPMiddleware
+    class NoCacheHTMLMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request, call_next):
+            response = await call_next(request)
+            path = request.url.path
+            if path.endswith(".html") or path == "/" or not "." in path.split("/")[-1]:
+                response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+                response.headers["Pragma"] = "no-cache"
+                response.headers["Expires"] = "0"
+            return response
+    app.add_middleware(NoCacheHTMLMiddleware)
+
+    app.mount("/www", StaticFiles(directory=www_folder), name="www")
+
+    def api_json(payload, status_code=200):
+        return JSONResponse(content=payload, status_code=status_code)
+
+    async def read_form_payload(request: Request):
+        try:
+            return dict(await request.form())
+        except AssertionError:
+            body = (await request.body()).decode("utf-8")
+            parsed = parse_qs(body, keep_blank_values=True)
+            return {key: values[-1] if values else "" for key, values in parsed.items()}
+
+    @app.get("/")
+    def home():
+        return FileResponse(os.path.join(www_folder, "index.html"))
+
+    @app.get("/data/{filename:path}")
+    def data(filename: str):
+        _PD = os.getcwd()
+        data_folder = os.path.join(_PD, "data")
+        filepath = os.path.realpath(os.path.join(data_folder, filename))
+        if not filepath.startswith(os.path.realpath(data_folder)):
+            return api_json({"status": "NO", "reason": "Invalid path"}, 400)
+        if not os.path.isfile(filepath):
+            return api_json({"status": "NO", "reason": "File not found"}, 404)
+        media_type = mimetypes.guess_type(filepath)[0] or "application/octet-stream"
+        return FileResponse(filepath, media_type=media_type)
+
+    @app.api_route("/api", methods=["GET", "POST"])
+    async def api(request: Request):
+        GETS = dict(request.query_params)
+        POSTS = {}
+        if request.method == "POST":
+            POSTS = await read_form_payload(request)
+
+        if "mode" in GETS:
+            mode = GETS["mode"]
+            if mode == "project_list":
+                _PD = os.getcwd()
+                projects = my.glob_dirs(os.path.join(_PD, "data", "projects", "*"))
+                projects = [os.path.basename(p) for p in projects]
+                return api_json({"status": "OK", "data": projects})
+            if mode == "project_add_action":
+                if "project_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "Missing project_name"}, 400)
+                project_name = POSTS["project_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                if my.is_dir(_PROJECT_FOLDER):
+                    return api_json({"status": "NO", "reason": "專案已存在"})
+
+                my.mkdir(_PROJECT_FOLDER)
+                os.chmod(_PROJECT_FOLDER, 0o777)
+                OUTPUT = {"status": "OK", "data": {}, "project_name": project_name}
+                reload_projects(project_name)
+                return api_json(OUTPUT)
+            if mode == "project_edit_action":
+                if "orin_project_name" not in POSTS or "new_project_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "輸入異常"}, 400)
+                _PD = os.getcwd()
+                orin_project_name = POSTS["orin_project_name"]
+                new_project_name = POSTS["new_project_name"]
+
+                _ORIN_PROJECT_FOLDER = os.path.join(_PD, "data", "projects", orin_project_name)
+                _NEW_PROJECT_FOLDER = os.path.join(_PD, "data", "projects", new_project_name)
+
+                if not my.is_dir(_ORIN_PROJECT_FOLDER):
+                    return api_json({"status": "NO", "reason": "原專案不存在"})
+                if my.is_dir(_NEW_PROJECT_FOLDER):
+                    return api_json({"status": "NO", "reason": "新專案已存在"})
+                os.rename(_ORIN_PROJECT_FOLDER, _NEW_PROJECT_FOLDER)
+                os.chmod(_NEW_PROJECT_FOLDER, 0o777)
+                OUTPUT = {
+                    "status": "OK",
+                    "data": {},
+                    "new_project_name": new_project_name,
+                }
+                reload_projects(new_project_name)
+                return api_json(OUTPUT)
+            if mode == "choice_project":
+                project_name = POSTS["project_name"]
+                reload_projects(project_name)
+                OUTPUT = {"status": "OK", "data": {}, "project_name": project_name}
+                reload_projects(project_name)
+                return api_json(OUTPUT)
+            if mode == "getKindList":
+                if "project_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "Missing project_name"}, 400)
+                project_name = POSTS["project_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KINDS = my.glob_dirs(os.path.join(_MY_DATASET_FOLDER, "*"))
+                OUTPUT = {"status": "OK", "data": {}}
+                _KINDS = sorted(_KINDS, key=os.path.getctime)
+
+                _data = []
+                for kind in _KINDS:
+                    _KIND = os.path.basename(kind)
+                    _KIND_FILES = len(my.glob(os.path.join(kind, "*.jpg")))
+                    _data.append({"kind_name": _KIND, "total_pics": _KIND_FILES})
+                OUTPUT["data"] = _data
+
+                return api_json(OUTPUT)
+            if mode == "addKind":
+                if "project_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "Missing project_name"}, 400)
+                if "kind_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "請輸入類別名稱"})
+                project_name = POSTS["project_name"]
+                kind_name = POSTS["kind_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
+                my.mkdir(_KIND_FOLDER)
+                os.chmod(_KIND_FOLDER, 0o777)
+                if my.is_dir(_KIND_FOLDER):
+                    return api_json({"status": "OK"})
+                return api_json({"status": "NO", "reason": "建立類別失敗"})
+            if mode == "delKind":
+                if "project_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "Missing project_name"}, 400)
+                if "kind_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "請輸入類別名稱"})
+                project_name = POSTS["project_name"]
+                kind_name = my.basename(POSTS["kind_name"])
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
+                print("Del path: %s" % (_KIND_FOLDER))
+                my.delete_directory_contents(_KIND_FOLDER)
+                return api_json({"status": "OK"})
+            if mode == "editKind":
+                if "project_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "Missing project_name"}, 400)
+                if "kind_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "請輸入類別名稱"})
+                if "new_kind_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "請輸入新類別名稱"})
+                project_name = POSTS["project_name"]
+                kind_name = my.basename(POSTS["kind_name"])
+                new_kind_name = my.basename(POSTS["new_kind_name"])
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
+                _NEW_KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, new_kind_name)
+                if my.is_dir(_KIND_FOLDER) and my.is_dir(_NEW_KIND_FOLDER) == False:
+                    os.rename(_KIND_FOLDER, _NEW_KIND_FOLDER)
+                elif my.is_dir(_KIND_FOLDER) == False:
+                    return api_json({"status": "NO", "reason": "類別不存在"})
+                elif my.is_dir(_NEW_KIND_FOLDER):
+                    return api_json({"status": "NO", "reason": "新類別已存在"})
+                return api_json({"status": "OK"})
+            if mode == "getPhotoList":
+                project_name = POSTS["project_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                fp = my.glob(os.path.join(_PROJECT_FOLDER, "*.jpg"))
+                fp = [{"photo_name": my.basename(f)} for f in fp]
+                return api_json({"status": "OK", "data": fp})
+            if mode == "delPhoto":
+                if "project_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "沒有這個專案..."}, 400)
+                if "photo_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "圖片名稱未填..."})
+                project_name = POSTS["project_name"]
+                photo_name = my.basename(POSTS["photo_name"])
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _PHOTO_FILE = os.path.join(_PROJECT_FOLDER, photo_name)
+                if my.is_file(_PHOTO_FILE):
+                    os.remove(_PHOTO_FILE)
+                    return api_json({"status": "OK"})
+                return api_json({"status": "NO", "reason": "圖片不存在"})
+            if mode == "setPhotoToKind":
+                project_name = POSTS["project_name"]
+                kind_name = POSTS["kind_name"]
+                photo_name = my.basename(POSTS["photo_name"])
+                if "project_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "沒有這個專案..."}, 400)
+                if "photo_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "圖片名稱未填..."})
+                if "kind_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "類別名稱未填..."})
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
+                _PHOTO_FILE = os.path.join(_PROJECT_FOLDER, photo_name)
+                _NEW_PHOTO_FILE = os.path.join(_KIND_FOLDER, photo_name)
+                if my.is_file(_PHOTO_FILE) == False:
+                    return api_json({"status": "NO", "reason": "圖片不存在"})
+                if my.is_dir(_KIND_FOLDER) == False:
+                    my.mkdir(_KIND_FOLDER)
+                    os.chmod(_KIND_FOLDER, 0o777)
+                if my.is_file(_NEW_PHOTO_FILE) == True:
+                    my.unlink(_NEW_PHOTO_FILE)
+                shutil.move(_PHOTO_FILE, _NEW_PHOTO_FILE)
+                if my.is_file(_NEW_PHOTO_FILE):
+                    return api_json({"status": "OK"})
+                return api_json({"status": "NO", "reason": "移動失敗"})
+            if mode == "getDoMarkKindList":
+                project_name = POSTS["project_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KINDS = my.glob_dirs(os.path.join(_MY_DATASET_FOLDER, "*"))
+                _data = []
+                for kind in _KINDS:
+                    _KIND = os.path.basename(kind)
+                    _KIND_FILES = len(my.glob(os.path.join(kind, "*.jpg")))
+                    _TXT_FILES = len(my.glob(os.path.join(kind, "*.txt")))
+                    _data.append(
+                        {
+                            "kind_name": _KIND,
+                            "total_pics": _KIND_FILES,
+                            "need_process_counts": _KIND_FILES - _TXT_FILES,
+                        }
+                    )
+                return api_json({"status": "OK", "data": _data})
+            if mode == "getMY_DATASETSPhotos":
+                project_name = POSTS["project_name"]
+                kind_name = POSTS["kind_name"]
+                show_kind = POSTS["show_kind"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
+                fpJpgs = my.glob(os.path.join(_KIND_FOLDER, "*.jpg"))
+                OUTPUT = {
+                    "status": "OK",
+                    "data": [],
+                    "project_name": project_name,
+                    "kind_name": kind_name,
+                    "show_kind": show_kind,
+                }
+                if show_kind == "needProcessOnly":
+                    for jpg in fpJpgs:
+                        _jpg = my.basename(jpg)
+                        _txt = os.path.splitext(_jpg)[0] + ".txt"
+                        _txt_path = os.path.join(_KIND_FOLDER, _txt)
+                        if my.is_file(_txt_path) == False:
+                            OUTPUT["data"].append({"photo_name": _jpg, "txt_name": "", "txt_data": ""})
+                elif show_kind == "showAll":
+                    for jpg in fpJpgs:
+                        _jpg = my.basename(jpg)
+                        _txt = os.path.splitext(_jpg)[0] + ".txt"
+                        _txt_path = os.path.join(_KIND_FOLDER, _txt)
+                        if my.is_file(_txt_path) == False:
+                            OUTPUT["data"].append({"photo_name": _jpg, "txt_name": "", "txt_data": ""})
+                        else:
+                            OUTPUT["data"].append(
+                                {
+                                    "photo_name": _jpg,
+                                    "txt_name": _txt,
+                                    "txt_data": my.file_get_contents(_txt_path),
+                                }
+                            )
+                return api_json(OUTPUT)
+            if mode == "resetPhotoKind":
+                project_name = POSTS["project_name"]
+                kind_name = POSTS["kind_name"]
+                mn = POSTS["mn"]
+                _PD = os.getcwd()
+                orin_photo_path = os.path.join(_PD, "data", "projects", project_name, "my_dataset", kind_name, mn + ".jpg")
+                orin_txt_path = os.path.join(_PD, "data", "projects", project_name, "my_dataset", kind_name, mn + ".txt")
+                if my.is_file(orin_txt_path):
+                    os.remove(orin_txt_path)
+                if my.is_file(orin_photo_path):
+                    _UNCLASSIFIED_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                    _UNCLASSIFIED_PHOTO_PATH = os.path.join(_UNCLASSIFIED_FOLDER, mn + ".jpg")
+                    shutil.move(orin_photo_path, _UNCLASSIFIED_PHOTO_PATH)
+                return api_json({"status": "OK"})
+            if mode == "saveTxt":
+                _PD = os.getcwd()
+                project_name = POSTS["project_name"]
+                kind_name = POSTS["kind_name"]
+                mn = my.mainname(POSTS["imgbn"])
+                txt = POSTS["txt"]
+                txt_filepath = os.path.join(_PD, "data", "projects", project_name, "my_dataset", kind_name, mn + ".txt")
+                my.file_put_contents(txt_filepath, txt)
+                os.chmod(txt_filepath, 0o777)
+                return api_json({"status": "OK"})
+            if mode == "train_add":
+                project_name = POSTS["project_name"]
+                kinds = POSTS["kinds"]
+                train_val = POSTS["train_val"]
+                epoch = POSTS["epoch"]
+                imgz = POSTS["imgz"]
+                batch = POSTS["batch"]
+                learning_rate = POSTS["learning_rate"]
+                optimizer = POSTS["optimizer"]
+                _model = POSTS["model"]
+                use_early_stopping = POSTS["use_early_stopping"]
+                patience = POSTS["patience"]
+                cache = POSTS.get("cache", "1")
+                amp = POSTS.get("amp", "1")
+                cos_lr = POSTS.get("cos_lr", "1")
+                close_mosaic = POSTS.get("close_mosaic", "10")
+
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _TRAIN_FOLDER = os.path.join(_PROJECT_FOLDER, "train_project")
+                if not my.is_dir(_TRAIN_FOLDER):
+                    my.mkdir(_TRAIN_FOLDER)
+                    os.chmod(_TRAIN_FOLDER, 0o777)
+                if not kinds:
+                    return api_json({"status": "NO", "reason": "請選擇至少一個類別"})
+                if not train_val:
+                    return api_json({"status": "NO", "reason": "請輸入訓練與驗證比例"})
+                dt_datetime = str(my.time())
+                task_folder = "task_" + dt_datetime
+                o = {
+                    "project_name": project_name,
+                    "task_name": task_folder,
+                    "kinds": kinds,
+                    "m_kinds": my.explode("|||3WA|||", kinds),
+                    "train_percent": my.explode("/", train_val)[0],
+                    "val_percent": my.explode("/", train_val)[1],
+                    "epoch": epoch,
+                    "imgz": imgz,
+                    "batch": batch,
+                    "learning_rate": learning_rate,
+                    "optimizer": optimizer,
+                    "model": _model,
+                    "use_early_stopping": use_early_stopping,
+                    "patience": patience,
+                    "cache": cache,
+                    "amp": amp,
+                    "cos_lr": cos_lr,
+                    "close_mosaic": close_mosaic,
+                    "create_datetime": my.date("Y-m-d H:i:s", dt_datetime),
+                }
+
+                _TASK_FOLDER = os.path.join(_TRAIN_FOLDER, task_folder)
+                if not my.is_dir(_TASK_FOLDER):
+                    my.mkdir(_TASK_FOLDER)
+                    os.chmod(_TASK_FOLDER, 0o777)
+                job_txt_path = os.path.join(_TASK_FOLDER, "job.txt")
+                my.file_put_contents(job_txt_path, my.json_encode_utf8(o))
+                os.chmod(job_txt_path, 0o777)
+
+                status_txt_path = os.path.join(_TASK_FOLDER, "status.txt")
+                my.file_put_contents(status_txt_path, "0")
+                return api_json({"status": "OK"})
+            if mode == "train_lists":
+                project_name = POSTS["project_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _TRAIN_FOLDER = os.path.join(_PROJECT_FOLDER, "train_project")
+                if not my.is_dir(_TRAIN_FOLDER):
+                    return api_json({"status": "OK", "data": []})
+                m_data = []
+
+                tasks = my.glob_dirs(os.path.join(_TRAIN_FOLDER, "*"))
+                if not tasks:
+                    return api_json({"status": "OK", "data": []})
+                for task in tasks:
+                    task_name = os.path.basename(task)
+                    job_txt_path = os.path.join(task, "job.txt")
+                    status_txt_path = os.path.join(task, "status.txt")
+                    if my.is_file(job_txt_path) and my.is_file(status_txt_path):
+                        job_data = str(my.file_get_contents(job_txt_path))
+                        status_data = str(my.file_get_contents(status_txt_path))
+                        m_data.append(
+                            {
+                                "task_name": task_name,
+                                "job_data": job_data,
+                                "status": status_data,
+                            }
+                        )
+                return api_json({"status": "OK", "data": m_data})
+            if mode == "train_get_task_status":
+                project_name = POSTS["project_name"]
+                task_name = POSTS["task_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _TASK_FOLDER = os.path.join(_PROJECT_FOLDER, "train_project", task_name)
+                status_txt_path = os.path.join(_TASK_FOLDER, "status.txt")
+                status_log_txt_path = os.path.join(_TASK_FOLDER, "status_log.txt")
+                status_progress_txt_path = os.path.join(_TASK_FOLDER, "status_progress.txt")
+                status_yolo_log_path = os.path.join(_TASK_FOLDER, "train.txt")
+                if not my.is_file(status_txt_path):
+                    return api_json({"status": "NO", "reason": "任務不存在"})
+
+                # 並行讀取多個狀態檔，避免阻塞 event loop
+                (
+                    _status,
+                    _status_log,
+                    _status_progress,
+                    _status_yolo_log,
+                ) = await asyncio.gather(
+                    asyncio.to_thread(my.file_get_contents, status_txt_path),
+                    asyncio.to_thread(my.file_get_contents, status_log_txt_path),
+                    asyncio.to_thread(my.file_get_contents, status_progress_txt_path),
+                    asyncio.to_thread(my.file_get_contents, status_yolo_log_path),
+                )
+                o = {
+                    "status": str(_status),
+                    "status_log": str(_status_log),
+                    "status_progress": str(_status_progress),
+                    "status_yolo_log": str(_status_yolo_log),
+                    "train_results": "",
+                    "job": "",
+                    "imgs": [],
+                }
+                train_results_filepath = os.path.join(_TASK_FOLDER, "runs", "train", "output", "results.csv")
+                if my.is_file(train_results_filepath):
+                    o["train_results"] = await asyncio.to_thread(my.file_get_contents, train_results_filepath)
+
+                job_txt_path = os.path.join(_TASK_FOLDER, "job.txt")
+                if my.is_file(job_txt_path):
+                    o["job"] = str(await asyncio.to_thread(my.file_get_contents, job_txt_path))
+
+                output_images_folder = os.path.join(_TASK_FOLDER, "runs", "train", "output")
+                if my.is_dir(output_images_folder):
+                    output_images = my.glob(os.path.join(output_images_folder, "*.*"))
+                    output_images = [
+                        {"name": my.basename(img), "path": img}
+                        for img in output_images
+                        if img.lower().endswith((".jpg", ".png"))
+                    ]
+                    o["imgs"] = output_images
+                o["end_datetime"] = ""
+                sdt = my.explode("_", my.basename(_TASK_FOLDER))[1]
+                o["start_datetime"] = my.date("Y-m-d H:i:s", int(sdt))
+                o["during_time"] = int(my.time()) - int(sdt)
+                if my.is_file(status_log_txt_path):
+                    o["end_datetime"] = my.date("Y-m-d H:i:s", my.filemtime(status_log_txt_path))
+                    o["during_time"] = int(my.strtotime(o["end_datetime"])) - int(sdt)
+                return api_json(
+                    {
+                        "status": "OK",
+                        "data": o,
+                        "project_name": project_name,
+                        "task_name": task_name,
+                    }
+                )
+            if mode == "train_retrain":
+                project_name = POSTS["project_name"]
+                task_name = POSTS["task_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _TASK_FOLDER = os.path.join(_PROJECT_FOLDER, "train_project", task_name)
+
+                runs_train_folder = os.path.join(_TASK_FOLDER, "runs", "train")
+                if my.is_dir(runs_train_folder):
+                    my.deltree(runs_train_folder)
+
+                status_txt_path = os.path.join(_TASK_FOLDER, "status.txt")
+                if not my.is_file(status_txt_path):
+                    return api_json({"status": "NO", "reason": "任務不存在"})
+                my.file_put_contents(status_txt_path, "0")
+                status_log_txt_path = os.path.join(_TASK_FOLDER, "status_log.txt")
+                my.file_put_contents(status_log_txt_path, "")
+                status_progress_txt_path = os.path.join(_TASK_FOLDER, "status_progress.txt")
+                my.file_put_contents(status_progress_txt_path, "0")
+                return api_json({"status": "OK"})
+        return api_json({"status": "OK"})
+
+    @app.api_route("/datetime", methods=["GET", "POST"])
+    def datetime():
+        return PlainTextResponse(my.date("Y-m-d H:i:s"))
+
+    @app.api_route("/test", methods=["GET", "POST"])
+    async def test(request: Request):
+        string_fields = dict(request.query_params)
+        if request.method == "POST":
+            string_fields = await read_form_payload(request)
+
+        output = {}
+        for key in string_fields:
+            output[key] = string_fields[key]
+
+        return output
+
+    return app
+
+
+def run_fastapi():
+    config = uvicorn.Config(
+        create_fastapi_app(),
+        host="127.0.0.1",
+        port=9487,
+        log_level="warning",
+        timeout_keep_alive=30,
+    )
+    server = uvicorn.Server(config)
+    server.run()
+
+
+threading.Thread(target=run_fastapi, daemon=True).start()
 
 # 註冊熱鍵 CTRL + ALT + ` 或 CTRL + ALT + ~，或 CTRL + ALT + F1
 # keyboard.add_hotkey("ctrl+alt+~", start_cut_screen)  # 設置螢幕熱鍵
 keyboard.add_hotkey("ctrl+f2", start_cut_screen)  # 設置螢幕熱鍵
+keyboard.add_hotkey("ctrl+f3", toggle_auto_click)  # 切換自動點擊
 # keyboard.add_hotkey('ctrl+alt+~', start_cut_screen)  # 設置螢幕熱鍵
 # 創建 OverlayWindow 實例
 overlay_window = OverlayWindow(root)
@@ -3028,12 +3596,12 @@ def background_worker():
                                                 _TRAIN_LABELS_FOLDER, new_lbl_name
                                             ),
                                         )
-                                    # 編輯 label 檔，第一行加上 kind 的 index
+                                    # 編輯 label 檔，每行加上 kind 的 index（多框支援）
                                     data = my.file_get_contents(
                                         os.path.join(_TRAIN_LABELS_FOLDER, new_lbl_name)
                                     )
-                                    data = my.trim(data)
-                                    data = f"{index} {data}"  # 在第一行加上 index
+                                    lines = [l.strip() for l in str(data).splitlines() if l.strip()]
+                                    data = "\n".join(f"{index} {l}" for l in lines)
                                     my.file_put_contents(
                                         os.path.join(
                                             _TRAIN_LABELS_FOLDER, new_lbl_name
@@ -3104,13 +3672,12 @@ def background_worker():
                                                 _VAL_LABELS_FOLDER, new_lbl_name
                                             ),
                                         )
-                                    # 編輯 label 檔，第一行加上 kind 的 index
+                                    # 編輯 label 檔，每行加上 kind 的 index（多框支援）
                                     data = my.file_get_contents(
                                         os.path.join(_VAL_LABELS_FOLDER, new_lbl_name)
                                     )
-                                    data = my.trim(data)
-                                    data = f"{index} {data}"
-
+                                    lines = [l.strip() for l in str(data).splitlines() if l.strip()]
+                                    data = "\n".join(f"{index} {l}" for l in lines)
                                     my.file_put_contents(
                                         os.path.join(_VAL_LABELS_FOLDER, new_lbl_name),
                                         data,
@@ -3209,6 +3776,10 @@ names_cht: {m_names_cht}
                                 "opt_patience": 10,  # 早停的耐心次數
                                 "opt_weight_decay": 0.0005,
                                 "opt_imgsz_rect": False,  # 是否使用矩形圖片大小
+                                "opt_cache": True,        # 圖片快取到 RAM
+                                "opt_amp": True,          # 自動混合精度
+                                "opt_cos_lr": True,       # cosine LR schedule
+                                "opt_close_mosaic": 10,   # 最後 N epoch 關閉 mosaic
                             }
 
                             # 從 job.txt 讀取設定
@@ -3239,6 +3810,14 @@ names_cht: {m_names_cht}
                                 )
                             if "patience" in o:
                                 train_config["opt_patience"] = int(o["patience"])
+                            if "cache" in o:
+                                train_config["opt_cache"] = str(o["cache"]) == "1"
+                            if "amp" in o:
+                                train_config["opt_amp"] = str(o["amp"]) == "1"
+                            if "cos_lr" in o:
+                                train_config["opt_cos_lr"] = str(o["cos_lr"]) == "1"
+                            if "close_mosaic" in o:
+                                train_config["opt_close_mosaic"] = int(o["close_mosaic"])
 
                             train_config_file_path = os.path.join(
                                 _TASK_FOLDER, "train_config.json"
@@ -3273,6 +3852,11 @@ names_cht: {m_names_cht}
                                 "rect": cfg.get(
                                     "opt_imgsz_rect", False
                                 ),  # 是否使用矩形圖片大小
+                                "cache": cfg.get("opt_cache", True),
+                                "amp": cfg.get("opt_amp", True),
+                                "cos_lr": cfg.get("opt_cos_lr", True),
+                                "close_mosaic": cfg.get("opt_close_mosaic", 10),
+                                "flipud": 0.0,  # 打地鼠場景不需要垂直翻轉
                                 #"save_period": 5,  # 每個 epoch 保存一次
                             }
                             # 如果有 early_stopping，則 patience 改 0
