@@ -350,11 +350,12 @@ class MyYoloTrainToolCallbackTests(unittest.TestCase):
         self.assertEqual(source_infos[-1]["source_video_file"], "source.mp4")
         self.assertEqual(source_infos[-1]["cache_key"]["url"], "youtube:demo")
 
-    def test_start_youtube_pose_recording_reuses_cache_hit_without_worker(self):
+    def test_start_youtube_pose_recording_reuses_cache_when_user_confirms(self):
         finished = []
         statuses = []
         created_folders = []
         thread_starts = []
+        cache_prompts = []
 
         class FakeThread:
             def __init__(self, *args, **kwargs):
@@ -386,6 +387,7 @@ class MyYoloTrainToolCallbackTests(unittest.TestCase):
                 "is_probable_youtube_url": lambda url: True,
                 "messagebox": types.SimpleNamespace(
                     askokcancel=lambda title, message: True,
+                    askyesnocancel=lambda title, message: cache_prompts.append((title, message)) or True,
                     showwarning=lambda *args, **kwargs: None,
                     showerror=lambda *args, **kwargs: None,
                 ),
@@ -408,7 +410,124 @@ class MyYoloTrainToolCallbackTests(unittest.TestCase):
         self.assertEqual(finished, [(cached_pose_record, None, None)])
         self.assertEqual(created_folders, [])
         self.assertEqual(thread_starts, [])
+        self.assertEqual(cache_prompts[0][0], "YouTube Pose 快取")
+        self.assertIn("重新轉換", cache_prompts[0][1])
         self.assertIn("YouTube Pose 使用快取", statuses[-1])
+
+    def test_start_youtube_pose_recording_reprocesses_cache_hit_when_user_declines_cache(self):
+        finished = []
+        created_folders = []
+        thread_starts = []
+
+        class FakeThread:
+            def __init__(self, *args, **kwargs):
+                self.args = args
+                self.kwargs = kwargs
+
+            def start(self):
+                thread_starts.append(True)
+
+        with tempfile.TemporaryDirectory() as project_folder:
+            cached_pose_record = os.path.join(project_folder, "pose_record", "record_1", "pose_record.json")
+            new_record_folder = os.path.join(project_folder, "pose_record", "record_2")
+            os.makedirs(os.path.dirname(cached_pose_record))
+            with open(cached_pose_record, "w", encoding="utf-8") as f:
+                f.write("{}")
+
+            globals_ = {
+                "GDATA": {
+                    "pose_recording": False,
+                    "pose_url_processing": False,
+                    "pose_fps_target": 15,
+                    "pose_video_max_duration_seconds": 300,
+                    "THREAD": {},
+                },
+                "pose_model_file": "yolo11n-pose.pt",
+                "pose_confidence": 0.35,
+                "is_run_keep_screen_predict": False,
+                "get_current_project_folder": lambda: project_folder,
+                "simpledialog": types.SimpleNamespace(askstring=lambda title, prompt: "https://youtu.be/demo"),
+                "is_probable_youtube_url": lambda url: True,
+                "messagebox": types.SimpleNamespace(
+                    askokcancel=lambda title, message: True,
+                    askyesnocancel=lambda title, message: False,
+                    showwarning=lambda *args, **kwargs: None,
+                    showerror=lambda *args, **kwargs: None,
+                ),
+                "find_youtube_pose_cache_record": lambda *args: cached_pose_record,
+                "convert_pose_record_to_live2d_files": lambda path: finished.append(path),
+                "finish_youtube_pose_recording": lambda path, error_message=None, live2d_error=None: finished.append(path),
+                "set_pose_status": lambda message: None,
+                "create_pose_record_folder": lambda folder: created_folders.append(folder) or new_record_folder,
+                "set_youtube_pose_processing_buttons": lambda is_processing: None,
+                "threading": types.SimpleNamespace(Thread=FakeThread),
+                "run_youtube_pose_worker": lambda url, record_folder: None,
+            }
+            namespace = load_functions("start_youtube_pose_recording", extra_globals=globals_)
+
+            namespace["start_youtube_pose_recording"]()
+
+        self.assertEqual(finished, [])
+        self.assertEqual(created_folders, [project_folder])
+        self.assertEqual(thread_starts, [True])
+
+    def test_start_youtube_pose_recording_cancels_cache_hit_when_user_cancels_prompt(self):
+        finished = []
+        created_folders = []
+        thread_starts = []
+        button_states = []
+
+        class FakeThread:
+            def __init__(self, *args, **kwargs):
+                self.args = args
+                self.kwargs = kwargs
+
+            def start(self):
+                thread_starts.append(True)
+
+        with tempfile.TemporaryDirectory() as project_folder:
+            cached_pose_record = os.path.join(project_folder, "pose_record", "record_1", "pose_record.json")
+            os.makedirs(os.path.dirname(cached_pose_record))
+            with open(cached_pose_record, "w", encoding="utf-8") as f:
+                f.write("{}")
+
+            globals_ = {
+                "GDATA": {
+                    "pose_recording": False,
+                    "pose_url_processing": False,
+                    "pose_fps_target": 15,
+                    "pose_video_max_duration_seconds": 300,
+                    "THREAD": {},
+                },
+                "pose_model_file": "yolo11n-pose.pt",
+                "pose_confidence": 0.35,
+                "is_run_keep_screen_predict": False,
+                "get_current_project_folder": lambda: project_folder,
+                "simpledialog": types.SimpleNamespace(askstring=lambda title, prompt: "https://youtu.be/demo"),
+                "is_probable_youtube_url": lambda url: True,
+                "messagebox": types.SimpleNamespace(
+                    askokcancel=lambda title, message: True,
+                    askyesnocancel=lambda title, message: None,
+                    showwarning=lambda *args, **kwargs: None,
+                    showerror=lambda *args, **kwargs: None,
+                ),
+                "find_youtube_pose_cache_record": lambda *args: cached_pose_record,
+                "convert_pose_record_to_live2d_files": lambda path: finished.append(path),
+                "finish_youtube_pose_recording": lambda path, error_message=None, live2d_error=None: finished.append(path),
+                "set_pose_status": lambda message: None,
+                "create_pose_record_folder": lambda folder: created_folders.append(folder) or os.path.join(folder, "new_record"),
+                "set_youtube_pose_processing_buttons": lambda is_processing: button_states.append(is_processing),
+                "threading": types.SimpleNamespace(Thread=FakeThread),
+                "run_youtube_pose_worker": lambda url, record_folder: None,
+            }
+            namespace = load_functions("start_youtube_pose_recording", extra_globals=globals_)
+
+            namespace["start_youtube_pose_recording"]()
+
+        self.assertEqual(finished, [])
+        self.assertEqual(created_folders, [])
+        self.assertEqual(thread_starts, [])
+        self.assertEqual(button_states, [])
 
     def test_youtube_pose_cache_key_normalizes_url_and_settings(self):
         namespace = load_functions(

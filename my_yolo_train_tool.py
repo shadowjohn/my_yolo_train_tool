@@ -1644,6 +1644,19 @@ def start_youtube_pose_recording():
             GDATA["pose_video_max_duration_seconds"]
         )
         if cached_pose_record:
+            cache_choice = messagebox.askyesnocancel(
+                "YouTube Pose 快取",
+                "這個 YouTube 連結已經轉過。\n\n"
+                "是：使用既有快取，不重新下載或分析。\n"
+                "否：重新轉換，建立新的 record_* 紀錄。\n"
+                "取消：不處理。"
+            )
+            if cache_choice is None:
+                return
+            if cache_choice is False:
+                cached_pose_record = None
+
+        if cached_pose_record:
             live2d_error = None
             try:
                 convert_pose_record_to_live2d_files(cached_pose_record)
@@ -4304,5 +4317,4 @@ worker_thread = threading.Thread(target=background_worker, daemon=True)
 worker_thread.start()
 
 root.mainloop()
-
 

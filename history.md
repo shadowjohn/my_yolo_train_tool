@@ -172,6 +172,9 @@ c:\python312_64\scripts\pyinstaller -F --onefile --icon="pic\icon.ico" ...
   - 新產生的 `source_video_info.json` 會寫入 `cache_key`、`pose_model`、`pose_confidence`、`fps_target`、`max_duration_seconds`；舊紀錄沒有 `cache_key` 時，會從 `source_video_info.json` 與 `pose_record.json` 推回可比對欄位，缺少舊版 confidence 時使用目前設定做 legacy 匹配。
   - 快取命中後會補轉缺少的 `live2d_params.json` / `motion3.json`，設定 `pose_last_output_file`，主畫面狀態顯示「YouTube Pose 使用快取」。
   - 乾跑確認 `data/projects/舞曲` 內既有 shorts 紀錄可被 lookup 命中。
+- 2026-06-12：YouTube Pose 快取命中時改為先詢問。
+  - 命中同設定快取後跳出「YouTube Pose 快取」三態確認；「是」使用既有快取，「否」重新轉換並建立新的 `record_*`，「取消」不處理。
+  - 不刪除舊紀錄，避免已開啟的 Live2D/VRM 對照頁或其他本機流程失去來源檔案。
 - 2026-06-12：優化 3D VRM 舞步展示頁面，實作全本地化、修復骨骼偏角與影片同步。
   - **本地化 (Offline-ready)**：將 `three.min.js`、`OrbitControls.js`、`GLTFLoader.js` 與 `three-vrm.min.js` 套件以及 `AliciaSolid.vrm`、`AvatarSample_B.vrm` 角色模型下載至本地，實作 100% 離線載入。
   - **脊椎彎腰修正 (Spine Offset)**：針對 `torso_angle_deg` 在直立狀態下為 `-90.0` 度的特性，在 3D VRM 骨骼動畫（`pose_vrm_mapper.py` 與 `vrm_dancer.html`）中加入 `+90.0` 度偏移，使角色直立於 0 度位置，修復角色攔腰折斷/平躺 90 度的問題。
