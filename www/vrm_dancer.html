@@ -330,7 +330,7 @@
         </article>
         <article class="view-panel">
           <div class="view-head"><span>3D VRM</span><span id="vrmState">等待載入</span></div>
-          <div class="view-body" style="background: #eef3f8;">
+          <div class="view-body" style="background: #0f1724;">
             <div id="vrmStage"></div>
           </div>
         </article>
@@ -575,10 +575,10 @@
       function init3D() {
         var container = document.getElementById("vrmStage");
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xeef3f8);
+        scene.background = new THREE.Color(0x0f1724);
         
         // Grid helper
-        var gridHelper = new THREE.GridHelper(10, 20, 0x1f6feb, 0xcccccc);
+        var gridHelper = new THREE.GridHelper(10, 20, 0x1f6feb, 0x3a404a);
         gridHelper.position.y = -1.0;
         scene.add(gridHelper);
         
