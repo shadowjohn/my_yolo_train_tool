@@ -1,0 +1,790 @@
+/**
+ * VrmMascot — VRM 吉祥物主控制器
+ *
+ * 整合 Three.js scene、VRM 載入、以及四個子系統：
+ *   - MotionController    (程序式動作)
+ *   - ExpressionController (眨眼 + 表情)
+ *   - LookAtController    (滑鼠注視)
+ *   - MascotStateMachine  (狀態機 API)
+ *
+ * 用法：
+ *   const mascot = new VrmMascot(document.getElementById('container'));
+ *   await mascot.load('models/mascot.vrm');
+ *   mascot.dispatch('wave');
+ *   mascot.dispatch('talking', { text: '你好' });
+ *   mascot.say('部署完成了！');
+ *
+ * 升級策略：
+ *   VRM 版本相關 API 全部集中在 _vrm* 開頭的 helper，
+ *   Phase 2 從 0.6.7 升級 @pixiv/three-vrm 3.x 時，
+ *   只需改這幾個 helper，其他模組完全不動。
+ */
+
+import { MotionController }     from './MotionController.js';
+import { ExpressionController } from './ExpressionController.js';
+import { LookAtController }     from './LookAtController.js';
+import { MascotStateMachine }   from './MascotStateMachine.js';
+import { ActionQueue }          from './ActionQueue.js';
+import { ToolRegistry }         from './ToolRegistry.js';
+import { ConversationMemory }   from './ConversationMemory.js';
+import { SpatialContext }       from './SpatialContext.js';
+import { DomContext }           from './DomContext.js';
+
+/**
+ * 意圖對照 Preset表，定義各種高階意圖所對應的底層指令序列與預設值
+ */
+const INTENT_PRESETS = {
+  greeting: {
+    text: '哈囉！你好，我是網頁導覽助理。',
+    emotion: 'joy',
+    motion: 'wave',
+    actions: (text, emotion, motion) => [
+      { type: 'lookAt', target: 'mouse' },
+      { type: 'wait', duration: 200 },
+      { type: 'say', text, emotion, motion, timeout: 7000 }
+    ]
+  },
+  success: {
+    text: '太棒了！任務順利完成了！🚀',
+    emotion: 'joy',
+    motion: 'happy',
+    actions: (text, emotion, motion) => [
+      { type: 'lookAt', target: 'mouse' },
+      { type: 'say', text, emotion, motion, timeout: 7000 }
+    ]
+  },
+  error: {
+    text: '抱歉... 執行過程中發生了一些錯誤。😢',
+    emotion: 'sorrow',
+    motion: 'think',
+    actions: (text, emotion, motion) => [
+      { type: 'lookAt', target: 'mouse' },
+      { type: 'say', text, emotion, motion, timeout: 7000 }
+    ]
+  },
+  thinking: {
+    text: '讓我想一想，稍等我一下喔...',
+    emotion: 'sorrow',
+    motion: 'think',
+    actions: (text, emotion, motion) => [
+      { type: 'lookAt', target: 'mouse' },
+      { type: 'do', name: motion || 'think' },
+      { type: 'say', text, emotion, timeout: 6000 }
+    ]
+  },
+  warning: {
+    text: '請注意！檢測到潛在的風險，請小心操作。⚠️',
+    emotion: 'angry',
+    motion: 'think',
+    actions: (text, emotion, motion) => [
+      { type: 'lookAt', target: 'mouse' },
+      { type: 'say', text, emotion, motion, timeout: 7000 }
+    ]
+  },
+  searching: {
+    text: '正在為您查詢相關資料，請稍候...',
+    emotion: 'fun',
+    motion: 'dance_short',
+    actions: (text, emotion, motion) => [
+      { type: 'lookAt', target: 'mouse' },
+      { type: 'say', text, emotion, motion, timeout: 7000 }
+    ]
+  },
+  explain: {
+    text: '讓我為您詳細說明一下這個部分的內容。',
+    emotion: 'joy',
+    motion: 'wave',
+    actions: (text, emotion, motion) => [
+      { type: 'lookAt', target: 'mouse' },
+      { type: 'wait', duration: 100 },
+      { type: 'say', text, emotion, motion, timeout: 8000 }
+    ]
+  }
+};
+
+export class VrmMascot {
+  // DOM
+  #container = null;
+
+  // Three.js
+  #scene = null;
+  #camera = null;
+  #renderer = null;
+  #clock = null;
+  #orbitControls = null;
+
+  // VRM
+  #currentVRM = null;
+
+  // 子系統
+  #motion     = new MotionController();
+  #expression = new ExpressionController();
+  #lookAtCtrl = new LookAtController();
+  #stateMachine = null;
+  #actionQueue = null;
+  #tools = new ToolRegistry(); // 註冊能力系統
+  #memory = null;
+  #context = null;
+  #domContext = null;
+
+  // 狀態監控
+  #isUserInteracting = false;
+
+  // 動畫迴圈
+  #rafId = 0;
+  #fps = 0;
+  #frameCount = 0;
+  #fpsTimer = 0;
+
+  // 意圖紀錄與除錯
+  #currentIntent = 'idle';
+  #lastIntent = 'none';
+  #lastSpeech = '';
+  #intentHistory = [];
+  #actionIntent = {
+    action: 'none',
+    target: 'none',
+    confidence: 0.0,
+    parameters: {},
+    status: 'idle',
+    source: 'system'
+  };
+
+  // 回調
+  /** @type {function|null} */
+  onFpsUpdate = null;
+  /** @type {function|null} */
+  onLoaded = null;
+  /** @type {function|null} */
+  onLoadProgress = null;
+  /** @type {function|null} */
+  onLoadError = null;
+  /** @type {function|null} */
+  onIntentUpdate = null;
+
+  /**
+   * @param {HTMLElement} container - 3D viewport 容器
+   * @param {object} [options]
+   * @param {boolean} [options.orbitControls=true]
+   * @param {boolean} [options.grid=true]
+   */
+  constructor(container, options = {}) {
+    this.#container = container;
+    this.#actionQueue = new ActionQueue(this);
+    this.#stateMachine = new MascotStateMachine(this);
+    this.#memory = new ConversationMemory(this);
+    this.#context = new SpatialContext(this);
+    this.#domContext = new DomContext(this);
+
+    // 監聽佇列變空
+    this.#actionQueue.onQueueEmpty = () => {
+      this.#currentIntent = 'idle';
+      this.#emitIntentUpdate();
+    };
+
+    this.#init3D(options);
+    this.#startLoop();
+    this.#bindResize();
+
+    // 初始發送一次 update
+    this.#emitIntentUpdate();
+  }
+
+  // ── Public 子系統存取 ─────────────────
+
+  /** @returns {MotionController} */
+  get motion() { return this.#motion; }
+
+  /** @returns {ExpressionController} */
+  get expression() { return this.#expression; }
+
+  /** @returns {LookAtController} */
+  get lookAt() { return this.#lookAtCtrl; }
+
+  /** @returns {MascotStateMachine} */
+  get state() { return this.#stateMachine; }
+
+  /** @returns {ActionQueue} */
+  get queue() { return this.#actionQueue; }
+
+  /** @returns {ToolRegistry} */
+  get tools() { return this.#tools; }
+
+  /** @returns {ConversationMemory} */
+  get memory() { return this.#memory; }
+
+  /** @returns {SpatialContext} */
+  get context() { return this.#context; }
+
+  /** @returns {DomContext} */
+  get domContext() { return this.#domContext; }
+
+  /** @returns {object} */
+  get intent() { return this.#actionIntent; }
+
+  /** @returns {ToolRegistry} */
+  get toolRegistry() { return this.tools; }
+
+  /** @returns {boolean} */
+  get isUserInteracting() { return this.#isUserInteracting; }
+
+  /** @returns {number} 當前 FPS */
+  get fps() { return this.#fps; }
+
+  /** @returns {boolean} 是否已載入模型 */
+  get isLoaded() { return this.#currentVRM !== null; }
+
+  // ── 狀態機頂層 API ─────────────────
+
+  /**
+   * 派發狀態切換（主要 API）
+   *
+   *   mascot.dispatch('wave');
+   *   mascot.dispatch('talking', { text: '你好' });
+   *   mascot.dispatch('idle');
+   *
+   * @param {string} name - 狀態名或別名
+   * @param {object} [params]
+   */
+  dispatch(name, params) {
+    // 如果不是來自佇列的指令，視為使用者中斷，清空佇列
+    const fromQueue = (typeof name === 'object' && name !== null && name.fromQueue)
+                     || (params && params.fromQueue);
+    if (!fromQueue) {
+      const prevIntent = this.#currentIntent;
+      this.#actionQueue.clear('user_interrupt');
+      this.#lastIntent = prevIntent;
+      this.#currentIntent = typeof name === 'string' ? name : (name?.type || 'custom');
+      if (params && params.text) {
+        this.#lastSpeech = String(params.text).slice(0, 120);
+      }
+      this.#emitIntentUpdate();
+    }
+    this.#stateMachine.dispatch(name, params);
+  }
+
+  /**
+   * 新增動作到排程佇列
+   * @param {object|object[]} action
+   */
+  enqueue(action) {
+    this.#actionQueue.enqueue(action);
+  }
+
+  /**
+   * 清空排程佇列
+   */
+  clearQueue() {
+    this.#actionQueue.clear('user_interrupt');
+    this.#currentIntent = 'idle';
+    this.#emitIntentUpdate();
+  }
+
+  /**
+   * 讓角色說話（便捷方法）
+   * @param {string} text
+   */
+  say(text) {
+    this.dispatch('talking', { text });
+  }
+
+  /**
+   * 將傳入的各種意圖格式規格化為統一的結構
+   * @param {object|string} intentObj
+   * @returns {object}
+   */
+  normalizeIntent(intentObj) {
+    let normalized = intentObj;
+    if (typeof intentObj === 'string') {
+      normalized = { intent: intentObj };
+    } else if (!intentObj || typeof intentObj !== 'object') {
+      normalized = {};
+    }
+
+    const action = normalized.intent || normalized.action || 'explain';
+    const tool = normalized.tool || (this.tools.has(action) ? action : null);
+    const parameters = normalized.args || normalized.parameters || {};
+    const target = parameters.featureId || normalized.target || 'none';
+    const confidence = typeof normalized.confidence === 'number' ? normalized.confidence : 1.0;
+    const status = normalized.status || 'pending';
+    const source = normalized.source || 'llm';
+    
+    // 文字與 Preset 屬性
+    const beforeText = normalized.text || normalized.beforeText || '';
+    const afterText = normalized.afterText || '';
+
+    return {
+      action,
+      target,
+      confidence,
+      parameters,
+      tool,
+      beforeText,
+      afterText,
+      status,
+      source
+    };
+  }
+
+  /**
+   * 執行代理意圖 (Agent Intent)
+   * 將高階語意意圖翻譯為底層動作序列並排程播放
+   *
+   * @param {object|string} intentObj - 意圖物件或意圖名稱字串
+   * @returns {Promise<any>}
+   */
+  async performIntent(intentObj) {
+    // 1. 規格化
+    const normalizedIntent = this.normalizeIntent(intentObj);
+    this.#actionIntent = normalizedIntent;
+    this.#emitIntentUpdate();
+
+    const toolName = normalizedIntent.tool;
+
+    // 2. Policy Layer Guard
+    if (toolName) {
+      if (!this.toolRegistry.has(toolName)) {
+        normalizedIntent.status = 'blocked';
+        this.#emitIntentUpdate();
+        this.dispatch('warning', { text: `安全策略攔截：工具 ${toolName} 未註冊。` });
+        return { ok: false, error: 'blocked' };
+      }
+    }
+
+    let intentName = normalizedIntent.action.toLowerCase();
+    if (!INTENT_PRESETS[intentName]) {
+      intentName = 'explain';
+    }
+    const preset = INTENT_PRESETS[intentName];
+
+    // 文字與動作選擇
+    const text = normalizedIntent.beforeText || normalizedIntent.text || preset.text;
+    const safeText = String(text || "").slice(0, 120);
+
+    const emotion = normalizedIntent.emotion || preset.emotion;
+    const motion = normalizedIntent.motion || preset.motion;
+
+    // 記錄到意圖歷史與狀態
+    this.#lastIntent = this.#currentIntent;
+    this.#currentIntent = intentName;
+    this.#lastSpeech = safeText;
+
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const time = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+    this.#intentHistory.unshift({
+      time,
+      intent: intentName,
+      text: safeText
+    });
+    this.#intentHistory = this.#intentHistory.slice(0, 50);
+    this.#emitIntentUpdate();
+
+    // 5. 轉譯為行為序列
+    const sequence = preset.actions(text, emotion, motion);
+
+    if (toolName) {
+      return new Promise((resolve) => {
+        sequence.push({
+          type: 'tool',
+          name: toolName,
+          args: normalizedIntent.parameters,
+          timeout: normalizedIntent.timeout || 10000,
+          afterText: normalizedIntent.afterText,
+          afterEmotion: normalizedIntent.afterEmotion,
+          afterMotion: normalizedIntent.afterMotion,
+          intentObj: normalizedIntent,
+          onToolComplete: (result) => {
+            resolve(result);
+          }
+        });
+        this.enqueue(sequence);
+      });
+    } else {
+      this.enqueue(sequence);
+      return { ok: true };
+    }
+  }
+
+  /**
+   * 取得意圖與佇列除錯資訊
+   */
+  getIntentDebugInfo() {
+    return {
+      currentIntent: this.#currentIntent,
+      lastIntent: this.#lastIntent,
+      lastSpeech: this.#lastSpeech,
+      queueLength: this.queue?.length ?? 0,
+      history: [...this.#intentHistory],
+      registeredTools: this.tools.list(),
+      memoryCount: this.#memory?.length ?? 0,
+      lastTool: this.#memory?.last('tool_result')?.tool || 'none',
+      lastResult: this.#memory?.getLastResult()?.summary || 'none',
+      selectedFeature: this.#context?.get().selectedFeature || 'none',
+      activeLayer: this.#context?.get().activeLayer || 'none',
+      mapCenter: this.#context?.get().mapCenter ? JSON.stringify(this.#context.get().mapCenter) : '[120.6, 24.1]',
+      activeElement: this.#domContext?.get().activeElement ? `${this.#domContext.get().activeElement.tag}${this.#domContext.get().activeElement.id ? '#' + this.#domContext.get().activeElement.id : ''}` : 'none',
+      lastClicked: this.#domContext?.get().lastClickedElement ? `${this.#domContext.get().lastClickedElement.tag}${this.#domContext.get().lastClickedElement.id ? '#' + this.#domContext.get().lastClickedElement.id : ''}` : 'none',
+      formKeys: Object.keys(this.#domContext?.get().formState || {}).join(', ') || 'none',
+      actionIntent: {
+        action: this.#actionIntent.action,
+        target: this.#actionIntent.target,
+        confidence: this.#actionIntent.confidence,
+        status: this.#actionIntent.status
+      }
+    };
+  }
+
+  emitIntentUpdate() {
+    this.#emitIntentUpdate();
+  }
+
+  /**
+   * 發送意圖更新通知
+   */
+  #emitIntentUpdate() {
+    try {
+      this.onIntentUpdate?.(this.getIntentDebugInfo());
+    } catch (err) {
+      console.warn("[VrmMascot] onIntentUpdate failed:", err);
+    }
+  }
+
+  // ── 模型載入 ──────────────────────────
+
+  /**
+   * 載入 VRM 模型（主要 API）
+   * @param {string} url - .vrm 檔案路徑
+   * @returns {Promise<void>}
+   */
+  async load(url) {
+    // 清理舊模型
+    this._vrmDispose();
+
+    return new Promise((resolve, reject) => {
+      const loader = new THREE.GLTFLoader();
+      loader.load(
+        url,
+        (gltf) => {
+          this._vrmFromGltf(gltf).then((vrm) => {
+            this.#currentVRM = vrm;
+            this.#scene.add(vrm.scene);
+
+            // VRM 面向攝影機
+            vrm.scene.rotation.y = Math.PI;
+            vrm.scene.position.y = -0.95;
+
+            // 啟用陰影
+            vrm.scene.traverse((obj) => {
+              if (obj.isMesh) {
+                obj.castShadow = true;
+                obj.receiveShadow = true;
+              }
+            });
+
+            // 綁定子系統
+            this.#motion.setVrm(vrm);
+            this.#expression.setVrm(vrm);
+            this.#lookAtCtrl.setVrm(vrm);
+
+            // 關閉 VRM 內建 lookAt（我們手動控制頭部）
+            if (vrm.lookAt) {
+              vrm.lookAt.autoUpdate = false;
+            }
+
+            // 啟動眨眼
+            this.#expression.startAutoBlink(2000, 5500);
+
+            // 啟動滑鼠注視
+            this.#lookAtCtrl.setTarget('mouse');
+
+            this.onLoaded?.();
+            resolve();
+          }).catch(reject);
+        },
+        (progress) => {
+          const pct = progress.total > 0
+            ? Math.round(progress.loaded / progress.total * 100)
+            : 0;
+          this.onLoadProgress?.(pct);
+        },
+        (error) => {
+          this.onLoadError?.(error);
+          reject(error);
+        }
+      );
+    });
+  }
+
+  /** @deprecated 用 load() 代替 */
+  async loadModel(url) { return this.load(url); }
+
+  /**
+   * 從 File 物件載入 VRM
+   * @param {File} file
+   * @returns {Promise<void>}
+   */
+  async loadFromFile(file) {
+    const url = URL.createObjectURL(file);
+    try {
+      await this.load(url);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  /** @deprecated 用 loadFromFile() 代替 */
+  async loadModelFromFile(file) { return this.loadFromFile(file); }
+
+  /**
+   * 載入自訂 JSON 動作動畫
+   * @param {string} url
+   * @returns {Promise<object>}
+   */
+  async loadCustomAnimation(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to load custom animation: ${res.statusText}`);
+    return await res.json();
+  }
+
+  /**
+   * 從 File 物件載入自訂 JSON 動作動畫
+   * @param {File} file
+   * @returns {Promise<object>}
+   */
+  async loadCustomAnimationFromFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          resolve(data);
+        } catch (err) {
+          reject(new Error(`Failed to parse motion JSON: ${err.message}`));
+        }
+      };
+      reader.onerror = () => reject(new Error('FileReader error'));
+      reader.readAsText(file);
+    });
+  }
+
+  // ── 滑鼠事件 ─────────────────────────
+
+  /**
+   * 處理滑鼠移動（由外部 mousemove 呼叫）
+   * @param {MouseEvent} event
+   */
+  handleMouseMove(event) {
+    const rect = this.#container.getBoundingClientRect();
+    const nx = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    const ny = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    this.#lookAtCtrl.onMouseMove(nx, ny);
+  }
+
+  // ══ VRM Version Abstraction Layer ════════
+  // 以下 _vrm* 方法封裝所有 VRM 版本相關 API。
+  // Phase 2 升級 three-vrm 3.x 時，只需改這區塊。
+
+  /**
+   * 從 GLTF 建立 VRM（0.6.7: VRM.from / 3.x: VRMLoaderPlugin）
+   * @internal
+   */
+  _vrmFromGltf(gltf) {
+    const VRM = THREE.VRM || (typeof THREE_VRM !== 'undefined' && THREE_VRM.VRM);
+    if (!VRM) throw new Error('THREE.VRM not available');
+    return VRM.from(gltf);
+  }
+
+  /**
+   * 取得 BlendShape Proxy（0.6.7: blendShapeProxy / 3.x: expressionManager）
+   * @internal
+   */
+  _getBlendShapeProxy() {
+    return this.#currentVRM?.blendShapeProxy
+        ?? this.#currentVRM?.expressionManager
+        ?? null;
+  }
+
+  /**
+   * 取得骨骼節點（0.6.7: getBoneNode / 3.x: getNormalizedBoneNode）
+   * @internal
+   */
+  _getBoneNode(boneName) {
+    const h = this.#currentVRM?.humanoid;
+    if (!h) return null;
+    return h.getNormalizedBoneNode?.(boneName)
+        ?? h.getBoneNode?.(boneName)
+        ?? null;
+  }
+
+  /**
+   * 更新 VRM 內部系統（springBone 等）
+   * @internal
+   */
+  _vrmUpdate(dt) {
+    this.#currentVRM?.update(dt);
+  }
+
+  /**
+   * 清理 VRM 模型
+   * @internal
+   */
+  _vrmDispose() {
+    if (!this.#currentVRM) return;
+    this.#scene.remove(this.#currentVRM.scene);
+    const utils = THREE.VRMUtils || (typeof THREE_VRM !== 'undefined' && THREE_VRM.VRMUtils);
+    utils?.deepDispose?.(this.#currentVRM.scene);
+    this.#currentVRM = null;
+  }
+
+  // ── 重置攝影機 ────────────────────────
+
+  resetCamera() {
+    if (this.#camera) {
+      this.#camera.position.set(0.0, 0.75, 2.8);
+    }
+    if (this.#orbitControls) {
+      this.#orbitControls.target.set(0.0, 0.45, 0.0);
+      this.#orbitControls.update();
+    }
+  }
+
+  // ── Three.js 初始化 ───────────────────
+
+  #init3D(options) {
+    const { orbitControls = true, grid = true } = options;
+
+    this.#scene = new THREE.Scene();
+    this.#scene.background = new THREE.Color(0x0e1525);
+
+    // 地板網格
+    if (grid) {
+      const gridHelper = new THREE.GridHelper(10, 24, 0x1a2a40, 0x14202e);
+      gridHelper.position.y = -0.95;
+      this.#scene.add(gridHelper);
+    }
+
+    // 攝影機
+    const aspect = this.#container.clientWidth / Math.max(1, this.#container.clientHeight);
+    this.#camera = new THREE.PerspectiveCamera(28, aspect, 0.1, 50.0);
+    this.#camera.position.set(0.0, 0.75, 2.8);
+
+    // 渲染器
+    this.#renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false,
+      powerPreference: 'high-performance',
+    });
+    this.#renderer.setSize(this.#container.clientWidth, this.#container.clientHeight);
+    this.#renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.#renderer.outputEncoding = THREE.sRGBEncoding;
+    this.#renderer.shadowMap.enabled = true;
+    this.#container.appendChild(this.#renderer.domElement);
+
+    // 軌道控制
+    if (orbitControls) {
+      this.#orbitControls = new THREE.OrbitControls(this.#camera, this.#renderer.domElement);
+      this.#orbitControls.screenSpacePanning = true;
+      this.#orbitControls.target.set(0.0, 0.45, 0.0);
+      this.#orbitControls.enableDamping = true;
+      this.#orbitControls.dampingFactor = 0.12;
+      this.#orbitControls.maxDistance = 8;
+      this.#orbitControls.minDistance = 1;
+      this.#orbitControls.update();
+
+      // 監聽相機拖拽操作以更新 isUserInteracting
+      this.#orbitControls.addEventListener('start', () => {
+        this.#isUserInteracting = true;
+      });
+      this.#orbitControls.addEventListener('end', () => {
+        this.#isUserInteracting = false;
+      });
+    }
+
+    // 燈光
+    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+    this.#scene.add(ambient);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(2, 4, 2);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 1024;
+    dirLight.shadow.mapSize.height = 1024;
+    this.#scene.add(dirLight);
+
+    // 補光（底光）
+    const fillLight = new THREE.DirectionalLight(0x88aacc, 0.25);
+    fillLight.position.set(-1, -1, 1);
+    this.#scene.add(fillLight);
+
+    // 背景柔光
+    const hemiLight = new THREE.HemisphereLight(0x1a2a40, 0x080c16, 0.4);
+    this.#scene.add(hemiLight);
+
+    this.#clock = new THREE.Clock();
+  }
+
+  // ── 動畫迴圈 ──────────────────────────
+
+  #startLoop() {
+    const animate = () => {
+      this.#rafId = requestAnimationFrame(animate);
+      const dt = this.#clock.getDelta();
+
+      // FPS 計算
+      this.#frameCount++;
+      this.#fpsTimer += dt;
+      if (this.#fpsTimer >= 0.5) {
+        this.#fps = Math.round(this.#frameCount / this.#fpsTimer);
+        this.#frameCount = 0;
+        this.#fpsTimer = 0;
+        this.onFpsUpdate?.(this.#fps);
+      }
+
+      // 更新子系統（順序重要）
+      this.#stateMachine.update(dt);   // 1. 狀態機：自動轉場
+      this.#motion.update(dt);         // 2. 動作：身體骨骼
+      this.#expression.update(dt);     // 3. 表情：眨眼 / BlendShape
+      this._vrmUpdate(dt);             // 4. VRM 內部：springBone（lookAt 已關）
+      this.#lookAtCtrl.update(dt);     // 5. 注視：頭/頸旋轉（在 vrm.update 之後，不會被覆蓋）
+
+      // 軌道控制阻尼更新
+      this.#orbitControls?.update();
+
+      // 渲染
+      this.#renderer.render(this.#scene, this.#camera);
+    };
+    animate();
+  }
+
+  // ── 視窗 Resize ───────────────────────
+
+  #bindResize() {
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0) {
+          this.#camera.aspect = width / height;
+          this.#camera.updateProjectionMatrix();
+          this.#renderer.setSize(width, height);
+        }
+      }
+    });
+    observer.observe(this.#container);
+  }
+
+  // ── 清理 ──────────────────────────────
+
+  dispose() {
+    cancelAnimationFrame(this.#rafId);
+    this.#motion.dispose();
+    this.#expression.dispose();
+    this.#lookAtCtrl.dispose();
+    this.#stateMachine.dispose();
+    this._vrmDispose();
+
+    this.#renderer?.dispose();
+    this.#container?.removeChild(this.#renderer?.domElement);
+  }
+}

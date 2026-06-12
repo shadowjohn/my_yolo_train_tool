@@ -418,3 +418,11 @@ data/projects
 /yolo-env
 /mss/__pycache__
 /binary/Ultralytics
+
+# Local tool / environment caches
+.claude/
+.superpowers/
+
+# Build and model outputs
+/dist/
+/example_pt/
