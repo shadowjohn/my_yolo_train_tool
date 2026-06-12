@@ -176,6 +176,97 @@ export function updateTraceStep(intentObj, step, patch = {}) {
   return intentObj.trace;
 }
 
+function cloneParameters(parameters) {
+  return { ...(parameters || {}) };
+}
+
+function isCompleteParameters(parameters) {
+  if (!parameters || typeof parameters !== 'object') {
+    return false;
+  }
+  return Object.values(parameters).every(value => value !== undefined && value !== null && value !== '');
+}
+
+/**
+ * 建立目前空間上下文可直接執行的工具建議。
+ * @param {object} options
+ * @param {object} options.spatialContext
+ * @param {function} options.hasTool
+ * @param {function} options.checkPolicy
+ * @param {function} options.mapCenterToGridXY
+ * @returns {object[]}
+ */
+export function createSuggestedActions(options = {}) {
+  const spatial = options.spatialContext || {};
+  const selectedFeature = spatial.selectedFeature || 'none';
+  if (!selectedFeature || selectedFeature === 'none') {
+    return [];
+  }
+
+  const hasTool = typeof options.hasTool === 'function' ? options.hasTool : () => false;
+  const checkPolicy = typeof options.checkPolicy === 'function' ? options.checkPolicy : () => ({ ok: false });
+  const mapCenterToGridXY = typeof options.mapCenterToGridXY === 'function'
+    ? options.mapCenterToGridXY
+    : () => ({ x: undefined, y: undefined });
+
+  const candidates = [];
+  const isPipe = selectedFeature.startsWith('PIPE-');
+  const isCctv = selectedFeature.startsWith('CCTV-');
+
+  if (isPipe || isCctv) {
+    const xy = mapCenterToGridXY(spatial.mapCenter);
+    const tool = isPipe ? 'query_pipe' : 'query_cctv';
+    const id = isPipe ? 'pipe_details' : 'cctv_status';
+    const label = isPipe ? '查看詳細資料' : '查看影像狀態';
+    const beforeText = isPipe
+      ? '我來查看這根管線的詳細資料。'
+      : '我來查看這台監視器的影像狀態。';
+    const afterText = isPipe
+      ? '已查詢目前選取管線，{summary}'
+      : '已查詢目前選取監視器，{summary}';
+    const parameters = { x: xy.x, y: xy.y };
+
+    candidates.push({
+      id,
+      label,
+      tool,
+      target: selectedFeature,
+      parameters,
+      intentPayload: {
+        action: tool,
+        tool,
+        parameters: cloneParameters(parameters),
+        beforeText,
+        afterText
+      }
+    });
+
+    const reportParameters = { featureId: selectedFeature };
+    candidates.push({
+      id: 'download_report',
+      label: '下載報表',
+      tool: 'download_report',
+      target: selectedFeature,
+      parameters: reportParameters,
+      intentPayload: {
+        action: 'download_report',
+        tool: 'download_report',
+        parameters: cloneParameters(reportParameters),
+        beforeText: '我幫你下載目前選取物件的維護報告。',
+        afterText: '我已經幫您下載完成囉～'
+      }
+    });
+  }
+
+  return candidates.filter(action => {
+    if (!hasTool(action.tool) || !isCompleteParameters(action.parameters)) {
+      return false;
+    }
+    const policyCheck = checkPolicy(action.tool, action.parameters);
+    return !!policyCheck?.ok;
+  });
+}
+
 export class VrmMascot {
   // DOM
   #container = null;
@@ -542,7 +633,8 @@ export class VrmMascot {
         trace: Array.isArray(this.#actionIntent.trace)
           ? this.#actionIntent.trace.map(item => ({ ...item }))
           : []
-      }
+      },
+      suggestedActions: this.buildSuggestedActions()
     };
   }
 
@@ -630,6 +722,22 @@ export class VrmMascot {
       validationErrors,
       toolDigest: this.buildToolDigest()
     };
+  }
+
+  /**
+   * 建立目前使用者可直接點擊執行的工具建議。
+   * @returns {object[]}
+   */
+  buildSuggestedActions() {
+    const spatial = this.#context ? this.#context.get() : {};
+    return createSuggestedActions({
+      spatialContext: spatial,
+      hasTool: (toolName) => this.tools ? this.tools.has(toolName) : false,
+      checkPolicy: (toolName, parameters) => this.policyGate
+        ? this.policyGate.check(toolName, parameters)
+        : { ok: false },
+      mapCenterToGridXY: (mapCenter) => this.mapCenterToGridXY(mapCenter)
+    });
   }
 
   /**

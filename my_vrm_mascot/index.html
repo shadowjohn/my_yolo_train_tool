@@ -67,6 +67,10 @@
           <div class="gis-marker" id="gisMarker">📍</div>
         </div>
         <div class="gis-info" id="gisInfo">GIS Idle. Waiting for query_pipe...</div>
+        <div class="gis-suggested-actions" id="suggestedActionsPanel" hidden>
+          <div class="gis-form-title">可執行動作</div>
+          <div class="suggested-actions-list" id="suggestedActionsList"></div>
+        </div>
 
         <!-- 設備維護回報單 (Phase 11) -->
         <form class="gis-form-panel" id="gisReportForm" novalidate>
@@ -354,7 +358,10 @@
       actionTarget: document.getElementById('dbgActionTarget'),
       actionConfidence: document.getElementById('dbgActionConfidence'),
       actionStatus: document.getElementById('dbgActionStatus'),
+      suggestedPanel: document.getElementById('suggestedActionsPanel'),
+      suggestedList: document.getElementById('suggestedActionsList'),
     };
+    let currentSuggestedActions = [];
 
     mascot.onFpsUpdate = (fps) => {
       dbg.fps.textContent = fps;
@@ -391,6 +398,7 @@
       if (dbg.actionTarget) dbg.actionTarget.textContent = info.actionIntent?.target || 'none';
       if (dbg.actionConfidence) dbg.actionConfidence.textContent = info.actionIntent?.confidence !== undefined ? info.actionIntent.confidence.toFixed(2) : '0.00';
       if (dbg.actionStatus) dbg.actionStatus.textContent = info.actionIntent?.status || 'idle';
+      renderSuggestedActions(info.suggestedActions);
 
       if (dbg.history) {
         dbg.history.innerHTML = info.history.map(item => {
@@ -411,6 +419,18 @@
           : '<div class="debug-trace-empty">no trace</div>';
       }
     };
+
+    if (dbg.suggestedList) {
+      dbg.suggestedList.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-suggested-action-id]');
+        if (!btn) return;
+
+        const action = currentSuggestedActions.find(item => item.id === btn.dataset.suggestedActionId);
+        if (!action || !action.intentPayload) return;
+
+        mascot.performIntent(action.intentPayload);
+      });
+    }
 
     function escapeHtml(str) {
       return String(str || '')
@@ -439,6 +459,25 @@
           ${detail ? `<span class="trace-detail">${escapeHtml(detail)}</span>` : ''}
         </div>
       `;
+    }
+
+    function renderSuggestedActions(actions) {
+      currentSuggestedActions = Array.isArray(actions) ? actions : [];
+      if (!dbg.suggestedPanel || !dbg.suggestedList) return;
+
+      if (currentSuggestedActions.length === 0) {
+        dbg.suggestedPanel.hidden = true;
+        dbg.suggestedList.innerHTML = '';
+        return;
+      }
+
+      dbg.suggestedPanel.hidden = false;
+      dbg.suggestedList.innerHTML = currentSuggestedActions.map(action => `
+        <button class="suggested-action-chip" type="button" data-suggested-action-id="${escapeHtml(action.id)}">
+          <span class="suggested-action-label">${escapeHtml(action.label)}</span>
+          <span class="suggested-action-tool">${escapeHtml(action.tool)}</span>
+        </button>
+      `).join('');
     }
 
     // ── 載入 ────────────────────────────────
