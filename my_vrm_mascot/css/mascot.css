@@ -628,6 +628,85 @@ body {
   -webkit-box-orient: vertical;
 }
 
+.debug-trace-container {
+  margin-top: 0;
+}
+
+.debug-trace-list {
+  max-height: 120px;
+}
+
+.debug-trace-item {
+  display: grid;
+  grid-template-columns: minmax(88px, 1fr) auto minmax(0, 1.2fr);
+  align-items: center;
+  gap: var(--gap-sm);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  padding: 4px var(--gap-sm);
+  background: var(--bg-glass);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+}
+
+.debug-trace-item:hover {
+  border-color: var(--border-subtle);
+  background: var(--bg-glass-hover);
+}
+
+.debug-trace-empty {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  padding: 4px var(--gap-sm);
+}
+
+.trace-step {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.trace-status {
+  min-width: 54px;
+  text-align: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.trace-detail {
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trace-status-ok,
+.trace-status-done,
+.trace-status-healed {
+  background: rgba(24, 169, 153, 0.15);
+  color: var(--accent-mint);
+}
+
+.trace-status-blocked,
+.trace-status-failed {
+  background: rgba(224, 108, 159, 0.15);
+  color: var(--accent-pink);
+}
+
+.trace-status-pending,
+.trace-status-running {
+  background: rgba(245, 166, 35, 0.15);
+  color: var(--accent-amber);
+}
+
+.trace-status-skipped,
+.trace-status-none {
+  background: rgba(232, 237, 245, 0.08);
+  color: var(--text-muted);
+}
+
 /* ── Mock LLM Connector (Phase 5A) ──────────────── */
 .llm-connector {
   background: rgba(16, 28, 52, 0.75);
@@ -918,4 +997,3 @@ body {
   border-color: rgba(224, 108, 159, 0.25);
   color: var(--accent-pink);
 }
-

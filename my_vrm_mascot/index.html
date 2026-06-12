@@ -275,6 +275,12 @@
             <!-- Dynamically populated timeline items -->
           </div>
         </div>
+        <div class="debug-history-container debug-trace-container">
+          <div class="debug-history-header">Action Trace Timeline</div>
+          <div class="debug-history-list debug-trace-list" id="dbgTrace">
+            <!-- Dynamically populated trace steps -->
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -333,6 +339,7 @@
       lastSpeech: document.getElementById('dbgLastSpeech'),
       queueLen:   document.getElementById('dbgQueueLength'),
       history:    document.getElementById('dbgHistory'),
+      trace:      document.getElementById('dbgTrace'),
       tools:      document.getElementById('dbgTools'),
       lastTool:   document.getElementById('dbgLastTool'),
       lastResult: document.getElementById('dbgLastResult'),
@@ -396,6 +403,13 @@
           `;
         }).join('');
       }
+
+      if (dbg.trace) {
+        const trace = Array.isArray(info.actionIntent?.trace) ? info.actionIntent.trace : [];
+        dbg.trace.innerHTML = trace.length > 0
+          ? trace.map(item => renderTraceItem(item)).join('')
+          : '<div class="debug-trace-empty">no trace</div>';
+      }
     };
 
     function escapeHtml(str) {
@@ -405,6 +419,26 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+    }
+
+    function traceStatusClass(status) {
+      return String(status || 'none').replace(/[^a-z0-9_-]/gi, '_');
+    }
+
+    function renderTraceItem(item) {
+      const args = Array.isArray(item.args) && item.args.length > 0
+        ? `args=${item.args.join(',')}`
+        : '';
+      const reason = item.reason ? `reason=${item.reason}` : '';
+      const detail = [args, reason].filter(Boolean).join(' ');
+      const status = item.status || 'none';
+      return `
+        <div class="debug-trace-item">
+          <span class="trace-step">${escapeHtml(item.step)}</span>
+          <span class="trace-status trace-status-${traceStatusClass(status)}">${escapeHtml(status)}</span>
+          ${detail ? `<span class="trace-detail">${escapeHtml(detail)}</span>` : ''}
+        </div>
+      `;
     }
 
     // ── 載入 ────────────────────────────────

@@ -100,6 +100,21 @@ export class ActionQueue {
     const timeoutDuration = action.timeout ?? 8000;
     this.#timeoutId = setTimeout(() => {
       console.warn(`[ActionQueue] Action timed out (${timeoutDuration}ms), skipping:`, action);
+      if (action.type === 'tool') {
+        const intentObj = action.intentObj;
+        if (intentObj) {
+          intentObj.status = 'failed';
+          intentObj.result = { ok: false, error: 'Tool timeout' };
+          if (this.#mascot.updateIntentTrace) {
+            this.#mascot.updateIntentTrace(intentObj, "execute_tool", { status: "failed", reason: "timeout" });
+          } else {
+            this.#mascot.emitIntentUpdate();
+          }
+        }
+        action.onToolComplete?.({ ok: false, error: 'Tool timeout' });
+        this.#handleToolFailure(action, 'Tool timeout');
+        return;
+      }
       this.#cancelCurrent('timeout');
       // 稍微延遲後執行下一個，確保狀態機有時間回歸 idle
       setTimeout(() => this.#executeNext(), 50);
@@ -140,7 +155,11 @@ export class ActionQueue {
         const intentObj = action.intentObj;
         if (intentObj) {
           intentObj.status = 'running';
-          this.#mascot.emitIntentUpdate();
+          if (this.#mascot.updateIntentTrace) {
+            this.#mascot.updateIntentTrace(intentObj, "execute_tool", { status: "running" });
+          } else {
+            this.#mascot.emitIntentUpdate();
+          }
         }
 
         if (this.#mascot.tools) {
@@ -170,7 +189,11 @@ export class ActionQueue {
             if (intentObj) {
               intentObj.status = isOk ? 'done' : 'failed';
               intentObj.result = result;
-              this.#mascot.emitIntentUpdate();
+              if (this.#mascot.updateIntentTrace) {
+                this.#mascot.updateIntentTrace(intentObj, "execute_tool", { status: isOk ? "done" : "failed" });
+              } else {
+                this.#mascot.emitIntentUpdate();
+              }
             }
 
             // 觸發 Promise 解析回調
@@ -238,7 +261,12 @@ export class ActionQueue {
             if (intentObj) {
               intentObj.status = 'failed';
               intentObj.result = { ok: false, error: err.message || String(err) };
-              this.#mascot.emitIntentUpdate();
+              if (this.#mascot.updateIntentTrace) {
+                const reason = /timeout/i.test(err.message || String(err)) ? "timeout" : "error";
+                this.#mascot.updateIntentTrace(intentObj, "execute_tool", { status: "failed", reason });
+              } else {
+                this.#mascot.emitIntentUpdate();
+              }
             }
 
             action.onToolComplete?.({ ok: false, error: err.message || String(err) });
@@ -251,7 +279,11 @@ export class ActionQueue {
           if (intentObj) {
             intentObj.status = 'failed';
             intentObj.result = { ok: false, error: 'No ToolRegistry available' };
-            this.#mascot.emitIntentUpdate();
+            if (this.#mascot.updateIntentTrace) {
+              this.#mascot.updateIntentTrace(intentObj, "execute_tool", { status: "failed" });
+            } else {
+              this.#mascot.emitIntentUpdate();
+            }
           }
           action.onToolComplete?.({ ok: false, error: 'No ToolRegistry available' });
           this.#onActionFinished(action, true);

@@ -103,6 +103,79 @@ const INTENT_PRESETS = {
   }
 };
 
+/**
+ * 建立固定四步驟 trace，讓 Debug Panel 有穩定的顯示順序。
+ * @param {object} [options]
+ * @param {boolean} [options.isTool=false]
+ * @param {string} [options.selfHealStatus]
+ * @param {string[]} [options.selfHealArgs]
+ * @param {string} [options.policyStatus]
+ * @param {string} [options.policyReason]
+ * @param {string} [options.executeStatus]
+ * @param {string} [options.executeReason]
+ * @returns {object[]}
+ */
+export function createIntentTrace(options = {}) {
+  const isTool = !!options.isTool;
+  const trace = [
+    { step: 'normalize', status: 'ok' },
+    { step: 'self_heal', status: isTool ? (options.selfHealStatus || 'skipped') : 'none' },
+    { step: 'policy_check', status: isTool ? (options.policyStatus || 'none') : 'none' },
+    { step: 'execute_tool', status: isTool ? (options.executeStatus || 'none') : 'none' }
+  ];
+
+  if (trace[1].status === 'healed' && Array.isArray(options.selfHealArgs) && options.selfHealArgs.length > 0) {
+    trace[1].args = [...options.selfHealArgs];
+  }
+  if (trace[2].status === 'blocked' && options.policyReason) {
+    trace[2].reason = options.policyReason;
+  }
+  if (options.executeReason) {
+    trace[3].reason = options.executeReason;
+  }
+
+  return trace;
+}
+
+/**
+ * 更新指定 trace step；若 step 不存在則依固定順序補上。
+ * @param {object} intentObj
+ * @param {string} step
+ * @param {object} patch
+ * @returns {object[]}
+ */
+export function updateTraceStep(intentObj, step, patch = {}) {
+  if (!intentObj || typeof intentObj !== 'object') {
+    return [];
+  }
+  if (!Array.isArray(intentObj.trace)) {
+    intentObj.trace = createIntentTrace({ isTool: !!intentObj.tool });
+  }
+
+  let target = intentObj.trace.find((item) => item.step === step);
+  if (!target) {
+    target = { step, status: 'none' };
+    intentObj.trace.push(target);
+  }
+
+  Object.assign(target, patch);
+  if (patch.args === undefined) {
+    delete target.args;
+  }
+  if (patch.reason === undefined) {
+    delete target.reason;
+  }
+
+  const order = ['normalize', 'self_heal', 'policy_check', 'execute_tool'];
+  intentObj.trace.sort((a, b) => {
+    const ai = order.indexOf(a.step);
+    const bi = order.indexOf(b.step);
+    return (ai === -1 ? order.length : ai) - (bi === -1 ? order.length : bi);
+  });
+
+  return intentObj.trace;
+}
+
 export class VrmMascot {
   // DOM
   #container = null;
@@ -342,23 +415,47 @@ export class VrmMascot {
   async performIntent(intentObj) {
     // 1. 規格化
     let normalizedIntent = this.normalizeIntent(intentObj);
+    let toolName = normalizedIntent.tool;
+    normalizedIntent.trace = createIntentTrace({ isTool: !!toolName });
 
     // 1.5 自我修復 (Phase 12.7)
     normalizedIntent = this.selfHealIntent(normalizedIntent);
+    toolName = normalizedIntent.tool;
+    if (toolName) {
+      const healedArgs = Array.isArray(normalizedIntent.selfHealLog)
+        ? normalizedIntent.selfHealLog.map(item => item.arg).filter(Boolean)
+        : [];
+      updateTraceStep(normalizedIntent, 'self_heal', healedArgs.length > 0
+        ? { status: 'healed', args: healedArgs }
+        : { status: 'skipped' });
+    } else {
+      updateTraceStep(normalizedIntent, 'self_heal', { status: 'none' });
+    }
     this.#actionIntent = normalizedIntent;
     this.#emitIntentUpdate();
-
-    const toolName = normalizedIntent.tool;
 
     // 2. Policy Layer Guard
     if (toolName) {
       const policyCheck = this.policyGate.check(toolName, normalizedIntent.parameters);
       if (!policyCheck.ok) {
         normalizedIntent.status = 'blocked';
+        updateTraceStep(normalizedIntent, 'policy_check', {
+          status: 'blocked',
+          reason: policyCheck.reason
+        });
+        updateTraceStep(normalizedIntent, 'execute_tool', {
+          status: 'skipped',
+          reason: 'policy_blocked'
+        });
         this.#emitIntentUpdate();
         this.dispatch('warning', { text: policyCheck.error });
         return { ok: false, error: 'blocked' };
       }
+      updateTraceStep(normalizedIntent, 'policy_check', { status: 'ok' });
+      updateTraceStep(normalizedIntent, 'execute_tool', { status: 'pending' });
+    } else {
+      updateTraceStep(normalizedIntent, 'policy_check', { status: 'none' });
+      updateTraceStep(normalizedIntent, 'execute_tool', { status: 'none' });
     }
 
     let intentName = normalizedIntent.action.toLowerCase();
@@ -441,7 +538,10 @@ export class VrmMascot {
         action: this.#actionIntent.action,
         target: this.#actionIntent.target,
         confidence: this.#actionIntent.confidence,
-        status: this.#actionIntent.status
+        status: this.#actionIntent.status,
+        trace: Array.isArray(this.#actionIntent.trace)
+          ? this.#actionIntent.trace.map(item => ({ ...item }))
+          : []
       }
     };
   }
@@ -630,6 +730,18 @@ export class VrmMascot {
   }
 
   emitIntentUpdate() {
+    this.#emitIntentUpdate();
+  }
+
+  /**
+   * 更新 action intent trace 並通知 Debug Panel。
+   * @param {object} intentObj
+   * @param {string} step
+   * @param {object} patch
+   */
+  updateIntentTrace(intentObj, step, patch = {}) {
+    updateTraceStep(intentObj, step, patch);
+    this.#actionIntent = intentObj;
     this.#emitIntentUpdate();
   }
 
