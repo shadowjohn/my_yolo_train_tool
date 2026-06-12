@@ -5,10 +5,14 @@ def clamp(value, min_value, max_value):
 
 
 DEFAULT_MAPPING = [
-    {"id": "ParamBodyAngleX", "source": "torso_angle_deg", "scale": 0.5, "offset": 0.0, "clamp": [-30, 30]},
-    {"id": "ParamBodyBounce", "source": "body_center_y", "scale": -60.0, "offset": 30.0, "clamp": [-30, 30]},
-    {"id": "ParamArmL", "source": "left_arm_angle_deg", "scale": 0.5, "offset": 0.0, "clamp": [-30, 30]},
-    {"id": "ParamArmR", "source": "right_arm_angle_deg", "scale": 0.5, "offset": 0.0, "clamp": [-30, 30]},
+    {"id": "PARAM_ANGLE_Z", "source": "torso_angle_deg", "scale": 0.5, "offset": 0.0, "clamp": [-30, 30]},
+    {"id": "PARAM_BODY_ANGLE_X", "source": "torso_angle_deg", "scale": 0.25, "offset": 0.0, "clamp": [-15, 15]},
+    {"id": "PARAM_BODY_ANGLE_Y", "source": "body_center_y", "scale": -12.0, "offset": 6.0, "clamp": [-8, 8]},
+    {"id": "PARAM_BASE_X", "source": "body_center_x", "scale": 80.0, "offset": -40.0, "clamp": [-50, 50]},
+    {"id": "PARAM_BASE_Y", "source": "body_center_y", "scale": -50.0, "offset": 30.0, "clamp": [-20, 40]},
+    {"id": "PARAM_ARM_L", "source": "left_arm_angle_deg", "scale": 0.5, "offset": 0.0, "clamp": [-30, 30]},
+    {"id": "PARAM_ARM_R", "source": "right_arm_angle_deg", "scale": 0.5, "offset": 0.0, "clamp": [-30, 30]},
+    {"id": "PARAM_BREATH", "source": "body_center_y", "scale": -0.8, "offset": 0.8, "clamp": [0, 1]},
 ]
 
 

@@ -17,12 +17,16 @@ class Live2DMapperTests(unittest.TestCase):
     def test_build_live2d_params_clamps_values(self):
         params = build_live2d_params(self.sample_pose_record())
         ids = [p["id"] for p in params["parameters"]]
-        self.assertIn("ParamBodyAngleX", ids)
+        self.assertIn("PARAM_BODY_ANGLE_X", ids)
+        self.assertIn("PARAM_ARM_L", ids)
         self.assertEqual(params["source_pose_record"], "pose_record.json")
         self.assertEqual(params["duration_ms"], 33)
-        body = next(p for p in params["parameters"] if p["id"] == "ParamBodyAngleX")
+        body = next(p for p in params["parameters"] if p["id"] == "PARAM_BODY_ANGLE_X")
         self.assertEqual(body["keys"][0]["time_ms"], 0)
         self.assertLessEqual(max(k["value"] for k in body["keys"]), 30)
+        breath = next(p for p in params["parameters"] if p["id"] == "PARAM_BREATH")
+        self.assertGreaterEqual(min(k["value"] for k in breath["keys"]), 0)
+        self.assertLessEqual(max(k["value"] for k in breath["keys"]), 1)
 
     def test_build_motion3_has_curves(self):
         params = build_live2d_params(self.sample_pose_record())
@@ -30,9 +34,9 @@ class Live2DMapperTests(unittest.TestCase):
         self.assertEqual(motion["Version"], 3)
         self.assertGreater(motion["Meta"]["CurveCount"], 0)
         self.assertTrue(any(c["Target"] == "Parameter" for c in motion["Curves"]))
-        self.assertEqual(motion["Meta"]["CurveCount"], 4)
-        self.assertEqual(motion["Meta"]["TotalSegmentCount"], 4)
-        self.assertEqual(motion["Meta"]["TotalPointCount"], 8)
+        self.assertEqual(motion["Meta"]["CurveCount"], 8)
+        self.assertEqual(motion["Meta"]["TotalSegmentCount"], 8)
+        self.assertEqual(motion["Meta"]["TotalPointCount"], 16)
         self.assertEqual(motion["Curves"][0]["Segments"], [0.0, 0.0, 0, 0.033, 10.0])
 
     def test_build_motion3_skips_empty_parameter_curves(self):

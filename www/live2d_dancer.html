@@ -311,7 +311,7 @@
         <div class="meter"><div id="progress"></div></div>
       </div>
       <div class="small text-muted">
-        default_model：黑長髮馬尾妹 / 可替換
+        model：Shizuku 48 / 之後可換黑長髮馬尾妹
       </div>
     </section>
     <section class="stage">
@@ -347,17 +347,34 @@
       };
 
       var mapping = [
-        { id: "ParamBodyAngleX", source: "torso_angle_deg", scale: 0.5, offset: 0, min: -30, max: 30 },
-        { id: "ParamBodyBounce", source: "body_center_y", scale: -60, offset: 30, min: -30, max: 30 },
-        { id: "ParamArmL", source: "left_arm_angle_deg", scale: 0.5, offset: 0, min: -30, max: 30 },
-        { id: "ParamArmR", source: "right_arm_angle_deg", scale: 0.5, offset: 0, min: -30, max: 30 }
+        { id: "PARAM_ANGLE_Z", source: "torso_angle_deg", scale: 0.5, offset: 0, min: -30, max: 30 },
+        { id: "PARAM_BODY_ANGLE_X", source: "torso_angle_deg", scale: 0.25, offset: 0, min: -15, max: 15 },
+        { id: "PARAM_BODY_ANGLE_Y", source: "body_center_y", scale: -12, offset: 6, min: -8, max: 8 },
+        { id: "PARAM_BASE_X", source: "body_center_x", scale: 80, offset: -40, min: -50, max: 50 },
+        { id: "PARAM_BASE_Y", source: "body_center_y", scale: -50, offset: 30, min: -20, max: 40 },
+        { id: "PARAM_ARM_L", source: "left_arm_angle_deg", scale: 0.5, offset: 0, min: -30, max: 30 },
+        { id: "PARAM_ARM_R", source: "right_arm_angle_deg", scale: 0.5, offset: 0, min: -30, max: 30 },
+        { id: "PARAM_BREATH", source: "body_center_y", scale: -0.8, offset: 0.8, min: 0, max: 1 }
       ];
 
       var live2dAliases = {
-        ParamBodyAngleX: ["PARAM_BODY_ANGLE_X", "PARAM_ANGLE_Z", "ParamBodyAngleX"],
-        ParamBodyBounce: ["PARAM_BREATH", "PARAM_BODY_ANGLE_Y", "ParamBodyBounce"],
-        ParamArmL: ["ParamArmL"],
-        ParamArmR: ["ParamArmR"]
+        ParamBodyAngleX: ["PARAM_BODY_ANGLE_X", "PARAM_BODY_ANGLE_Z", "PARAM_ANGLE_Z", "ParamBodyAngleX"],
+        ParamBodyBounce: ["PARAM_BODY_ANGLE_Y", "PARAM_BODY_Y", "PARAM_BASE_Y", "ParamBodyBounce"],
+        ParamArmL: ["PARAM_ARM_L", "PARAM_ARM_L_02", "PARAM_L_ARM", "PARAM_HAND_L", "ParamArmL"],
+        ParamArmR: ["PARAM_ARM_R", "PARAM_ARM_R_02", "PARAM_HAND_R", "ParamArmR"],
+        PARAM_ANGLE_Z: ["PARAM_ANGLE_Z", "PARAM_BODY_ANGLE_Z"],
+        PARAM_BODY_ANGLE_X: ["PARAM_BODY_ANGLE_X"],
+        PARAM_BODY_ANGLE_Y: ["PARAM_BODY_ANGLE_Y", "PARAM_BODY_Y"],
+        PARAM_BASE_X: ["PARAM_BASE_X", "PARAM_BODY_X"],
+        PARAM_BASE_Y: ["PARAM_BASE_Y", "PARAM_BODY_Y"],
+        PARAM_ARM_L: ["PARAM_ARM_L", "PARAM_ARM_L_02", "PARAM_L_ARM", "PARAM_HAND_L"],
+        PARAM_ARM_R: ["PARAM_ARM_R", "PARAM_ARM_R_02", "PARAM_HAND_R"],
+        PARAM_BREATH: ["PARAM_BREATH"]
+      };
+
+      var modelMap = {
+        shizuku: { name: "Shizuku 48", url: "/www/live2d/models/shizuku_48/index.json" },
+        default: { name: "default_model", url: "/www/live2d/default_model/index.json" }
       };
 
       function clamp(value, min, max) {
@@ -453,6 +470,13 @@
         return Number(keys[keys.length - 1].value || 0);
       }
 
+      function pickValue(values, ids, fallback) {
+        for (var i = 0; i < ids.length; i++) {
+          if (values[ids[i]] !== undefined && values[ids[i]] !== null) return Number(values[ids[i]]) || 0;
+        }
+        return fallback || 0;
+      }
+
       function attachLive2DHook(model) {
         if (!model || model.__dancerHooked) return;
         var originalUpdate = model.update;
@@ -477,10 +501,10 @@
       }
 
       function applyValues(values) {
-        var bodyAngle = clamp(values.ParamBodyAngleX || 0, -30, 30);
-        var bounce = clamp(values.ParamBodyBounce || 0, -24, 24);
-        var armL = clamp(values.ParamArmL || 0, -45, 45);
-        var armR = clamp(values.ParamArmR || 0, -45, 45);
+        var bodyAngle = clamp(pickValue(values, ["PARAM_BODY_ANGLE_X", "PARAM_ANGLE_Z", "ParamBodyAngleX"], 0), -30, 30);
+        var bounce = clamp(pickValue(values, ["PARAM_BASE_Y", "PARAM_BODY_ANGLE_Y", "ParamBodyBounce"], 0), -24, 24);
+        var armL = clamp(pickValue(values, ["PARAM_ARM_L", "ParamArmL"], 0), -45, 45);
+        var armR = clamp(pickValue(values, ["PARAM_ARM_R", "ParamArmR"], 0), -45, 45);
         state.overrides = values;
         $("#fallbackCharacter").css({
           "--body-tilt": (bodyAngle * 0.45).toFixed(2) + "deg",
@@ -548,10 +572,11 @@
         reader.readAsText(file, "utf-8");
       }
 
-      function loadFromUrl(url) {
+      function loadFromUrl(url, autoplay) {
         $.getJSON(url)
           .done(function (data) {
             loadJsonObject(data, url.split("/").pop());
+            if (autoplay) play();
           })
           .fail(function () {
             setStatus("舞步檔載入失敗");
@@ -559,21 +584,24 @@
       }
 
       function tryInitLive2D() {
-        $.getJSON("/www/live2d/default_model/index.json")
+        var query = getQuery();
+        var modelKey = (query.model || "shizuku").toLowerCase();
+        var modelConfig = modelMap[modelKey] || modelMap.shizuku;
+        $.getJSON(modelConfig.url)
           .done(function () {
             $("#live2d").show();
             $("#fallbackCharacter").hide();
             try {
-              loadlive2d("live2d", "/www/live2d/default_model/index.json");
+              loadlive2d("live2d", modelConfig.url);
               state.live2dReady = true;
-              setStatus("Live2D default_model 已載入");
+              setStatus("Live2D " + modelConfig.name + " 已載入");
             } catch (err) {
               $("#fallbackCharacter").show();
-              setStatus("Live2D runtime 已載入，default_model 初始化失敗");
+              setStatus("Live2D runtime 已載入，" + modelConfig.name + " 初始化失敗");
             }
           })
           .fail(function () {
-            setStatus("使用 default_model placeholder");
+            setStatus("使用 placeholder");
           });
       }
 
@@ -592,8 +620,8 @@
 
       var query = getQuery();
       tryInitLive2D();
-      if (query.pose_url) loadFromUrl(query.pose_url);
-      if (query.motion_url) loadFromUrl(query.motion_url);
+      if (query.pose_url) loadFromUrl(query.pose_url, true);
+      if (query.motion_url) loadFromUrl(query.motion_url, true);
     })();
   </script>
 </body>
