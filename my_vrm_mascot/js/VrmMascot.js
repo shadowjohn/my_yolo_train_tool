@@ -29,6 +29,7 @@ import { ToolRegistry }         from './ToolRegistry.js';
 import { ConversationMemory }   from './ConversationMemory.js';
 import { SpatialContext }       from './SpatialContext.js';
 import { DomContext }           from './DomContext.js';
+import { PolicyGate }           from './PolicyGate.js';
 
 /**
  * 意圖對照 Preset表，定義各種高階意圖所對應的底層指令序列與預設值
@@ -126,6 +127,7 @@ export class VrmMascot {
   #memory = null;
   #context = null;
   #domContext = null;
+  #policyGate = null;
 
   // 狀態監控
   #isUserInteracting = false;
@@ -175,6 +177,7 @@ export class VrmMascot {
     this.#memory = new ConversationMemory(this);
     this.#context = new SpatialContext(this);
     this.#domContext = new DomContext(this);
+    this.#policyGate = new PolicyGate(this);
 
     // 監聽佇列變空
     this.#actionQueue.onQueueEmpty = () => {
@@ -218,6 +221,9 @@ export class VrmMascot {
 
   /** @returns {DomContext} */
   get domContext() { return this.#domContext; }
+
+  /** @returns {PolicyGate} */
+  get policyGate() { return this.#policyGate; }
 
   /** @returns {object} */
   get intent() { return this.#actionIntent; }
@@ -343,10 +349,11 @@ export class VrmMascot {
 
     // 2. Policy Layer Guard
     if (toolName) {
-      if (!this.toolRegistry.has(toolName)) {
+      const policyCheck = this.policyGate.check(toolName, normalizedIntent.parameters);
+      if (!policyCheck.ok) {
         normalizedIntent.status = 'blocked';
         this.#emitIntentUpdate();
-        this.dispatch('warning', { text: `安全策略攔截：工具 ${toolName} 未註冊。` });
+        this.dispatch('warning', { text: policyCheck.error });
         return { ok: false, error: 'blocked' };
       }
     }
@@ -433,6 +440,72 @@ export class VrmMascot {
         confidence: this.#actionIntent.confidence,
         status: this.#actionIntent.status
       }
+    };
+  }
+
+  /**
+   * 建立極簡的上下文摘要 (Context Digest)，供 LLM Proxy 推理使用，降低 Token 消耗。
+   * @returns {object}
+   */
+  buildContextDigest() {
+    const spatial = this.#context ? this.#context.get() : {};
+    const dom = this.#domContext ? this.#domContext.get() : {};
+
+    const selectedFeature = spatial.selectedFeature || "none";
+
+    // activeElement: 優先抓 ID，若無則抓 tag
+    const activeEl = dom.activeElement;
+    const activeElement = activeEl ? (activeEl.id || activeEl.tag || "none") : "none";
+
+    // activePanel: 依據 activeElement 或者是網頁當前焦點元素判斷所屬區塊
+    let activePanel = "none";
+    if (typeof document !== 'undefined' && document.activeElement) {
+      const el = document.activeElement;
+      if (el.closest) {
+        if (el.closest('#exportPanel')) {
+          activePanel = "exportPanel";
+        } else if (el.closest('#gisReportForm')) {
+          activePanel = "gisReportForm";
+        } else if (el.closest('#gisPanel')) {
+          activePanel = "gisPanel";
+        }
+      }
+    }
+    // Fallback: 靜態比對
+    if (activePanel === "none" && activeElement !== "none") {
+      if (['reportAddress', 'reportEmail', 'reportDesc', 'btnSubmitReport'].includes(activeElement)) {
+        activePanel = "gisReportForm";
+      } else if (['exportFormat', 'btnExportFeature'].includes(activeElement)) {
+        activePanel = "exportPanel";
+      }
+    }
+
+    // availableActions: 當前註冊之工具清單
+    const availableActions = this.tools ? this.tools.list().map(t => t.name) : [];
+
+    // lastIntent: 最後一次執行的行動/意圖名稱
+    const lastIntent = this.#actionIntent ? (this.#actionIntent.action || "none") : "none";
+
+    // mapCenter: 目前地圖經緯度
+    const mapCenter = spatial.mapCenter || [120.6, 24.1];
+
+    // validationErrors: 蒐集當前表單中所有校驗失敗（valid === false）的欄位鍵值
+    const validationErrors = [];
+    const valState = dom.validationState || {};
+    for (const key of Object.keys(valState)) {
+      if (valState[key] && valState[key].valid === false) {
+        validationErrors.push(key);
+      }
+    }
+
+    return {
+      selectedFeature,
+      activeElement,
+      activePanel,
+      availableActions,
+      lastIntent,
+      mapCenter,
+      validationErrors
     };
   }
 

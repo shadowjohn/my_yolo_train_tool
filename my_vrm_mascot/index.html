@@ -684,7 +684,6 @@
       }, null, 2);
 
       // 向後端發送語意請求
-      const spatialContext = mascot.context ? mascot.context.get() : { selectedFeature: 'none', activeLayer: 'none', mapCenter: [120.6, 24.1] };
       fetch('/api/llm', {
         method: 'POST',
         headers: {
@@ -692,13 +691,7 @@
         },
         body: JSON.stringify({
           message: text,
-          memory: mascot.memory ? mascot.memory.list().slice(0, 10) : [],
-          spatialContext: {
-            selectedFeature: spatialContext.selectedFeature,
-            activeLayer: spatialContext.activeLayer,
-            mapCenter: spatialContext.mapCenter
-          },
-          domContext: mascot.domContext ? mascot.domContext.get() : null
+          contextDigest: mascot.buildContextDigest ? mascot.buildContextDigest() : {}
         }),
         signal: llmAbortController ? (llmAbortController.abort(), llmAbortController = new AbortController()).signal : (llmAbortController = new AbortController()).signal
       })

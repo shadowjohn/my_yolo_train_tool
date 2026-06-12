@@ -22,23 +22,56 @@ def llm_proxy():
             "motion": "think"
         })
 
-    # 獲取並解析對話記憶 (Phase 9A)
-    memory = data.get("memory", [])
-    
-    # 找到最近的一筆工具執行結果 (因為 unshift，第一個就是最新的)
-    last_tool_result = None
-    for item in memory:
-        if item.get("type") == "tool_result":
-            last_tool_result = item
-            break
+    # 優先解析 Context Digest (Phase 12.5)
+    context_digest = data.get("contextDigest", {})
+    if context_digest:
+        selected_feature = context_digest.get("selectedFeature", "none")
+        active_element = context_digest.get("activeElement", "none")
+        active_panel = context_digest.get("activePanel", "none")
+        last_intent = context_digest.get("lastIntent", "none")
+        center = context_digest.get("mapCenter", [120.6, 24.1])
+        validation_errors = context_digest.get("validationErrors", [])
 
-    # 獲取並解析空間上下文 (Phase 10A)
-    spatial_context = data.get("spatialContext", {})
-    selected_feature = spatial_context.get("selectedFeature", "none")
-    active_layer = spatial_context.get("activeLayer", "none")
-    center = spatial_context.get("mapCenter", [120.6, 24.1])
-    
-    # 坐標格式安全校驗 (保護點 2)
+        # 將 validationErrors 對應回相容格式
+        address_invalid = any(k in validation_errors for k in ["reportAddress", "address"])
+        email_invalid = any(k in validation_errors for k in ["reportEmail", "email"])
+        validation_state = {
+            "reportAddress": { "valid": not address_invalid },
+            "reportEmail": { "valid": not email_invalid }
+        }
+        form_state = {
+            "reportEmail": "",
+            "reportAddress": ""
+        }
+
+        # 模擬上一筆執行工具歷史
+        last_tool_result = None
+        if last_intent in ["download_report", "query_pipe", "query_cctv"]:
+            last_tool_result = {
+                "tool": last_intent,
+                "result": {
+                    "data": {
+                        "depth": 1.8,
+                        "status": "online"
+                    }
+                }
+            }
+    else:
+        # 向下相容傳統格式 (Phase 9A, 10A, 11)
+        memory = data.get("memory", [])
+        last_tool_result = None
+        for item in memory:
+            if item.get("type") == "tool_result":
+                last_tool_result = item
+                break
+        spatial_context = data.get("spatialContext", {})
+        selected_feature = spatial_context.get("selectedFeature", "none")
+        center = spatial_context.get("mapCenter", [120.6, 24.1])
+        dom_context = data.get("domContext", {}) or {}
+        validation_state = dom_context.get("validationState", {}) or {}
+        form_state = dom_context.get("formState", {}) or {}
+
+    # 坐標格式安全校驗與轉換
     if not isinstance(center, list) or len(center) != 2:
         center = [120.6, 24.1]
     try:
@@ -54,11 +87,6 @@ def llm_proxy():
         x, y = 30, 60
     else:
         x, y = 50, 50
-
-    # 獲取並解析 DOM 上下文 (Phase 11)
-    dom_context = data.get("domContext", {}) or {}
-    validation_state = dom_context.get("validationState", {}) or {}
-    form_state = dom_context.get("formState", {}) or {}
     
     # A. 表單輔助 (為什麼不能送出？)
     message_lower = message.lower()
