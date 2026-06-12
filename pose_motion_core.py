@@ -199,6 +199,20 @@ def smooth_features(features_list, alpha=0.3):
 
 
 def compute_pose_features(keypoints, roi):
+    # Filter keypoints: if confidence is below 0.4, treat x/y as None (not detected)
+    filtered_kpts = []
+    for kp in keypoints:
+        if float(kp.get("confidence", 0.0)) < 0.4:
+            filtered_kpts.append({
+                "name": kp["name"],
+                "x": None,
+                "y": None,
+                "confidence": float(kp.get("confidence", 0.0))
+            })
+        else:
+            filtered_kpts.append(kp)
+    keypoints = filtered_kpts
+
     nose = keypoint_by_name(keypoints, "nose")
     le = keypoint_by_name(keypoints, "left_eye")
     re = keypoint_by_name(keypoints, "right_eye")
