@@ -341,7 +341,10 @@ export class VrmMascot {
    */
   async performIntent(intentObj) {
     // 1. 規格化
-    const normalizedIntent = this.normalizeIntent(intentObj);
+    let normalizedIntent = this.normalizeIntent(intentObj);
+
+    // 1.5 自我修復 (Phase 12.7)
+    normalizedIntent = this.selfHealIntent(normalizedIntent);
     this.#actionIntent = normalizedIntent;
     this.#emitIntentUpdate();
 
@@ -527,6 +530,103 @@ export class VrmMascot {
       validationErrors,
       toolDigest: this.buildToolDigest()
     };
+  }
+
+  /**
+   * 將地圖中心經緯度轉換為模擬格點座標 (Phase 12.7)
+   * @param {number[]} mapCenter 
+   * @returns {object} { x, y }
+   */
+  mapCenterToGridXY(mapCenter) {
+    if (!Array.isArray(mapCenter) || mapCenter.length !== 2) {
+      return { x: 50000, y: 50000 };
+    }
+    return {
+      x: Math.round(mapCenter[0] * 1000),
+      y: Math.round(mapCenter[1] * 1000)
+    };
+  }
+
+  /**
+   * 自我修復意圖參數 (Phase 12.7)
+   * @param {object} normalizedIntent 
+   * @returns {object} 修復後的意圖物件
+   */
+  selfHealIntent(normalizedIntent) {
+    if (!normalizedIntent || !normalizedIntent.tool) {
+      return normalizedIntent;
+    }
+
+    const toolName = normalizedIntent.tool;
+    const policy = this.policyGate ? this.policyGate.getPolicy(toolName) : null;
+    if (!policy) {
+      return normalizedIntent;
+    }
+
+    const parameters = { ...(normalizedIntent.parameters || {}) };
+    const missingArgs = [];
+    for (const reqKey of policy.requiredArgs) {
+      if (parameters[reqKey] === undefined || parameters[reqKey] === null || parameters[reqKey] === '') {
+        missingArgs.push(reqKey);
+      }
+    }
+
+    if (missingArgs.length === 0) {
+      return normalizedIntent;
+    }
+
+    const spatial = this.#context ? this.#context.get() : {};
+    const selectedFeature = spatial.selectedFeature || "none";
+    const selfHealLog = [];
+    let selfHealed = false;
+
+    for (const missingKey of missingArgs) {
+      // 1. 修復 featureId
+      if (missingKey === 'featureId' && selectedFeature !== 'none') {
+        // 必須符合 policy 的 prefix 檢查才予以修復
+        let allowed = true;
+        if (policy.allowedTargetPrefixes && policy.allowedTargetPrefixes.length > 0) {
+          allowed = policy.allowedTargetPrefixes.some(prefix => selectedFeature.startsWith(prefix));
+        }
+        if (allowed) {
+          parameters['featureId'] = selectedFeature;
+          selfHealed = true;
+          selfHealLog.push({
+            arg: 'featureId',
+            source: 'context.selectedFeature',
+            value: selectedFeature
+          });
+          console.info(`[Self-Healing] Automatically filled missing required argument 'featureId' with selectedFeature '${selectedFeature}'`);
+        }
+      }
+
+      // 2. 修復 x, y 座標
+      if ((missingKey === 'x' || missingKey === 'y') && spatial.mapCenter) {
+        const grid = this.mapCenterToGridXY(spatial.mapCenter);
+        if (grid && grid[missingKey] !== undefined) {
+          parameters[missingKey] = grid[missingKey];
+          selfHealed = true;
+          selfHealLog.push({
+            arg: missingKey,
+            source: 'context.mapCenter',
+            value: grid[missingKey]
+          });
+          console.info(`[Self-Healing] Automatically filled missing required argument '${missingKey}' with grid value '${grid[missingKey]}'`);
+        }
+      }
+    }
+
+    if (selfHealed) {
+      return {
+        ...normalizedIntent,
+        parameters,
+        target: parameters.featureId || normalizedIntent.target,
+        selfHealed: true,
+        selfHealLog
+      };
+    }
+
+    return normalizedIntent;
   }
 
   emitIntentUpdate() {
