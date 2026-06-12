@@ -1,0 +1,1102 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>3D VRM Dancer</title>
+  <link rel="icon" href="data:,">
+  <script src="/www/js/jquery.min.js"></script>
+  <!-- Three.js + VRM UMD Bundles (本地化檔案) -->
+  <script src="/www/js/threejs/three.min.js"></script>
+  <script src="/www/js/threejs/OrbitControls.js"></script>
+  <script src="/www/js/threejs/GLTFLoader.js"></script>
+  <script src="/www/js/threejs/three-vrm.min.js"></script>
+  
+  <script src="/www/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <link href="/www/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #667085;
+      --line: #d7dde8;
+      --panel: #ffffff;
+      --stage: #eef3f8;
+      --grid: rgba(23, 32, 51, .045);
+      --mint: #18a999;
+      --blue: #1f6feb;
+      --amber: #c47d16;
+      --danger: #d14d72;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #f6f7fb;
+      color: var(--ink);
+      font-family: "Microsoft JhengHei", "Segoe UI", system-ui, sans-serif;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 300px minmax(720px, 1fr);
+      gap: 14px;
+      min-height: 100vh;
+      padding: 14px;
+    }
+
+    .panel,
+    .stage {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .panel {
+      padding: 14px;
+      overflow: auto;
+    }
+
+    .title {
+      margin: 0 0 10px;
+      font-size: 1.08rem;
+      font-weight: 700;
+    }
+
+    .meta {
+      min-height: 24px;
+      color: var(--muted);
+      font-size: .9rem;
+      word-break: break-all;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .toolbar .btn,
+    .transport .btn {
+      font-size: .86rem;
+      line-height: 1.2;
+    }
+
+    .data-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: .86rem;
+      align-items: center;
+    }
+
+    .notice {
+      margin-top: 12px;
+      padding: 9px 10px;
+      border: 1px solid #f1d48f;
+      border-radius: 8px;
+      background: #fff7df;
+      color: #735111;
+      font-size: .86rem;
+    }
+
+    .stage {
+      display: flex;
+      flex-direction: column;
+      min-height: calc(100vh - 28px);
+      overflow: hidden;
+      background:
+        linear-gradient(0deg, var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+        var(--stage);
+      background-size: 36px 36px;
+      padding: 14px;
+    }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      flex: 1 1 auto;
+      height: min(72vh, 680px);
+      min-height: 420px;
+    }
+
+    .view-panel {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+      background: rgba(255, 255, 255, .86);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .view-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 42px;
+      padding: 9px 11px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, .92);
+      font-weight: 700;
+    }
+
+    .view-head span:last-child {
+      color: var(--muted);
+      font-size: .8rem;
+      font-weight: 500;
+    }
+
+    .view-body {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      aspect-ratio: 10 / 13;
+      overflow: hidden;
+      background: #101827;
+    }
+
+    #sourceVideo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #101827;
+    }
+
+    #sourceVideoMissing,
+    .empty-state {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      color: #d8dee9;
+      text-align: center;
+      font-size: .95rem;
+    }
+
+    #skeletonCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background:
+        radial-gradient(circle at center, rgba(24, 169, 153, .08), transparent 58%),
+        #0f1724;
+    }
+
+    #vrmStage {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .transport {
+      display: grid;
+      grid-template-columns: auto auto auto auto 1fr auto;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 0 0;
+    }
+
+    #timeline {
+      width: 100%;
+      accent-color: var(--mint);
+    }
+
+    .timecode {
+      min-width: 110px;
+      color: var(--muted);
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-size: .86rem;
+    }
+
+    .monitor-row {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px dashed #eee;
+      padding: 3px 0;
+    }
+    .monitor-row:last-child {
+      border-bottom: none;
+    }
+    .monitor-row span:first-child {
+      color: var(--muted);
+    }
+    .monitor-row span:last-child {
+      font-weight: bold;
+      color: var(--blue);
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .compare-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+
+      .view-panel {
+        min-height: 380px;
+        height: 58vh;
+      }
+
+      .transport {
+        grid-template-columns: repeat(4, auto);
+      }
+
+      #timeline,
+      .timecode {
+        grid-column: 1 / -1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="panel">
+      <h1 class="title">3D VRM Dancer</h1>
+      <div id="status" class="meta">未載入舞步</div>
+      <div class="toolbar">
+        <button id="btnChoose" class="btn btn-primary btn-sm" type="button">選舞步</button>
+        <button id="btnPlay" class="btn btn-success btn-sm" type="button" disabled>播放</button>
+        <button id="btnPause" class="btn btn-outline-secondary btn-sm" type="button" disabled>暫停</button>
+      </div>
+      <input id="motionFile" type="file" accept=".json,application/json" hidden>
+      <input id="vrmFileSelector" type="file" accept=".vrm" hidden>
+      
+      <div class="data-row">
+        <span id="motionName">-</span>
+        <span id="motionDuration">0.00s</span>
+      </div>
+      <div class="data-row" style="margin-top: 10px;">
+        <span>3D 角色模型</span>
+        <button id="btnUploadVRM" class="btn btn-outline-primary btn-sm" type="button">上傳 VRM</button>
+      </div>
+      <div class="data-row" style="margin-top: 6px;">
+        <select id="vrmSelector" class="form-select form-select-sm">
+          <option value="">選擇範例模型...</option>
+          <option value="/www/vrm/AliciaSolid.vrm" selected>Alicia Solid (本地)</option>
+          <option value="/www/vrm/AvatarSample_B.vrm">Avatar Sample B (本地)</option>
+          <option value="https://pixiv.github.io/three-vrm/packages/three-vrm/examples/models/VRoidSimpleSample.vrm">VRoid Simple Sample (線上)</option>
+        </select>
+      </div>
+      
+      <div class="data-row" style="margin-top: 10px;">
+        <span>動作平滑 (EMA)</span>
+        <div style="display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end;">
+          <input id="emaAlphaSlider" type="range" min="0.05" max="1.0" step="0.05" value="0.35" style="width: 80px;" aria-label="EMA Alpha">
+          <span id="emaAlphaVal">0.35</span>
+        </div>
+      </div>
+      <div class="toolbar" style="margin-top: 10px;">
+        <button id="btnResetCamera" class="btn btn-outline-secondary btn-sm w-100" type="button">重置 3D 視角</button>
+      </div>
+      <hr style="margin: 14px 0; border-color: var(--line);">
+      <h2 class="title" style="font-size: 0.95rem; margin-bottom: 6px;">即時骨骼參數監視</h2>
+      <div id="paramMonitor" style="max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.76rem; border: 1px solid var(--line); border-radius: 6px; padding: 6px; background: #fafafa;">
+        <div class="text-muted text-center py-2">尚未載入參數</div>
+      </div>
+      <div id="capabilityNotice" class="notice" style="margin-top: 10px;">請上傳 VRM 模型或選擇範例載入。</div>
+    </section>
+    
+    <section class="stage">
+      <div class="compare-grid">
+        <article class="view-panel">
+          <div class="view-head"><span>原影片</span><span id="videoState">等待影片</span></div>
+          <div class="view-body">
+            <video id="sourceVideo" muted playsinline preload="metadata"></video>
+            <div id="sourceVideoMissing">沒有原影片。舊的 pose_record 仍可用火柴人與 VRM 對照。</div>
+          </div>
+        </article>
+        <article class="view-panel">
+          <div class="view-head"><span>火柴人</span><span id="skeletonTime">0.00s</span></div>
+          <div class="view-body">
+            <canvas id="skeletonCanvas"></canvas>
+            <div id="skeletonMissing" class="empty-state">尚未載入 pose_record.json</div>
+          </div>
+        </article>
+        <article class="view-panel">
+          <div class="view-head"><span>3D VRM</span><span id="vrmState">等待載入</span></div>
+          <div class="view-body" style="background: #eef3f8;">
+            <div id="vrmStage"></div>
+          </div>
+        </article>
+      </div>
+      
+      <div class="transport">
+        <button id="btnPrevFrame" class="btn btn-outline-secondary btn-sm" type="button">上一格</button>
+        <button id="btnPlayStage" class="btn btn-success btn-sm" type="button" disabled>播放</button>
+        <button id="btnPauseStage" class="btn btn-outline-secondary btn-sm" type="button" disabled>暫停</button>
+        <button id="btnNextFrame" class="btn btn-outline-secondary btn-sm" type="button">下一格</button>
+        <input id="timeline" type="range" min="0" max="1" step="1" value="0" aria-label="同步時間軸">
+        <div id="motionTime" class="timecode">同步時間軸 0.00 / 0.00s</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      // 擴展 Math 物件
+      Math.radians = function(degrees) {
+        return degrees * Math.PI / 180;
+      };
+
+      // 相容性設定：如果載入的 three-vrm 為 0.x UMD，則設定對應的 bone name 物件
+      if (typeof THREE !== 'undefined') {
+        if (!THREE.VRMHumanoidBoneName) {
+          if (typeof THREE_VRM !== 'undefined' && THREE_VRM.VRMSchema && THREE_VRM.VRMSchema.HumanoidBoneName) {
+            THREE.VRMHumanoidBoneName = THREE_VRM.VRMSchema.HumanoidBoneName;
+          } else if (THREE.VRMSchema && THREE.VRMSchema.HumanoidBoneName) {
+            THREE.VRMHumanoidBoneName = THREE.VRMSchema.HumanoidBoneName;
+          } else {
+            // 備用方案：手動對應 0.6.7 中的常規骨骼名稱
+            THREE.VRMHumanoidBoneName = {
+              Head: "head",
+              Neck: "neck",
+              Spine: "spine",
+              LeftUpperArm: "leftUpperArm",
+              RightUpperArm: "rightUpperArm",
+              LeftLowerArm: "leftLowerArm",
+              RightLowerArm: "rightLowerArm",
+              LeftUpperLeg: "leftUpperLeg",
+              RightUpperLeg: "rightUpperLeg",
+              Hips: "hips"
+            };
+          }
+        }
+        
+        // 同步相容 THREE.VRM 與 THREE.VRMUtils
+        if (!THREE.VRM && typeof THREE_VRM !== 'undefined') {
+          THREE.VRM = THREE_VRM.VRM;
+        }
+        if (!THREE.VRMUtils && typeof THREE_VRM !== 'undefined') {
+          THREE.VRMUtils = THREE_VRM.VRMUtils;
+        }
+      }
+
+      var state = {
+        poseRecord: null,
+        params: null,
+        fileName: "",
+        durationMs: 0,
+        currentTimeMs: 0,
+        playing: false,
+        raf: 0,
+        startedAt: 0,
+        startedFromMs: 0,
+        emaAlpha: 0.35,
+        overrides: {}
+      };
+
+      var skeletonLines = [
+        ["left_shoulder", "right_shoulder"],
+        ["left_shoulder", "left_elbow"],
+        ["left_elbow", "left_wrist"],
+        ["right_shoulder", "right_elbow"],
+        ["right_elbow", "right_wrist"],
+        ["left_shoulder", "left_hip"],
+        ["right_shoulder", "right_hip"],
+        ["left_hip", "right_hip"],
+        ["left_hip", "left_knee"],
+        ["left_knee", "left_ankle"],
+        ["right_hip", "right_knee"],
+        ["right_knee", "right_ankle"]
+      ];
+
+      // three.js variables
+      var scene, camera, renderer, currentVRM, orbitControls;
+      var clock = new THREE.Clock();
+
+      function getQuery() {
+        var out = {};
+        window.location.search.replace(/^\?/, "").split("&").forEach(function (part) {
+          if (!part) return;
+          var kv = part.split("=");
+          out[decodeURIComponent(kv[0])] = decodeURIComponent(kv.slice(1).join("=") || "");
+        });
+        return out;
+      }
+
+      function setStatus(text) {
+        $("#status").text(text);
+      }
+
+      function setCapabilityNotice(text) {
+        $("#capabilityNotice").text(text);
+      }
+
+      function setTransportEnabled(enabled) {
+        $("#btnPlay, #btnPlayStage").prop("disabled", !enabled);
+        $("#btnPause, #btnPauseStage").prop("disabled", !enabled);
+      }
+
+      function formatSeconds(ms) {
+        return (Math.max(0, ms) / 1000).toFixed(2) + "s";
+      }
+
+      function updateDuration() {
+        var values = [0];
+        if (state.poseRecord) {
+          if (state.poseRecord.duration_ms) {
+            values.push(Number(state.poseRecord.duration_ms));
+          } else if (state.poseRecord.frames && state.poseRecord.frames.length) {
+            values.push(Number(state.poseRecord.frames[state.poseRecord.frames.length - 1].time_ms || 0));
+          }
+        }
+        var video = document.getElementById("sourceVideo");
+        if (video && Number.isFinite(video.duration) && video.duration > 0) {
+          values.push(video.duration * 1000);
+        }
+        state.durationMs = Math.max.apply(Math, values);
+        $("#timeline").attr("max", Math.max(1, Math.round(state.durationMs)));
+        $("#motionDuration").text(formatSeconds(state.durationMs));
+        setTransportEnabled(state.durationMs > 0);
+      }
+
+      function frameAt(timeMs) {
+        var frames = (state.poseRecord && state.poseRecord.frames) || [];
+        if (!frames.length) return null;
+        var best = frames[0];
+        var bestDiff = Math.abs(Number(best.time_ms || 0) - timeMs);
+        for (var i = 1; i < frames.length; i++) {
+          var diff = Math.abs(Number(frames[i].time_ms || 0) - timeMs);
+          if (diff < bestDiff) {
+            best = frames[i];
+            bestDiff = diff;
+          }
+        }
+        return best;
+      }
+
+      function resizeSkeletonCanvas() {
+        var canvas = document.getElementById("skeletonCanvas");
+        var rect = canvas.getBoundingClientRect();
+        var scale = window.devicePixelRatio || 1;
+        var width = Math.max(1, Math.floor(rect.width * scale));
+        var height = Math.max(1, Math.floor(rect.height * scale));
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+        return { canvas: canvas, scale: scale, width: width, height: height };
+      }
+
+      function drawSkeletonAt(timeMs) {
+        var setup = resizeSkeletonCanvas();
+        var canvas = setup.canvas;
+        var ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#0f1724";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        var frame = frameAt(timeMs);
+        if (!frame && state.poseRecord && state.poseRecord.bones) {
+          $("#skeletonMissing").show().text("此檔案為 3D 骨骼旋轉格式 (vrm_animation.json)，不含火柴人關鍵點資料。");
+          $("#skeletonTime").text(formatSeconds(timeMs));
+          return;
+        }
+        $("#skeletonMissing").toggle(!frame);
+        $("#skeletonTime").text(formatSeconds(timeMs));
+        if (!frame) return;
+
+        var roi = (state.poseRecord && state.poseRecord.source && state.poseRecord.source.roi) || {};
+        var sourceW = Number(roi.width || 1);
+        var sourceH = Number(roi.height || 1);
+        var panelW = canvas.width;
+        var panelH = canvas.height;
+        var fit = Math.min(panelW / sourceW, panelH / sourceH);
+        var offsetX = (panelW - sourceW * fit) / 2;
+        var offsetY = (panelH - sourceH * fit) / 2;
+        var points = {};
+        (frame.keypoints || []).forEach(function (kp) {
+          if (kp.x === null || kp.y === null || Number(kp.confidence || 0) < 0.2) return;
+          points[kp.name] = {
+            x: offsetX + Number(kp.x) * fit,
+            y: offsetY + Number(kp.y) * fit,
+            confidence: Number(kp.confidence || 0)
+          };
+        });
+
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = Math.max(3, 5 * setup.scale);
+        ctx.strokeStyle = "rgba(24, 169, 153, .95)";
+        skeletonLines.forEach(function (line) {
+          var a = points[line[0]];
+          var b = points[line[1]];
+          if (!a || !b) return;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        });
+
+        Object.keys(points).forEach(function (name) {
+          var point = points[name];
+          ctx.beginPath();
+          ctx.fillStyle = "#ffffff";
+          ctx.strokeStyle = "#1f6feb";
+          ctx.lineWidth = Math.max(2, 2 * setup.scale);
+          ctx.arc(point.x, point.y, Math.max(4, 5 * setup.scale), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        });
+      }
+
+      function updateParamMonitor(values) {
+        var container = $("#paramMonitor");
+        if (!container.length) return;
+        var keys = Object.keys(values);
+        if (!keys.length) {
+          container.html('<div class="text-muted text-center py-2">尚未載入參數</div>');
+          return;
+        }
+        container.empty();
+        keys.sort().forEach(function (key) {
+          var val = Number(values[key]).toFixed(2);
+          container.append('<div class="monitor-row"><span>' + key + '</span><span>' + val + '</span></div>');
+        });
+      }
+
+      // Three.js and VRM Initialization
+      function init3D() {
+        var container = document.getElementById("vrmStage");
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xeef3f8);
+        
+        // Grid helper
+        var gridHelper = new THREE.GridHelper(10, 20, 0x1f6feb, 0xcccccc);
+        gridHelper.position.y = -1.0;
+        scene.add(gridHelper);
+        
+        camera = new THREE.PerspectiveCamera(30, container.clientWidth / container.clientHeight, 0.1, 20.0);
+        camera.position.set(0.0, 0.8, 3.2);
+        
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        container.appendChild(renderer.domElement);
+        
+        orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
+        orbitControls.screenSpacePanning = true;
+        orbitControls.target.set(0.0, 0.5, 0.0);
+        orbitControls.update();
+        
+        // Lights
+        var ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+        scene.add(ambientLight);
+        
+        var dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+        dirLight.position.set(2.0, 4.0, 2.0);
+        scene.add(dirLight);
+        
+        animate();
+      }
+
+      function animate() {
+        requestAnimationFrame(animate);
+        var deltaTime = clock.getDelta();
+        if (currentVRM) {
+          currentVRM.update(deltaTime);
+        }
+        renderer.render(scene, camera);
+      }
+
+      function loadVRM(url) {
+        $("#vrmState").text("載入中...");
+        if (currentVRM) {
+          scene.remove(currentVRM.scene);
+          THREE.VRMUtils.deepDispose(currentVRM.scene);
+          currentVRM = null;
+        }
+        
+        var loader = new THREE.GLTFLoader();
+        loader.load(
+          url,
+          function (gltf) {
+            THREE.VRM.from(gltf).then(function (vrm) {
+              currentVRM = vrm;
+              scene.add(vrm.scene);
+              vrm.scene.position.y = -1.0;
+              vrm.scene.rotation.y = Math.PI; // Face the camera
+              
+              vrm.scene.traverse(function (obj) {
+                if (obj.isMesh) {
+                  obj.castShadow = true;
+                  obj.receiveShadow = true;
+                }
+              });
+              
+              $("#vrmState").text("3D 已載入");
+              $("#capabilityNotice").text("VRM 模型載入成功，支援人體骨骼動畫。");
+              seekTo(state.currentTimeMs, false);
+            });
+          },
+          function (progress) {
+            var percent = Math.round(progress.loaded / (progress.total || 1) * 100);
+            $("#vrmState").text("載入中 " + percent + "%");
+          },
+          function (error) {
+            console.error(error);
+            $("#vrmState").text("載入失敗");
+          }
+        );
+      }
+
+      function applyVRMValues(values) {
+        if (!currentVRM) return;
+        
+        var headNode = currentVRM.humanoid.getBoneNode(THREE.VRMHumanoidBoneName.Head);
+        var neckNode = currentVRM.humanoid.getBoneNode(THREE.VRMHumanoidBoneName.Neck);
+        var spineNode = currentVRM.humanoid.getBoneNode(THREE.VRMHumanoidBoneName.Spine);
+        var leftUpperArm = currentVRM.humanoid.getBoneNode(THREE.VRMHumanoidBoneName.LeftUpperArm);
+        var rightUpperArm = currentVRM.humanoid.getBoneNode(THREE.VRMHumanoidBoneName.RightUpperArm);
+        var leftLowerArm = currentVRM.humanoid.getBoneNode(THREE.VRMHumanoidBoneName.LeftLowerArm);
+        var rightLowerArm = currentVRM.humanoid.getBoneNode(THREE.VRMHumanoidBoneName.RightLowerArm);
+        var leftUpperLeg = currentVRM.humanoid.getBoneNode(THREE.VRMHumanoidBoneName.LeftUpperLeg);
+        var rightUpperLeg = currentVRM.humanoid.getBoneNode(THREE.VRMHumanoidBoneName.RightUpperLeg);
+        var hipsNode = currentVRM.humanoid.getBoneNode(THREE.VRMHumanoidBoneName.Hips);
+        
+        var hx = values.head_angle_x_deg || 0;
+        var hy = values.head_angle_y_deg || 0;
+        var hz = values.head_angle_z_deg || 0;
+        var spineRoll = values.torso_angle_deg !== undefined ? (values.torso_angle_deg + 90) : 0;
+        var armL = values.left_arm_angle_deg || 0;
+        var armR = values.right_arm_angle_deg || 0;
+        var elbowL = values.left_elbow_angle_deg !== undefined ? values.left_elbow_angle_deg : 180;
+        var elbowR = values.right_elbow_angle_deg !== undefined ? values.right_elbow_angle_deg : 180;
+        var legL = values.left_leg_angle_deg || 90;
+        var legR = values.right_leg_angle_deg || 90;
+        
+        var hipX = values.body_center_x !== undefined ? (values.body_center_x - 0.5) * 1.5 : 0;
+        var hipY = values.body_center_y !== undefined ? (0.5 - values.body_center_y) * 1.5 : 0;
+
+        // Apply Head Z/Y/X
+        if (headNode) {
+          headNode.rotation.set(
+            Math.radians(hy),
+            Math.radians(-hx), // Mirror angle
+            Math.radians(-hz)
+          );
+        }
+        
+        // Apply Spine Z Roll
+        if (spineNode) {
+          spineNode.rotation.z = Math.radians(-spineRoll);
+        }
+        
+        // Arms mapping
+        if (leftUpperArm) {
+          // T-pose points +X (horizontal). 
+          // Raw armL is around -180 to 180.
+          // Map to correct rotation.z
+          leftUpperArm.rotation.z = Math.radians(armL);
+        }
+        if (rightUpperArm) {
+          rightUpperArm.rotation.z = Math.radians(armR - 180);
+        }
+
+        // Elbow bending
+        if (leftLowerArm) {
+          // 180 straight, 0 bent
+          leftLowerArm.rotation.y = Math.radians(elbowL - 180);
+        }
+        if (rightLowerArm) {
+          rightLowerArm.rotation.y = Math.radians(180 - elbowR);
+        }
+
+        // Legs mapping
+        if (leftUpperLeg) {
+          leftUpperLeg.rotation.z = Math.radians(legL - 90);
+        }
+        if (rightUpperLeg) {
+          rightUpperLeg.rotation.z = Math.radians(legR - 90);
+        }
+
+        // Hip translation
+        if (hipsNode) {
+          hipsNode.position.set(hipX, hipY, 0);
+        }
+
+        updateParamMonitor({
+          head_yaw: hx,
+          head_pitch: hy,
+          head_roll: hz,
+          spine_roll: spineRoll,
+          arm_l: armL,
+          arm_r: armR,
+          elbow_l: elbowL,
+          elbow_r: elbowR,
+          leg_l: legL,
+          leg_r: legR,
+          hip_x: hipX,
+          hip_y: hipY
+        });
+      }
+
+      function applyVRMBonesAnimationAt(timeMs) {
+        if (!currentVRM || !state.poseRecord || !state.poseRecord.bones) return;
+        
+        var bones = state.poseRecord.bones;
+        var hipsPos = state.poseRecord.hips_position || [];
+        
+        var getBoneRot = function (boneName, timeMs) {
+          var keys = bones[boneName] || [];
+          if (!keys.length) return null;
+          if (timeMs <= keys[0].time_ms) return keys[0].rot;
+          for (var i = 1; i < keys.length; i++) {
+            if (timeMs <= keys[i].time_ms) {
+              var a = keys[i - 1];
+              var b = keys[i];
+              var span = Math.max(1, b.time_ms - a.time_ms);
+              var t = (timeMs - a.time_ms) / span;
+              var qA = new THREE.Quaternion(a.rot[0], a.rot[1], a.rot[2], a.rot[3]);
+              var qB = new THREE.Quaternion(b.rot[0], b.rot[1], b.rot[2], b.rot[3]);
+              qA.slerp(qB, t);
+              return [qA.x, qA.y, qA.z, qA.w];
+            }
+          }
+          return keys[keys.length - 1].rot;
+        };
+        
+        var getHipsPos = function (timeMs) {
+          if (!hipsPos.length) return null;
+          if (timeMs <= hipsPos[0].time_ms) return hipsPos[0].pos;
+          for (var i = 1; i < hipsPos.length; i++) {
+            if (timeMs <= hipsPos[i].time_ms) {
+              var a = hipsPos[i - 1];
+              var b = hipsPos[i];
+              var span = Math.max(1, b.time_ms - a.time_ms);
+              var t = (timeMs - a.time_ms) / span;
+              return [
+                a.pos[0] + (b.pos[0] - a.pos[0]) * t,
+                a.pos[1] + (b.pos[1] - a.pos[1]) * t,
+                a.pos[2] + (b.pos[2] - a.pos[2]) * t
+              ];
+            }
+          }
+          return hipsPos[hipsPos.length - 1].pos;
+        };
+        
+        var boneMappings = {
+          head: THREE.VRMHumanoidBoneName.Head,
+          spine: THREE.VRMHumanoidBoneName.Spine,
+          leftUpperArm: THREE.VRMHumanoidBoneName.LeftUpperArm,
+          rightUpperArm: THREE.VRMHumanoidBoneName.RightUpperArm,
+          leftLowerArm: THREE.VRMHumanoidBoneName.LeftLowerArm,
+          rightLowerArm: THREE.VRMHumanoidBoneName.RightLowerArm,
+          leftUpperLeg: THREE.VRMHumanoidBoneName.LeftUpperLeg,
+          rightUpperLeg: THREE.VRMHumanoidBoneName.RightUpperLeg
+        };
+        
+        Object.keys(boneMappings).forEach(function (key) {
+          var boneNode = currentVRM.humanoid.getBoneNode(boneMappings[key]);
+          if (boneNode) {
+            var rot = getBoneRot(key, timeMs);
+            if (rot) {
+              boneNode.quaternion.set(rot[0], rot[1], rot[2], rot[3]);
+            }
+          }
+        });
+        
+        var hipsNode = currentVRM.humanoid.getBoneNode(THREE.VRMHumanoidBoneName.Hips);
+        if (hipsNode) {
+          var pos = getHipsPos(timeMs);
+          if (pos) {
+            hipsNode.position.set(pos[0], pos[1], pos[2]);
+          }
+        }
+        
+        var monitorValues = {};
+        Object.keys(boneMappings).forEach(function (key) {
+          var rot = getBoneRot(key, timeMs);
+          if (rot) {
+            monitorValues[key] = rot.map(function (x) { return x.toFixed(2); }).join(", ");
+          }
+        });
+        var pos = getHipsPos(timeMs);
+        if (pos) {
+          monitorValues["hips_pos"] = pos.map(function (x) { return x.toFixed(2); }).join(", ");
+        }
+        updateParamMonitor(monitorValues);
+      }
+
+      function valuesAt(timeMs) {
+        var frame = frameAt(timeMs);
+        if (frame && frame.features) {
+          return applyEmaToFeatures(frame.features);
+        }
+        return {};
+      }
+
+      // Front-end EMA feature calculation
+      var emaCache = {};
+      function applyEmaToFeatures(features) {
+        var alpha = state.emaAlpha;
+        if (alpha >= 1.0) return features;
+        
+        var output = {};
+        Object.keys(features).forEach(function (key) {
+          var val = features[key];
+          if (val === null || val === undefined) {
+            output[key] = val;
+            return;
+          }
+          if (emaCache[key] === undefined) {
+            emaCache[key] = val;
+          } else {
+            emaCache[key] = alpha * val + (1.0 - alpha) * emaCache[key];
+          }
+          output[key] = emaCache[key];
+        });
+        return output;
+      }
+
+      function clearEmaCache() {
+        emaCache = {};
+      }
+
+      function seekTo(timeMs, syncVideo) {
+        state.currentTimeMs = Math.max(0, Math.min(state.durationMs, Math.round(timeMs || 0)));
+        $("#timeline").val(state.currentTimeMs);
+        $("#motionTime").text("同步時間軸 " + formatSeconds(state.currentTimeMs) + " / " + formatSeconds(state.durationMs));
+        drawSkeletonAt(state.currentTimeMs);
+        
+        if (state.poseRecord && state.poseRecord.bones) {
+          applyVRMBonesAnimationAt(state.currentTimeMs);
+        } else {
+          var vals = valuesAt(state.currentTimeMs);
+          applyVRMValues(vals);
+        }
+        
+        if (syncVideo !== false) {
+          var video = document.getElementById("sourceVideo");
+          if (video && video.src) {
+            var target = state.currentTimeMs / 1000;
+            if (Math.abs(video.currentTime - target) > 0.08) {
+              if (!video.seeking) {
+                video.currentTime = target;
+              } else {
+                video.pendingSeekTarget = target;
+              }
+            }
+          }
+        }
+      }
+
+      function tick() {
+        if (!state.playing) return;
+        var elapsed = performance.now() - state.startedAt;
+        var next = state.startedFromMs + elapsed;
+        if (state.durationMs > 0 && next >= state.durationMs) {
+          seekTo(state.durationMs, true);
+          pause();
+          return;
+        }
+        seekTo(next, true);
+        state.raf = requestAnimationFrame(tick);
+      }
+
+      function play() {
+        if (!state.durationMs) return;
+        if (state.currentTimeMs >= state.durationMs) seekTo(0);
+        state.playing = true;
+        state.startedAt = performance.now();
+        state.startedFromMs = state.currentTimeMs;
+        $("#btnPlay, #btnPlayStage").prop("disabled", true);
+        $("#btnPause, #btnPauseStage").prop("disabled", false);
+        var video = document.getElementById("sourceVideo");
+        if (video && video.src) {
+          video.currentTime = state.currentTimeMs / 1000;
+          video.play().catch(function () {});
+        }
+        cancelAnimationFrame(state.raf);
+        tick();
+      }
+
+      function pause() {
+        state.playing = false;
+        cancelAnimationFrame(state.raf);
+        $("#btnPlay, #btnPlayStage").prop("disabled", !state.durationMs);
+        $("#btnPause, #btnPauseStage").prop("disabled", true);
+        var video = document.getElementById("sourceVideo");
+        if (video) video.pause();
+      }
+
+      function stepFrame(direction) {
+        pause();
+        var frames = (state.poseRecord && state.poseRecord.frames) || [];
+        if (!frames.length) {
+          seekTo(state.currentTimeMs + direction * 33);
+          return;
+        }
+        var nearestIndex = 0;
+        var nearestDiff = Infinity;
+        frames.forEach(function (frame, index) {
+          var diff = Math.abs(Number(frame.time_ms || 0) - state.currentTimeMs);
+          if (diff < nearestDiff) {
+            nearestDiff = diff;
+            nearestIndex = index;
+          }
+        });
+        var nextIndex = Math.max(0, Math.min(frames.length - 1, nearestIndex + direction));
+        seekTo(Number(frames[nextIndex].time_ms || 0));
+      }
+
+      function loadJsonObject(data, sourceName) {
+        state.poseRecord = data;
+        state.fileName = sourceName || "motion.json";
+        $("#motionName").text(state.fileName);
+        setStatus("已載入：" + state.fileName);
+        clearEmaCache();
+        updateDuration();
+        seekTo(0);
+      }
+
+      function loadFile(file) {
+        var reader = new FileReader();
+        reader.onload = function () {
+          try {
+            loadJsonObject(JSON.parse(reader.result), file.name);
+          } catch (err) {
+            setStatus("解析 JSON 錯誤：" + (err.message || String(err)));
+          }
+        };
+        reader.readAsText(file, "utf-8");
+      }
+
+      function loadPoseRecordFromUrl(url) {
+        return $.getJSON(url)
+          .done(function (data) {
+            loadJsonObject(data, url.split("/").pop());
+          })
+          .fail(function () {
+            setStatus("pose_record 載入失敗");
+          });
+      }
+
+      function loadSourceVideo(url) {
+        if (!url) {
+          $("#sourceVideo").hide();
+          $("#sourceVideoMissing").show();
+          $("#videoState").text("沒有原影片");
+          return;
+        }
+        var video = document.getElementById("sourceVideo");
+        $("#sourceVideoMissing").hide();
+        $("#sourceVideo").show();
+        $("#videoState").text("載入中");
+        video.src = url;
+        
+        if (!video.hasSeekedListener) {
+          video.addEventListener("seeked", function () {
+            if (video.pendingSeekTarget !== undefined) {
+              var target = video.pendingSeekTarget;
+              delete video.pendingSeekTarget;
+              video.currentTime = target;
+            }
+          });
+          video.hasSeekedListener = true;
+        }
+
+        video.addEventListener("loadedmetadata", function () {
+          $("#videoState").text("已載入");
+          updateDuration();
+          seekTo(state.currentTimeMs);
+        }, { once: true });
+        video.addEventListener("error", function () {
+          $("#sourceVideo").hide();
+          $("#sourceVideoMissing").show().text("原影片載入失敗。");
+          $("#videoState").text("載入失敗");
+        }, { once: true });
+      }
+
+      // UI Events Binding
+      $("#btnChoose").on("click", function () {
+        $("#motionFile").trigger("click");
+      });
+      $("#btnUploadVRM").on("click", function () {
+        $("#vrmFileSelector").trigger("click");
+      });
+      
+      $("#vrmFileSelector").on("change", function () {
+        if (this.files && this.files[0]) {
+          var file = this.files[0];
+          var blobUrl = URL.createObjectURL(file);
+          loadVRM(blobUrl);
+        }
+      });
+
+      $("#vrmSelector").on("change", function () {
+        if (this.value) {
+          loadVRM(this.value);
+        }
+      });
+
+      $("#btnPlay, #btnPlayStage").on("click", play);
+      $("#btnPause, #btnPauseStage").on("click", pause);
+      $("#btnPrevFrame").on("click", function () { stepFrame(-1); });
+      $("#btnNextFrame").on("click", function () { stepFrame(1); });
+      
+      $("#timeline").on("input change", function () {
+        pause();
+        seekTo(Number(this.value || 0));
+      });
+      
+      $("#motionFile").on("change", function () {
+        if (this.files && this.files[0]) loadFile(this.files[0]);
+      });
+      
+      $("#btnResetCamera").on("click", function () {
+        if (orbitControls) {
+          camera.position.set(0.0, 0.8, 3.2);
+          orbitControls.target.set(0.0, 0.5, 0.0);
+          orbitControls.update();
+        }
+      });
+
+      $("#emaAlphaSlider").on("input", function () {
+        var val = parseFloat(this.value);
+        $("#emaAlphaVal").text(val.toFixed(2));
+        state.emaAlpha = val;
+        clearEmaCache();
+        seekTo(state.currentTimeMs, false);
+      });
+
+      $(window).on("resize", function () {
+        drawSkeletonAt(state.currentTimeMs);
+        if (renderer && camera) {
+          var container = document.getElementById("vrmStage");
+          camera.aspect = container.clientWidth / container.clientHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+      });
+
+      // Init
+      init3D();
+      var query = getQuery();
+      loadSourceVideo(query.video_url);
+      if (query.pose_url) loadPoseRecordFromUrl(query.pose_url);
+      
+      // Auto load default sample model
+      loadVRM("/www/vrm/AliciaSolid.vrm");
+
+    })();
+  </script>
+</body>
+</html>

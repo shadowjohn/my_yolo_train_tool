@@ -157,18 +157,70 @@ def draw_pose_skeleton_image(keypoints, roi, lines, confidence_threshold=0.2):
     return image
 
 
+def joint_angle_deg(p1, p2, p3):
+    if not has_xy(p1) or not has_xy(p2) or not has_xy(p3):
+        return None
+    # p2 is the vertex (joint)
+    v1 = (p1["x"] - p2["x"], p1["y"] - p2["y"])
+    v2 = (p3["x"] - p2["x"], p3["y"] - p2["y"])
+    dot = v1[0] * v2[0] + v1[1] * v2[1]
+    len1 = math.hypot(v1[0], v1[1])
+    len2 = math.hypot(v2[0], v2[1])
+    if len1 < 1e-6 or len2 < 1e-6:
+        return 180.0
+    cos_theta = dot / (len1 * len2)
+    cos_theta = max(-1.0, min(1.0, cos_theta))
+    return math.degrees(math.acos(cos_theta))
+
+
+def smooth_features(features_list, alpha=0.3):
+    if not features_list:
+        return []
+    smoothed = []
+    current = None
+    for f in features_list:
+        if f is None:
+            smoothed.append(None)
+            continue
+        if current is None:
+            current = {k: v for k, v in f.items()}
+        else:
+            for k, v in f.items():
+                if v is None:
+                    # Keep current value as is (EMA fill) or None?
+                    # Keeping last valid smoothed value prevents sudden jumps
+                    pass
+                elif current.get(k) is None:
+                    current[k] = v
+                else:
+                    current[k] = alpha * v + (1.0 - alpha) * current[k]
+        smoothed.append({k: v for k, v in current.items()})
+    return smoothed
+
+
 def compute_pose_features(keypoints, roi):
+    nose = keypoint_by_name(keypoints, "nose")
+    le = keypoint_by_name(keypoints, "left_eye")
+    re = keypoint_by_name(keypoints, "right_eye")
     ls = keypoint_by_name(keypoints, "left_shoulder")
     rs = keypoint_by_name(keypoints, "right_shoulder")
-    lh = keypoint_by_name(keypoints, "left_hip")
-    rh = keypoint_by_name(keypoints, "right_hip")
+    lelb = keypoint_by_name(keypoints, "left_elbow")
+    relb = keypoint_by_name(keypoints, "right_elbow")
     lw = keypoint_by_name(keypoints, "left_wrist")
     rw = keypoint_by_name(keypoints, "right_wrist")
+    lh = keypoint_by_name(keypoints, "left_hip")
+    rh = keypoint_by_name(keypoints, "right_hip")
     la = keypoint_by_name(keypoints, "left_ankle")
     ra = keypoint_by_name(keypoints, "right_ankle")
     shoulder_center = safe_midpoint(ls, rs)
     hip_center = safe_midpoint(lh, rh)
     body_center = safe_midpoint(shoulder_center, hip_center)
+
+    shoulder_width = None
+    if has_xy(ls) and has_xy(rs):
+        shoulder_width = math.hypot(ls["x"] - rs["x"], ls["y"] - rs["y"])
+
+    # Base features
     features = {
         "shoulder_angle_deg": angle_deg(ls["x"], ls["y"], rs["x"], rs["y"]) if has_xy(ls) and has_xy(rs) else None,
         "hip_angle_deg": angle_deg(lh["x"], lh["y"], rh["x"], rh["y"]) if has_xy(lh) and has_xy(rh) else None,
@@ -180,6 +232,41 @@ def compute_pose_features(keypoints, roi):
         "left_leg_angle_deg": angle_deg(lh["x"], lh["y"], la["x"], la["y"]) if has_xy(lh) and has_xy(la) else None,
         "right_leg_angle_deg": angle_deg(rh["x"], rh["y"], ra["x"], ra["y"]) if has_xy(rh) and has_xy(ra) else None,
     }
+
+    # Head rotation features
+    if has_xy(nose) and shoulder_center:
+        # X: head turn left/right (atan2 of dx, dy where dy is pointing upwards)
+        features["head_angle_x_deg"] = math.degrees(math.atan2(nose["x"] - shoulder_center["x"], shoulder_center["y"] - nose["y"]))
+        
+        # Y: head pitch up/down (relative vertical distance scaled by shoulder width)
+        if shoulder_width and shoulder_width > 1e-6:
+            # Baseline head-to-shoulder vertical distance ratio is around 0.6
+            ratio = (shoulder_center["y"] - nose["y"]) / shoulder_width
+            features["head_angle_y_deg"] = (ratio - 0.6) * 90.0
+        else:
+            features["head_angle_y_deg"] = 0.0
+    else:
+        features["head_angle_x_deg"] = None
+        features["head_angle_y_deg"] = None
+
+    # Head Z (tilt): eye-to-eye line angle relative to horizontal
+    if has_xy(le) and has_xy(re):
+        features["head_angle_z_deg"] = math.degrees(math.atan2(le["y"] - re["y"], le["x"] - re["x"]))
+    else:
+        features["head_angle_z_deg"] = None
+
+    # Elbow joint angles
+    features["left_elbow_angle_deg"] = joint_angle_deg(ls, lelb, lw)
+    features["right_elbow_angle_deg"] = joint_angle_deg(rs, relb, rw)
+
+    # Shoulder raise features (耸肩)
+    if shoulder_center and shoulder_width and shoulder_width > 1e-6:
+        features["left_shoulder_raise"] = (shoulder_center["y"] - ls["y"]) / shoulder_width if has_xy(ls) else None
+        features["right_shoulder_raise"] = (shoulder_center["y"] - rs["y"]) / shoulder_width if has_xy(rs) else None
+    else:
+        features["left_shoulder_raise"] = None
+        features["right_shoulder_raise"] = None
+
     return features
 
 

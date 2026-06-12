@@ -1310,13 +1310,21 @@ def convert_pose_record_to_live2d_files(pose_record_path):
     live2d_params = build_live2d_params(
         pose_record,
         source_pose_record=os.path.basename(pose_record_path),
+        ema_alpha=0.35,
     )
     motion3 = build_motion3(live2d_params)
     live2d_params_path = os.path.join(folder, "live2d_params.json")
     motion3_path = os.path.join(folder, "motion3.json")
     write_json_atomic(live2d_params_path, live2d_params)
     write_json_atomic(motion3_path, motion3)
-    return {"live2d_params": live2d_params_path, "motion3": motion3_path}
+    try:
+        import pose_vrm_mapper
+        vrm_anim = pose_vrm_mapper.build_vrm_bones_animation(pose_record)
+        vrm_anim_path = os.path.join(folder, "vrm_animation.json")
+        write_json_atomic(vrm_anim_path, vrm_anim)
+    except Exception:
+        vrm_anim_path = None
+    return {"live2d_params": live2d_params_path, "motion3": motion3_path, "vrm_animation": vrm_anim_path}
 
 
 def path_to_data_url(file_path):
@@ -1626,6 +1634,26 @@ def start_youtube_pose_recording():
             return
         if not messagebox.askokcancel("授權確認", "請只處理你擁有、已授權或可合法使用的影片。\n\n確定要繼續？"):
             return
+
+        cached_pose_record = find_youtube_pose_cache_record(
+            project_folder,
+            url,
+            pose_model_file,
+            pose_confidence,
+            GDATA["pose_fps_target"],
+            GDATA["pose_video_max_duration_seconds"]
+        )
+        if cached_pose_record:
+            live2d_error = None
+            try:
+                convert_pose_record_to_live2d_files(cached_pose_record)
+            except Exception as e:
+                live2d_error = str(e)
+                logging.exception("convert cached youtube pose record to live2d failed")
+            finish_youtube_pose_recording(cached_pose_record, None, live2d_error)
+            set_pose_status("YouTube Pose 使用快取：%s" % cached_pose_record)
+            return
+
         record_folder = create_pose_record_folder(project_folder)
         GDATA["pose_url_processing"] = True
         set_youtube_pose_processing_buttons(True)
@@ -1657,13 +1685,35 @@ def finish_youtube_pose_recording(output_path=None, error_message=None, live2d_e
     messagebox.showinfo("提示", "YouTube Pose 完成：\n%s" % output_path)
 
 
+def schedule_pose_status(message):
+    print(message, flush=True)
+    root.after(0, lambda message=message: set_pose_status(message))
+
+
+def report_youtube_pose_progress(total_frame_count, detected_frame_count):
+    if total_frame_count == 1 or total_frame_count % 5 == 0:
+        schedule_pose_status("YouTube Pose 分析中：已處理 %s 張影格，偵測到 %s 張" % (total_frame_count, detected_frame_count))
+
+
 def run_youtube_pose_worker(url, record_folder):
     tmp_dir = tempfile.mkdtemp(prefix="youtube_pose_")
     output_path = None
+    source_video_file = None
+    cache_key = build_youtube_pose_cache_key(
+        url,
+        pose_model_file,
+        pose_confidence,
+        GDATA["pose_fps_target"],
+        GDATA["pose_video_max_duration_seconds"]
+    )
     source_info = {
         "url": url,
         "status": "started",
         "rights_note": "請只處理你擁有、已授權或可合法使用的影片。",
+        "cache_key": cache_key,
+        "pose_model": cache_key["pose_model"],
+        "pose_confidence": cache_key["pose_confidence"],
+        "fps_target": cache_key["fps_target"],
         "max_duration_seconds": GDATA["pose_video_max_duration_seconds"],
     }
     try:
@@ -1681,6 +1731,16 @@ def run_youtube_pose_worker(url, record_folder):
             "extractor": video_info.get("extractor"),
         })
         write_source_video_info(record_folder, source_info)
+
+        saved_video_path = os.path.join(record_folder, "source.mp4")
+        shutil.copy2(video_path, saved_video_path)
+        source_video_file = os.path.basename(saved_video_path)
+        source_info.update({
+            "source_video_file": source_video_file,
+            "source_video_saved": True
+        })
+        write_source_video_info(record_folder, source_info)
+        schedule_pose_status("YouTube Pose 下載完成，開始分析影格...")
 
         frames = []
         roi = None
@@ -1704,9 +1764,11 @@ def run_youtube_pose_worker(url, record_folder):
             )
             if person is None:
                 missing_frame_count += 1
+                report_youtube_pose_progress(total_frame_count, len(frames))
                 continue
             previous_center = bbox_center(person["bbox"])
             frames.append(build_pose_frame(frame_index, time_ms, person, roi))
+            report_youtube_pose_progress(total_frame_count, len(frames))
 
         if roi is None:
             raise RuntimeError("影片沒有可處理的影格，請改用螢幕框選模式。")
@@ -1721,7 +1783,12 @@ def run_youtube_pose_worker(url, record_folder):
             "total_frame_count": total_frame_count,
             "detected_frame_count": len(frames),
             "missing_frame_count": missing_frame_count,
+            "pose_confidence": cache_key["pose_confidence"],
+            "max_duration_seconds": cache_key["max_duration_seconds"],
         }
+        if source_video_file:
+            source["source_video_file"] = source_video_file
+
         record = build_pose_record(
             project_name=GDATA.get("project", ""),
             source=source,
@@ -1766,8 +1833,15 @@ def run_youtube_pose_worker(url, record_folder):
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
-def open_live2d_dancer():
-    url = "http://127.0.0.1:9487/www/live2d_dancer.html"
+def open_live2d_dancer(mode="live2d"):
+    if mode == "live2d":
+        url = "http://127.0.0.1:9487/www/live2d_dancer.html"
+    elif mode == "vrm":
+        url = "http://127.0.0.1:9487/www/vrm_dancer.html"
+    elif mode == "cesium":
+        url = "http://127.0.0.1:9487/www/cesium_world.html"
+    else:
+        url = "http://127.0.0.1:9487/www/live2d_dancer.html"
     params = []
     pose_record_path = GDATA.get("pose_last_output_file")
     if pose_record_path and os.path.isfile(pose_record_path):
@@ -1779,6 +1853,23 @@ def open_live2d_dancer():
                 params.append("pose_url=%s" % quote(pose_url, safe="/"))
             if motion_url:
                 params.append("motion_url=%s" % quote(motion_url, safe="/"))
+            
+            # Read source video from pose record if it exists
+            try:
+                import json
+                if os.path.isfile(pose_record_path):
+                    with open(pose_record_path, "r", encoding="utf-8") as f:
+                        rec_data = json.load(f)
+                    src_info = rec_data.get("source", {})
+                    video_filename = src_info.get("source_video_file")
+                    if video_filename:
+                        video_full_path = os.path.join(os.path.dirname(pose_record_path), video_filename)
+                        if os.path.isfile(video_full_path):
+                            video_url = path_to_data_url(video_full_path)
+                            if video_url:
+                                params.append("video_url=%s" % quote(video_url, safe="/"))
+            except Exception:
+                logging.exception("Failed to parse source_video_file from pose_record")
         except Exception as e:
             messagebox.showwarning("提示", "Live2D motion 轉換失敗，仍會開啟人物頁：\n%s" % e)
     if params:
@@ -1821,6 +1912,8 @@ def win_stop_move(event):
 def win_do_move(event):
     widget_type = event.widget.winfo_class()
     if widget_type != "Scale":
+        if root.x is None or root.y is None:
+            return
         deltax = event.x - root.x
         deltay = event.y - root.y
         x = root.winfo_x() + deltax
@@ -1876,17 +1969,7 @@ def new_project():
     )
     messagebox.showinfo("提示", "新增專案檔成功！")
 
-    # 更新下拉選單，重新取得專案檔列表 並且設定選擇的專案檔
-    GDATA["UI"]["select_project_selected_menu"]["menu"].delete(0, "end")
-    GDATA["UI"]["select_project_selected"].set("選擇專案檔")
-    for project in project_get_list_all():
-        GDATA["UI"]["select_project_selected_menu"]["menu"].add_command(
-            label=project,
-            command=tk._setit(GDATA["UI"]["select_project_selected"], project),
-        )
-        GDATA["UI"]["select_project_selected_menu"].pack(side=tk.LEFT, padx=5)
-        GDATA["UI"]["select_area_button"].config(state=tk.NORMAL)
-        method_count_wait_process_files()  # 計算有多少待處理的檔案
+    reload_projects(project_name)
 
 
 def reload_projects(project_name=None):
@@ -1902,18 +1985,15 @@ def reload_projects(project_name=None):
             label=project,
             command=tk._setit(GDATA["UI"]["select_project_selected"], project),
         )
-        GDATA["UI"]["select_project_selected_menu"].pack(side=tk.LEFT, padx=5)
-        GDATA["UI"]["select_area_button"].config(state=tk.NORMAL)
-        GDATA["project_folder"] = os.path.join(
-            GDATA["basedir"], "data", "projects", project_name
-        )
-        method_count_wait_process_files()  # 計算有多少待處理的檔案
-    # GDATA["project_folder"] = None  # 清空專案資料夾
+    GDATA["UI"]["select_project_selected_menu"].pack(side=tk.LEFT, padx=5)
+
     if project_name is not None:
         GDATA["UI"]["select_project_selected"].set(project_name)
         GDATA["project_folder"] = os.path.join(
             GDATA["basedir"], "data", "projects", project_name
         )
+        GDATA["UI"]["select_area_button"].config(state=tk.NORMAL)
+        method_count_wait_process_files()  # 計算有多少待處理的檔案
 
 
 def do_show_hide_rect_button(b):
@@ -1994,6 +2074,187 @@ def project_selected(self, a, b):
             GDATA["UI"]["show_hide_rect_button"].config(highlightcolor="red")
     # 計算有多少待處理的檔案
     method_count_wait_process_files()
+
+
+# =====================================================================
+# RESTORED LOST FUNCTIONS (Byte Range Streaming & YouTube Cache)
+# =====================================================================
+
+from urllib.parse import urlparse, parse_qs
+
+def normalize_youtube_pose_cache_url(url):
+    url = url.strip() if url else ''
+    if not url:
+        return ''
+    parsed = urlparse(url)
+    host = parsed.netloc.lower() if parsed.netloc else ''
+    if host.startswith('www.'):
+        host = host[4:]
+        
+    path_parts = [part for part in parsed.path.split('/') if part]
+    video_id = None
+    
+    if host == 'youtu.be':
+        if path_parts:
+            video_id = path_parts[0]
+    elif host.endswith('youtube.com'):
+        query = parse_qs(parsed.query) if parsed.query else {}
+        if query.get('v'):
+            video_id = query['v'][0]
+        elif len(path_parts) >= 2 and path_parts[0] in ('shorts', 'embed', 'live'):
+            video_id = path_parts[1]
+            
+    if video_id:
+        return 'youtube:%s' % video_id
+    return url
+
+
+def youtube_pose_cache_key_matches(expected, candidate):
+    if not isinstance(candidate, dict):
+        return False
+    for key, expected_value in expected.items():
+        if key not in candidate:
+            return False
+        if candidate.get(key) != expected_value:
+            return False
+    return True
+
+
+def build_youtube_pose_cache_key(url, model_file, confidence, fps_target, max_duration_seconds):
+    return {
+        "url": normalize_youtube_pose_cache_url(url),
+        "pose_model": os.path.basename(model_file) if model_file else '',
+        "pose_confidence": round(float(confidence), 4),
+        "fps_target": int(float(fps_target)),
+        "max_duration_seconds": int(float(max_duration_seconds))
+    }
+
+
+def find_youtube_pose_cache_record(project_folder, url, model_file, confidence, fps_target, max_duration_seconds):
+    expected = build_youtube_pose_cache_key(url, model_file, confidence, fps_target, max_duration_seconds)
+    pose_record_root = os.path.join(project_folder, 'pose_record')
+    if not os.path.isdir(pose_record_root):
+        return None
+        
+    record_folders = []
+    for name in os.listdir(pose_record_root):
+        folder = os.path.join(pose_record_root, name)
+        if os.path.isdir(folder):
+            record_folders.append(folder)
+            
+    record_folders.sort(key=lambda folder: os.path.getmtime(folder) if hasattr(os.path, 'getmtime') else os.path.getmtime(folder), reverse=True)
+    
+    for folder in record_folders:
+        pose_record_path = os.path.join(folder, 'pose_record.json')
+        if not os.path.isfile(pose_record_path):
+            continue
+            
+        source_info = {}
+        source_info_path = os.path.join(folder, 'source_video_info.json')
+        if os.path.isfile(source_info_path):
+            try:
+                with open(source_info_path, 'r', encoding='utf-8') as f:
+                    source_info = json.load(f)
+            except Exception:
+                source_info = {}
+                
+        try:
+            with open(pose_record_path, 'r', encoding='utf-8') as f:
+                pose_record = json.load(f)
+        except Exception:
+            continue
+            
+        source = pose_record.get('source', {})
+        source_video_file = source_info.get('source_video_file') or source.get('source_video_file') or 'source.mp4'
+        
+        if not os.path.isfile(os.path.join(folder, source_video_file)):
+            continue
+            
+        candidate_key = source_info.get('cache_key')
+        if not isinstance(candidate_key, dict):
+            candidate_key = build_youtube_pose_cache_key(
+                source_info.get('url') or source.get('url') or '',
+                source_info.get('pose_model') or source.get('model') or expected['pose_model'],
+                source_info.get('pose_confidence', expected['pose_confidence']),
+                source_info.get('fps_target') or source.get('fps_target') or expected['fps_target'],
+                source_info.get('max_duration_seconds') or source.get('max_duration_seconds') or expected['max_duration_seconds']
+            )
+            
+        if youtube_pose_cache_key_matches(expected, candidate_key):
+            return pose_record_path
+            
+    return None
+
+
+def parse_range_header(range_header, file_size):
+    if not range_header or not range_header.startswith('bytes='):
+        return None
+    spec = range_header.replace('bytes=', '', 1).strip()
+    if ',' in spec or '-' not in spec:
+        return None
+    start_text, end_text = spec.split('-', 1)
+    if not start_text and not end_text:
+        return None
+    try:
+        if start_text:
+            start = int(start_text)
+            if end_text:
+                end = int(end_text)
+            else:
+                end = file_size - 1
+        else:
+            suffix_length = int(end_text)
+            if suffix_length <= 0:
+                return None
+            start = max(file_size - suffix_length, 0)
+            end = file_size - 1
+    except ValueError:
+        return None
+    if start < 0 or start >= file_size or end < start:
+        return None
+    return (start, min(end, file_size - 1))
+
+
+def iter_file_range(filepath, start, end, chunk_size=65536):
+    with open(filepath, 'rb') as fp:
+        fp.seek(start)
+        remaining = end - start + 1
+        while remaining > 0:
+            chunk = fp.read(min(chunk_size, remaining))
+            if not chunk:
+                break
+            remaining -= len(chunk)
+            yield chunk
+
+
+def data_file_response(filepath, media_type, range_header):
+    file_size = os.path.getsize(filepath) if hasattr(os.path, 'getsize') else os.path.getsize(filepath)
+    headers = {
+        'Accept-Ranges': 'bytes',
+        'Content-Encoding': 'identity'
+    }
+    if not range_header:
+        return FileResponse(filepath, media_type=media_type, headers=headers)
+        
+    byte_range = parse_range_header(range_header, file_size)
+    if not byte_range:
+        invalid_headers = dict(headers)
+        invalid_headers['Content-Range'] = 'bytes */{}'.format(file_size)
+        return Response(status_code=416, headers=invalid_headers)
+        
+    start, end = byte_range
+    partial_headers = dict(headers)
+    partial_headers.update({
+        'Content-Range': 'bytes {}-{}/{}'.format(start, end, file_size),
+        'Content-Length': str(end - start + 1)
+    })
+    
+    return StreamingResponse(
+        iter_file_range(filepath, start, end),
+        status_code=206,
+        media_type=media_type,
+        headers=partial_headers
+    )
 
 
 root = tk.Tk()
@@ -2215,9 +2476,23 @@ GDATA["UI"]["btn_screen_pose_record"].pack(side=tk.LEFT, padx=5)
 GDATA["UI"]["btn_live2d_dancer"] = tk.Button(
     GDATA["UI"]["pose_frame"],
     text="Live2D 人物",
-    command=open_live2d_dancer,
+    command=lambda: open_live2d_dancer("live2d"),
 )
 GDATA["UI"]["btn_live2d_dancer"].pack(side=tk.LEFT, padx=5)
+
+GDATA["UI"]["btn_vrm_dancer"] = tk.Button(
+    GDATA["UI"]["pose_frame"],
+    text="3D VRM角色",
+    command=lambda: open_live2d_dancer("vrm"),
+)
+GDATA["UI"]["btn_vrm_dancer"].pack(side=tk.LEFT, padx=5)
+
+GDATA["UI"]["btn_cesium_world"] = tk.Button(
+    GDATA["UI"]["pose_frame"],
+    text="Cesium地球",
+    command=lambda: open_live2d_dancer("cesium"),
+)
+GDATA["UI"]["btn_cesium_world"].pack(side=tk.LEFT, padx=5)
 
 GDATA["UI"]["pose_status_label"] = tk.Label(GDATA["UI"]["pose_frame"], text="", anchor=tk.W)
 GDATA["UI"]["pose_status_label"].pack(side=tk.LEFT, padx=5)
@@ -4029,3 +4304,5 @@ worker_thread = threading.Thread(target=background_worker, daemon=True)
 worker_thread.start()
 
 root.mainloop()
+
+

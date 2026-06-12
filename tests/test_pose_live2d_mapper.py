@@ -9,8 +9,8 @@ class Live2DMapperTests(unittest.TestCase):
             "version": 1,
             "source": {"fps_target": 30},
             "frames": [
-                {"time_ms": 0, "features": {"torso_angle_deg": 0, "body_center_y": 0.5, "left_arm_angle_deg": 10, "right_arm_angle_deg": -10}},
-                {"time_ms": 33, "features": {"torso_angle_deg": 20, "body_center_y": 0.4, "left_arm_angle_deg": 30, "right_arm_angle_deg": -30}},
+                {"time_ms": 0, "features": {"torso_angle_deg": 0, "body_center_y": 0.5, "left_arm_angle_deg": 10, "right_arm_angle_deg": -10, "left_leg_angle_deg": 70, "right_leg_angle_deg": -70}},
+                {"time_ms": 33, "features": {"torso_angle_deg": 20, "body_center_y": 0.4, "left_arm_angle_deg": 30, "right_arm_angle_deg": -30, "left_leg_angle_deg": 90, "right_leg_angle_deg": -90}},
             ],
         }
 
@@ -19,6 +19,8 @@ class Live2DMapperTests(unittest.TestCase):
         ids = [p["id"] for p in params["parameters"]]
         self.assertIn("PARAM_BODY_ANGLE_X", ids)
         self.assertIn("PARAM_ARM_L", ids)
+        self.assertIn("PARAM_LEG_L", ids)
+        self.assertIn("PARAM_LEG_R", ids)
         self.assertEqual(params["source_pose_record"], "pose_record.json")
         self.assertEqual(params["duration_ms"], 33)
         body = next(p for p in params["parameters"] if p["id"] == "PARAM_BODY_ANGLE_X")
@@ -28,16 +30,23 @@ class Live2DMapperTests(unittest.TestCase):
         self.assertGreaterEqual(min(k["value"] for k in breath["keys"]), 0)
         self.assertLessEqual(max(k["value"] for k in breath["keys"]), 1)
 
+    def test_build_live2d_params_includes_leg_curves_for_fullbody_models(self):
+        params = build_live2d_params(self.sample_pose_record())
+        leg_l = next(p for p in params["parameters"] if p["id"] == "PARAM_LEG_L")
+        leg_r = next(p for p in params["parameters"] if p["id"] == "PARAM_LEG_R")
+        self.assertEqual([k["time_ms"] for k in leg_l["keys"]], [0, 33])
+        self.assertNotEqual(leg_l["keys"][0]["value"], leg_l["keys"][1]["value"])
+        self.assertNotEqual(leg_r["keys"][0]["value"], leg_r["keys"][1]["value"])
+
     def test_build_motion3_has_curves(self):
         params = build_live2d_params(self.sample_pose_record())
         motion = build_motion3(params)
         self.assertEqual(motion["Version"], 3)
         self.assertGreater(motion["Meta"]["CurveCount"], 0)
         self.assertTrue(any(c["Target"] == "Parameter" for c in motion["Curves"]))
-        self.assertEqual(motion["Meta"]["CurveCount"], 8)
-        self.assertEqual(motion["Meta"]["TotalSegmentCount"], 8)
-        self.assertEqual(motion["Meta"]["TotalPointCount"], 16)
-        self.assertEqual(motion["Curves"][0]["Segments"], [0.0, 0.0, 0, 0.033, 10.0])
+        self.assertEqual(motion["Meta"]["CurveCount"], 22)
+        self.assertEqual(motion["Meta"]["TotalSegmentCount"], 22)
+        self.assertEqual(motion["Meta"]["TotalPointCount"], 44)
 
     def test_build_motion3_skips_empty_parameter_curves(self):
         motion = build_motion3({
