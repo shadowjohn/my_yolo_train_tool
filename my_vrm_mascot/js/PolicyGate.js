@@ -2,10 +2,11 @@
  * PolicyGate — 安全策略保護網關
  *
  * 核心功能：
- *   - 提供工具執行前的風險控制與安全檢查
+ *   - 提供工具執行前的風險控制與安全檢查與可解釋性
  *   - 支援 requiredArgs, allowedArgs 校驗
  *   - 支援 allowedTargetPrefixes 前綴規則校驗
  *   - 提供 risk 分級與 requireConfirm 確認標籤
+ *   - 提供 explain() 解釋契約違反細節
  */
 export class PolicyGate {
   #mascot = null;
@@ -70,66 +71,84 @@ export class PolicyGate {
   }
 
   /**
-   * 依序執行政策安全檢查
-   *
-   * 檢查順序：
-   *   tool exists ➔ args schema ➔ required args ➔ allowed args ➔ target prefix ➔ risk / confirmation
-   *
-   * @param {string} toolName
-   * @param {object} args
-   * @returns {object} { ok: boolean, reason?: string, error?: string }
+   * 進行安全策略評估，產出詳細合約與狀態解釋
+   * @param {string} toolName 
+   * @param {object} args 
+   * @returns {object} 解釋物件
    */
-  check(toolName, args) {
+  explain(toolName, args = {}) {
     const cleanName = String(toolName || '').trim().toLowerCase();
 
-    // 1. Tool Exists (工具是否存在於 Registry)
+    // 1. Tool Exists 檢查
     if (!this.#mascot.toolRegistry || !this.#mascot.toolRegistry.has(cleanName)) {
       return {
-        ok: false,
+        toolName: cleanName,
+        allowed: false,
         reason: 'unregistered',
-        error: `安全策略攔截：工具 ${toolName} 未註冊。`
+        message: `安全策略攔截：工具 ${toolName} 未註冊。`,
+        missingArgs: [],
+        illegalArgs: [],
+        requiredConfirmation: false
       };
     }
 
     const policy = this.getPolicy(cleanName);
     if (!policy) {
       return {
-        ok: false,
+        toolName: cleanName,
+        allowed: false,
         reason: 'no_policy',
-        error: `安全策略攔截：工具 ${toolName} 沒有定義安全政策。`
+        message: `安全策略攔截：工具 ${toolName} 沒有定義安全政策。`,
+        missingArgs: [],
+        illegalArgs: [],
+        requiredConfirmation: false
       };
     }
 
-    // 2. Args Schema (這部分與 ToolRegistry 的內建 Required 檢查互補)
-    // 3. Required Args (防止缺少必要參數)
-    if (policy.requiredArgs && policy.requiredArgs.length > 0) {
+    // 2. Required Args 檢查 (缺少必要參數)
+    const missingArgs = [];
+    if (policy.requiredArgs) {
       for (const reqKey of policy.requiredArgs) {
         if (!args || args[reqKey] === undefined || args[reqKey] === null || args[reqKey] === '') {
-          return {
-            ok: false,
-            reason: 'missing_required_arg',
-            error: `安全策略攔截：工具 ${toolName} 缺少必要參數 ${reqKey}。`
-          };
+          missingArgs.push(reqKey);
         }
       }
     }
+    if (missingArgs.length > 0) {
+      return {
+        toolName: cleanName,
+        allowed: false,
+        reason: 'missing_required_arg',
+        message: `安全策略攔截：工具 ${toolName} 缺少必要參數 ${missingArgs.join(', ')}。`,
+        missingArgs,
+        illegalArgs: [],
+        requiredConfirmation: false
+      };
+    }
 
-    // 4. Allowed Args (防止多塞奇怪參數)
+    // 3. Allowed Args 檢查 (包含未允許參數)
+    const illegalArgs = [];
     if (args) {
       for (const key of Object.keys(args)) {
         if (!policy.allowedArgs.includes(key)) {
-          return {
-            ok: false,
-            reason: 'disallowed_arg',
-            error: `安全策略攔截：工具 ${toolName} 包含未允許的參數 ${key}。`
-          };
+          illegalArgs.push(key);
         }
       }
     }
+    if (illegalArgs.length > 0) {
+      return {
+        toolName: cleanName,
+        allowed: false,
+        reason: 'disallowed_arg',
+        message: `安全策略攔截：工具 ${toolName} 包含未允許的參數 ${illegalArgs.join(', ')}。`,
+        missingArgs: [],
+        illegalArgs,
+        requiredConfirmation: false
+      };
+    }
 
-    // 5. Target Prefix (防止工具被拿去操作不該操作的 ID)
+    // 4. Target Prefix 前綴規則檢查
     if (policy.allowedTargetPrefixes && policy.allowedTargetPrefixes.length > 0) {
-      // 搜尋參數中所有字串屬性值，以進行前綴檢查
       const targetValues = [];
       if (args) {
         for (const [key, val] of Object.entries(args)) {
@@ -143,23 +162,55 @@ export class PolicyGate {
         const isAllowed = policy.allowedTargetPrefixes.some(prefix => val.startsWith(prefix));
         if (!isAllowed) {
           return {
-            ok: false,
-            reason: 'disallowed_target_prefix',
-            error: `安全策略攔截：標的識別碼 "${val}" 不符合允許的前綴規則 (${policy.allowedTargetPrefixes.join(', ')})。`
+            toolName: cleanName,
+            allowed: false,
+            reason: 'target_prefix_not_allowed',
+            message: `安全策略攔截：標的識別碼 "${val}" 不符合允許的前綴規則 (${policy.allowedTargetPrefixes.join(', ')})。`,
+            missingArgs: [],
+            illegalArgs: [],
+            requiredConfirmation: false
           };
         }
       }
     }
 
-    // 6. Risk & Confirmation (確認與風險級別)
+    // 5. Risk / Confirmation 檢查
     if (policy.requireConfirm) {
       return {
-        ok: false,
+        toolName: cleanName,
+        allowed: false,
         reason: 'require_confirmation',
-        error: `安全策略攔截：執行工具 ${toolName} 需要使用者確認。`
+        message: `安全策略攔截：執行工具 ${toolName} 需要使用者確認。`,
+        missingArgs: [],
+        illegalArgs: [],
+        requiredConfirmation: true
       };
     }
 
-    return { ok: true };
+    return {
+      toolName: cleanName,
+      allowed: true,
+      reason: 'allowed',
+      message: '安全策略審查通過，可以執行。',
+      missingArgs: [],
+      illegalArgs: [],
+      requiredConfirmation: false
+    };
+  }
+
+  /**
+   * 檢查工具執行安全政策，並包裹 explain() 結果回傳
+   * @param {string} toolName
+   * @param {object} args
+   * @returns {object} { ok, reason, error, explanation }
+   */
+  check(toolName, args = {}) {
+    const explanation = this.explain(toolName, args);
+    return {
+      ok: explanation.allowed,
+      reason: explanation.reason,
+      error: explanation.allowed ? null : explanation.message,
+      explanation
+    };
   }
 }

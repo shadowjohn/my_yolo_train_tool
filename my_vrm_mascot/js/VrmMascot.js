@@ -444,6 +444,25 @@ export class VrmMascot {
   }
 
   /**
+   * 取得已註冊工具之契約與安全政策摘要 (Tool Digest)
+   * @returns {object[]}
+   */
+  buildToolDigest() {
+    if (!this.tools) return [];
+    return this.tools.list().map(t => {
+      const policy = this.policyGate ? this.policyGate.getPolicy(t.name) : null;
+      return {
+        name: t.name,
+        requiredArgs: policy ? (policy.requiredArgs || []) : [],
+        allowedArgs: policy ? (policy.allowedArgs || []) : [],
+        allowedTargetPrefixes: policy ? (policy.allowedTargetPrefixes || []) : [],
+        risk: policy ? (policy.risk || "low") : "low",
+        requireConfirm: policy ? (policy.requireConfirm || false) : false
+      };
+    });
+  }
+
+  /**
    * 建立極簡的上下文摘要 (Context Digest)，供 LLM Proxy 推理使用，降低 Token 消耗。
    * @returns {object}
    */
@@ -505,7 +524,8 @@ export class VrmMascot {
       availableActions,
       lastIntent,
       mapCenter,
-      validationErrors
+      validationErrors,
+      toolDigest: this.buildToolDigest()
     };
   }
 
