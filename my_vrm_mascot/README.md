@@ -14,6 +14,12 @@ python -m http.server 8765 --directory my_vrm_mascot
 
 > **注意**：ES Module 需要 HTTP server，不支援 `file://` 協定。
 
+開啟 VRMA 範本匯入實驗室：
+
+```text
+http://127.0.0.1:8765/motion_template_lab.html
+```
+
 ## 目錄結構
 
 ```
@@ -157,6 +163,8 @@ M4 Expression Layer 把語意表情集中在 `ExpressionProfiles.js`，目前提
 M5 Attention & Acting Policy 把演出決策集中在 `ActingPolicy.js`：`success -> happy + victory + mouse`、`running -> thinking + presenting + point`、`blocked -> angry + warning_nod + mouse`。這層只產生 policy result，實際執行仍交給 Expression / Motion / LookAt controllers，且不進 `contextDigest`。
 
 M6 Conversation Acting Bridge 讓 `ActingBridge.js` 接收 tool trace 與 talking lifecycle 事件，依 priority 裁決目前 acting state，並只呼叫 `mascot.act(state)`；runtime 仍持續更新 trace，expression / clip / gaze / pose 的細節留在 `ActingPolicy.js`、`PoseDirector.js` 與底層 controllers。
+
+M6.7 Motion Template Importer 提供獨立開發工具 `motion_template_lab.html`：載入 Alicia 與本機 `.vrma`，取樣第一幀或指定時間點的 upper-body humanoid rotation，匯出可貼回 Character Inspector 的 NaturalPose preset JSON。這個 lab 不進 production runtime、不改 Agent、不寫 `contextDigest`。
 
 Base pose preset 會依模型載入：
 
