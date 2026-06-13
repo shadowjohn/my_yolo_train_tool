@@ -23,6 +23,7 @@ my_vrm_mascot/
     VrmMascot.js              # 主控制器（Three.js + VRM）
     MotionController.js       # 動作控制器（natural pose / idle / semantic motions / clip playback）
     MotionClips.js            # 短動作 clip 定義（wave/victory/warning_nod/shake_head/dance_short/punch_short）
+    ExpressionProfiles.js     # 語意表情 profile 定義（neutral/happy/thinking/surprised/sad/angry）
     ExpressionController.js   # 眨眼 + 表情控制
     MascotStateMachine.js     # 狀態機（dispatch / do / say / emote）
     LookAtController.js       # 滑鼠注視（EMA 平滑）
@@ -122,6 +123,8 @@ mascot.state.reset();
 ```javascript
 mascot.motion.play('dance_short');   // MotionController
 mascot.motion.playClip('victory');    // Short Motion Clips
+mascot.setExpression('happy', { intensity: 0.8, duration: 1200 }); // Expression Layer
+mascot.clearExpression();
 mascot.motion.playCustom(animData, { loop: true }); // 播放自訂 JSON 動畫
 mascot.expression.set('joy', 0.8);  // ExpressionController
 mascot.lookAt.setTarget('none');     // LookAtController
@@ -145,6 +148,8 @@ MotionController 會在 VRM 載入後立即套用 Natural Pose；所有內建程
 M2 Idle Micro Motion 只強化待機層：idle 會疊加胸口/脊椎/重心分層呼吸、肩膀放鬆、前臂與手腕微擺；LookAt `none` 時會加小幅頭部 drift，目標注視時不啟用這個漂移。
 
 M3 Short Motion Clips 把短動作集中在 `MotionClips.js`：`wave`、`victory`、`warning_nod`、`shake_head`、`dance_short`、`punch_short` 都是短、可預期、可恢復的 clip。`MotionController.play(name)` 會自動路由 clip name，`playClip(name)` 可直接播放；clip 結束後會回到 idle 並重套 Natural Pose，避免殘留骨骼偏移。
+
+M4 Expression Layer 把語意表情集中在 `ExpressionProfiles.js`，目前提供 `neutral`、`happy`、`thinking`、`surprised`、`sad`、`angry`。Expression layer 只控制 VRM blendshape 權重與 blink 疊加，不寫骨架 rotation / position；因此可和 `MotionController.playClip('victory')` 這類短動作同時存在。
 
 Base pose preset 會依模型載入：
 
@@ -174,6 +179,8 @@ Base pose preset 會依模型載入：
 | 名稱 | VRM Preset |
 |------|-----------|
 | `happy` / `joy` | joy |
+| `thinking` | fun + sorrow |
+| `surprised` | fun |
 | `sad` / `sorrow` | sorrow |
 | `angry` | angry |
 | `fun` | fun |

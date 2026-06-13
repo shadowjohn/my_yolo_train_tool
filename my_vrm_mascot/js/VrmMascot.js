@@ -476,6 +476,25 @@ export class VrmMascot {
   }
 
   /**
+   * 設定語意表情 profile；骨架姿勢仍交給 Motion / LookAt 層處理。
+   * @param {string} name
+   * @param {object} [options]
+   * @returns {object}
+   */
+  setExpression(name, options = {}) {
+    return this.#expression.setProfile(name, options);
+  }
+
+  /**
+   * 清除語意表情 profile，淡出 ExpressionController 管理中的 blendshape。
+   * @param {object} [options]
+   * @returns {object}
+   */
+  clearExpression(options = {}) {
+    return this.#expression.clear(options);
+  }
+
+  /**
    * 依語意狀態播放姿勢，不暴露骨架細節給 Agent Runtime。
    * @param {string} state
    * @param {object} [meta]
