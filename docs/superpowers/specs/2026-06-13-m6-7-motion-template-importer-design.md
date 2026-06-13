@@ -385,6 +385,7 @@ M6.7 is complete when:
 - The lab exports NaturalPose preset JSON.
 - Exported JSON preserves Alicia lower body / hips baseline.
 - Exported JSON only overrides the upper-body rotation whitelist.
+- Exporting the same VRMA sample twice is deterministic: JSON differences are not allowed except explicitly documented metadata fields.
 - Exported JSON can be pasted into Character Inspector.
 - No Agent Runtime files are touched.
 - No production mascot runtime path depends on VRMA loader code.
