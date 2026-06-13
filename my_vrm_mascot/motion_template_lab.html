@@ -425,9 +425,10 @@
     }
 
     async function loadBasePreset() {
-      const res = await fetch('motions/poses/alicia_solid.json');
-      if (!res.ok) throw new Error(`無法載入 Alicia preset: ${res.status}`);
-      basePreset = await res.json();
+      const loader = new THREE.FileLoader();
+      loader.setResponseType('text');
+      const text = await loader.loadAsync('motions/poses/alicia_solid.json');
+      basePreset = JSON.parse(text);
     }
 
     async function loadAlicia() {
