@@ -42,11 +42,11 @@ function testLabHtmlContractExists() {
   assert.equal(existsSync(LAB_PATH), true, `${LAB_PATH} should exist`);
 
   const html = read(LAB_PATH);
-  assert.match(html, /Motion Template Lab/);
-  assert.match(html, /VRMA-first Pose Importer/);
+  assert.match(html, /Alicia Motion Mine/);
+  assert.match(html, /先找好姿勢，再分類/);
   assert.match(html, /載入 VRMA/);
   assert.match(html, /取第一幀/);
-  assert.match(html, /取指定時間/);
+  assert.match(html, /取目前時間/);
   assert.match(html, /複製 JSON/);
   assert.match(html, /下載 JSON/);
   assert.match(html, /匯出 NaturalPosePreset/);
@@ -73,7 +73,7 @@ function testLabIncludesExampleAndPlaybackControls() {
   for (const fileName of REQUIRED_EXAMPLE_VRMA) {
     assert.match(html, new RegExp(fileName.replace('.', '\\.')));
   }
-  assert.match(html, /播放動作/);
+  assert.match(html, /播放/);
   assert.match(html, /暫停/);
   assert.match(html, /停止/);
   assert.match(html, /examples\/m6_7_vrma_samples\//);
@@ -335,7 +335,8 @@ function testLabIncludesMotionMiningWorkbenchControls() {
   assert.match(html, /id="previewModeLabel"/);
   assert.match(html, /function\s+applyPreviewMode\s*\(/);
   assert.match(html, /function\s+refreshCurrentFrame\s*\(/);
-  assert.match(html, /Motion Mining Workbench/);
+  assert.match(html, /Alicia Motion Mine/);
+  assert.match(html, /id="minerAdvancedTools"/);
   assert.match(html, /id="miningCategory"/);
   assert.match(html, /id="miningScore"/);
   assert.match(html, /id="miningSourceScore"/);
@@ -440,6 +441,66 @@ function testReviewQueueSchemaAndBehaviorContracts() {
   assert.match(html, /updatedAt/);
   assert.match(html, /reviewActionHistory/);
   assert.match(html, /entry\.status\s*===\s*'classified'/);
+}
+
+function testLabUsesAliciaMotionMineManagerUi() {
+  const html = read(LAB_PATH);
+
+  assert.match(html, /Alicia Motion Mine/);
+  assert.match(html, /先找好姿勢，再分類/);
+  assert.match(html, /礦區/);
+  assert.match(html, /候選片段/);
+  assert.match(html, /id="mineList"/);
+  assert.match(html, /id="pinnedCandidateList"/);
+  assert.match(html, /id="btnPinMoment"/);
+  assert.match(html, /id="minerCurrentSample"/);
+  assert.match(html, /id="minerProgressText"/);
+  assert.match(html, /id="minerProgressBar"/);
+  assert.match(html, /id="sourceVrmaCount"/);
+  assert.match(html, /id="pinnedCandidateCount"/);
+  assert.match(html, /id="classifiedCandidateCount"/);
+  assert.match(html, /id="minerAdvancedTools"/);
+  assert.match(html, /進階工具/);
+  assert.match(html, /只顯示必要資訊/);
+  assert.doesNotMatch(html, />\s*Motion Mining Workbench\s*</);
+}
+
+function testLabIncludesRuleBasedMiningSuggestion() {
+  const html = read(LAB_PATH);
+
+  assert.match(html, /id="miningSuggestionPanel"/);
+  assert.match(html, /自動推薦/);
+  assert.match(html, /id="suggestedCategoryLabel"/);
+  assert.match(html, /id="suggestionConfidence"/);
+  assert.match(html, /id="suggestionReason"/);
+  assert.match(html, /function\s+suggestMiningCategory\s*\(/);
+  assert.match(html, /function\s+extractPoseFeatures\s*\(/);
+  assert.match(html, /handNearFace/);
+  assert.match(html, /headDown/);
+  assert.match(html, /armExtended/);
+  assert.match(html, /setRecommendedCategory/);
+  assert.ok(
+    html.indexOf("source.includes('angry')") < html.indexOf("source.includes('thinking')"),
+    'Angry source heuristic should recommend warning before generic thinking posture rules',
+  );
+}
+
+function testLabUsesPinThenClassifyMiningFlow() {
+  const html = read(LAB_PATH);
+
+  assert.doesNotMatch(html, /const\s+MINER_AUTO_ADVANCE/);
+  assert.doesNotMatch(html, /generateReviewQueue\(\{\s*silent:\s*true\s*\}\)/);
+  assert.doesNotMatch(html, /await\s+advanceToNextPendingReviewItem\(''\)/);
+  assert.match(html, /function\s+renderMineList\s*\(/);
+  assert.match(html, /function\s+pinCurrentMoment\s*\(/);
+  assert.match(html, /function\s+renderPinnedCandidates\s*\(/);
+  assert.match(html, /function\s+selectPinnedCandidate\s*\(/);
+  assert.match(html, /釘選這一刻/);
+  assert.match(html, /建議取樣點/);
+  assert.match(html, /event\.key\s*===\s*' '/);
+  assert.match(html, /event\.key\s*===\s*'ArrowRight'/);
+  assert.match(html, /event\.key\.toUpperCase\(\)\s*===\s*'P'/);
+  assert.match(html, /event\.key\.toUpperCase\(\)\s*===\s*'Z'/);
 }
 
 async function testBuildNaturalPosePresetMergesUpperBodyOnly() {
@@ -579,6 +640,9 @@ async function run() {
     testLabIncludesReviewQueueControls,
     testReviewQueueUsesChineseFirstLabels,
     testReviewQueueSchemaAndBehaviorContracts,
+    testLabUsesAliciaMotionMineManagerUi,
+    testLabIncludesRuleBasedMiningSuggestion,
+    testLabUsesPinThenClassifyMiningFlow,
     testMotionMiningLogHasSprintReviewedSamples,
     testMotionMiningReportMatchesLog,
     testBuildNaturalPosePresetMergesUpperBodyOnly,

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Motion Template Lab — VRMA-first Pose Importer</title>
+  <title>Alicia Motion Mine — 先找好姿勢，再分類</title>
   <style>
     :root {
       color-scheme: dark;
@@ -554,6 +554,464 @@
       font: 12px/1.5 Consolas, "Cascadia Mono", monospace;
     }
 
+    .miner-shell {
+      min-height: 100vh;
+      grid-template-columns: 230px minmax(560px, 1fr) 320px;
+      grid-template-rows: auto minmax(360px, 1fr) auto;
+      grid-template-areas:
+        "topbar topbar topbar"
+        "guide stage sidebar"
+        "guide classifier sidebar";
+      gap: 18px 22px;
+      padding: 22px 24px;
+      background:
+        linear-gradient(180deg, rgba(10, 18, 34, 0.96), rgba(3, 9, 18, 0.98)),
+        radial-gradient(circle at 55% 38%, rgba(124, 58, 237, 0.18), transparent 36%);
+    }
+
+    .miner-topbar {
+      grid-area: topbar;
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) auto minmax(260px, auto) auto;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .miner-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .miner-gem {
+      color: #9b6cff;
+      font-size: 30px;
+      line-height: 1;
+      text-shadow: 0 0 18px rgba(139, 92, 246, 0.72);
+    }
+
+    .miner-brand h1 {
+      margin: 0;
+      font-size: clamp(28px, 2.5vw, 38px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .miner-brand p {
+      margin: 8px 0 0;
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .miner-brand p span {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(139, 92, 246, 0.78);
+      color: #f5f3ff;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .miner-sample-pill,
+    .miner-status {
+      min-height: 42px;
+      padding: 10px 20px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.78);
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .miner-status {
+      color: var(--accent-strong);
+      font-size: 14px;
+    }
+
+    .miner-top-progress {
+      display: grid;
+      grid-template-columns: auto minmax(120px, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      min-width: 260px;
+    }
+
+    .miner-top-progress strong {
+      color: #9b6cff;
+      font-size: 34px;
+      line-height: 1;
+    }
+
+    .miner-progress-track {
+      overflow: hidden;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(30, 41, 59, 0.92);
+    }
+
+    .miner-progress-track span {
+      display: block;
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+      transition: width 160ms ease;
+    }
+
+    .miner-guide {
+      grid-area: guide;
+      align-self: start;
+      display: grid;
+      gap: 28px;
+      color: var(--text);
+    }
+
+    .miner-guide h2 {
+      margin: 0 0 10px;
+      color: #a78bfa;
+      font-size: 20px;
+      line-height: 1.25;
+    }
+
+    .miner-guide ul,
+    .miner-guide p {
+      margin: 0;
+      color: #e5e7eb;
+      font-size: 16px;
+      line-height: 1.8;
+    }
+
+    .miner-guide ul {
+      display: grid;
+      gap: 8px;
+      padding: 14px 18px;
+      border: 1px solid rgba(167, 139, 250, 0.4);
+      border-radius: 8px;
+      list-style: none;
+      background: rgba(15, 23, 42, 0.6);
+    }
+
+    .miner-guide li::before {
+      content: "✓";
+      margin-right: 10px;
+      color: #a78bfa;
+      font-weight: 800;
+    }
+
+    .mine-list,
+    .pinned-candidate-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .mine-list {
+      max-height: 42vh;
+      overflow: auto;
+    }
+
+    .mine-card-button,
+    .pinned-candidate-button {
+      display: grid;
+      gap: 4px;
+      width: 100%;
+      padding: 10px 12px;
+      border-color: rgba(148, 163, 184, 0.26);
+      text-align: left;
+    }
+
+    .mine-card-button.is-selected,
+    .pinned-candidate-button.is-selected {
+      border-color: rgba(103, 232, 249, 0.82);
+      box-shadow: 0 0 0 1px rgba(103, 232, 249, 0.2) inset;
+    }
+
+    .mine-card-button strong,
+    .pinned-candidate-button strong {
+      color: var(--text);
+      line-height: 1.25;
+    }
+
+    .mine-card-button span,
+    .pinned-candidate-button span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .miner-stage {
+      grid-area: stage;
+      min-height: 500px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 12px;
+      background:
+        linear-gradient(180deg, rgba(35, 42, 75, 0.74), rgba(12, 20, 38, 0.8)),
+        radial-gradient(circle at 50% 94%, rgba(139, 92, 246, 0.42), transparent 32%);
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.24);
+    }
+
+    .miner-stage .lab-viewport {
+      inset: 0;
+      border: 0;
+      border-radius: 12px;
+      background: transparent;
+    }
+
+    .miner-preview-note {
+      position: absolute;
+      z-index: 3;
+      top: 84px;
+      right: 76px;
+      max-width: 180px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      background: rgba(241, 245, 249, 0.92);
+      color: #0f172a;
+      line-height: 1.45;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+    }
+
+    .miner-preview-note strong,
+    .miner-preview-note span {
+      display: block;
+    }
+
+    .miner-classifier {
+      grid-area: classifier;
+      align-self: start;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    .miner-classifier .lab-quick-panel {
+      margin: 0;
+      gap: 12px;
+    }
+
+    .miner-classifier .lab-quick-panel h2 {
+      margin: 0;
+      text-align: center;
+      font-size: 22px;
+      line-height: 1.25;
+    }
+
+    .mine-explorer-panel {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.58);
+    }
+
+    .mine-explorer-panel h2 {
+      margin: 0;
+      text-align: center;
+      font-size: 20px;
+    }
+
+    .mine-explorer-actions,
+    .suggested-time-actions {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .mine-explorer-actions #btnPinMoment {
+      border-color: rgba(167, 139, 250, 0.82);
+      background: linear-gradient(180deg, rgba(139, 92, 246, 0.86), rgba(109, 40, 217, 0.86));
+    }
+
+    .miner-classifier .lab-quick-grid {
+      grid-template-columns: repeat(7, minmax(68px, 1fr));
+      gap: 8px;
+    }
+
+    .miner-classifier .lab-quick-button {
+      position: relative;
+      grid-template-columns: 1fr;
+      justify-items: center;
+      gap: 8px;
+      min-height: 126px;
+      padding: 12px 6px;
+      border-width: 2px;
+      text-align: center;
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .miner-classifier .lab-quick-button kbd {
+      min-width: 32px;
+      min-height: 32px;
+      border-radius: 999px;
+      font-size: 14px;
+    }
+
+    .miner-classifier .lab-quick-button span {
+      font-size: 18px;
+    }
+
+    .miner-classifier .lab-quick-button small {
+      font-size: 11px;
+    }
+
+    .lab-quick-button[data-quick-category="present"] {
+      border-color: rgba(167, 139, 250, 0.74);
+    }
+
+    .lab-quick-button[data-quick-category="point"] {
+      border-color: rgba(96, 165, 250, 0.74);
+    }
+
+    .lab-quick-button[data-quick-category="think"] {
+      border-color: rgba(45, 212, 191, 0.74);
+    }
+
+    .lab-quick-button[data-quick-category="warning"] {
+      border-color: rgba(251, 146, 60, 0.82);
+    }
+
+    .lab-quick-button[data-quick-category="success"] {
+      border-color: rgba(74, 222, 128, 0.78);
+    }
+
+    .lab-quick-button.is-recommended {
+      box-shadow: 0 0 0 2px rgba(250, 250, 250, 0.18) inset, 0 0 24px rgba(167, 139, 250, 0.42);
+    }
+
+    .lab-quick-button.is-recommended::after {
+      content: "推薦";
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(34, 197, 94, 0.94);
+      color: #052e16;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .miner-nav-actions {
+      display: grid;
+      grid-template-columns: minmax(120px, 1fr) minmax(220px, 1.8fr) minmax(120px, 1fr);
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .miner-nav-actions button {
+      min-height: 56px;
+      font-size: 18px;
+    }
+
+    #btnMinerNext {
+      border-color: rgba(167, 139, 250, 0.82);
+      background: linear-gradient(180deg, rgba(139, 92, 246, 0.9), rgba(109, 40, 217, 0.9));
+    }
+
+    .miner-auto-copy {
+      margin: 8px 0 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .miner-sidebar {
+      grid-area: sidebar;
+      display: grid;
+      align-content: start;
+      gap: 18px;
+      max-height: calc(100vh - 44px);
+      padding: 0;
+      border-left: 0;
+      background: transparent;
+    }
+
+    .miner-card,
+    .miner-advanced-tools {
+      padding: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.62);
+    }
+
+    .miner-card h2 {
+      margin: 0 0 14px;
+      color: #86efac;
+      font-size: 18px;
+    }
+
+    .miner-card p {
+      margin: 0 0 8px;
+      color: #e5e7eb;
+      line-height: 1.55;
+    }
+
+    .miner-stat-list {
+      display: grid;
+      gap: 10px;
+      margin: 0 0 14px;
+    }
+
+    .miner-stat-list div {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .miner-stat-list dt {
+      color: var(--muted);
+    }
+
+    .miner-stat-list dd {
+      margin: 0;
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .miner-suggestion strong {
+      color: #86efac;
+    }
+
+    #suggestionAlternatives {
+      display: grid;
+      gap: 6px;
+      margin: 12px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .miner-advanced-tools {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .miner-advanced-tools summary {
+      min-height: 50px;
+      padding: 15px 18px;
+      cursor: pointer;
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .miner-advanced-tools[open] summary {
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+    }
+
+    .miner-advanced-body {
+      padding: 18px;
+    }
+
     @media (max-width: 860px) {
       .lab-shell {
         grid-template-columns: 1fr;
@@ -576,6 +1034,42 @@
         border-left: 0;
         border-top: 1px solid var(--line);
       }
+
+      .miner-shell {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        grid-template-areas:
+          "topbar"
+          "stage"
+          "classifier"
+          "sidebar"
+          "guide";
+        padding: 16px;
+      }
+
+      .miner-topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .miner-guide {
+        display: none;
+      }
+
+      .miner-stage {
+        min-height: 52vh;
+      }
+
+      .miner-sidebar {
+        max-height: none;
+      }
+
+      .miner-classifier .lab-quick-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .miner-nav-actions {
+        grid-template-columns: 1fr;
+      }
     }
 
     @media (max-width: 480px) {
@@ -594,201 +1088,282 @@
   </style>
 </head>
 <body>
-  <main class="lab-shell">
-    <section class="lab-stage" aria-label="Alicia pose preview">
-      <header class="lab-header">
-        <strong>Motion Template Lab</strong>
-        <span>VRMA-first Pose Importer</span>
-        <span id="labLoadState">載入中</span>
-      </header>
+  <main class="lab-shell miner-shell">
+    <header class="miner-topbar">
+      <div class="miner-brand">
+        <span class="miner-gem">◆</span>
+        <div>
+          <h1>Alicia Motion Mine</h1>
+          <p>先找好姿勢，再分類 <span>v1.1</span></p>
+        </div>
+      </div>
+      <div id="minerCurrentSample" class="miner-sample-pill">尚未選取樣本</div>
+      <div class="miner-top-progress" aria-label="採礦進度">
+        <strong id="minerProgressText">0 / 0</strong>
+        <div class="miner-progress-track"><span id="minerProgressBar"></span></div>
+        <span id="minerProgressPercent">0%</span>
+      </div>
+      <span id="labLoadState" class="miner-status">載入中</span>
+    </header>
+
+    <aside class="miner-guide" aria-label="極簡採礦說明">
+      <section>
+        <h2>礦場流程</h2>
+        <ul>
+          <li>選一支 VRMA</li>
+          <li>播放或拖時間軸</li>
+          <li>釘選有料瞬間</li>
+          <li>再分類候選片段</li>
+        </ul>
+      </section>
+      <section>
+        <h2>礦區</h2>
+        <ol id="mineList" class="mine-list"></ol>
+      </section>
+      <section>
+        <h2>操作說明</h2>
+        <p>Space 播放 / 暫停，P 釘選這一刻。分類只作用在已釘選的候選片段。</p>
+      </section>
+    </aside>
+
+    <section class="lab-stage miner-stage" aria-label="Alicia pose preview">
       <div id="labViewport" class="lab-viewport"></div>
+      <div class="miner-preview-note">
+        <strong>大預覽區</strong>
+        <span>先看整支 VRMA，看到好姿勢再釘選。</span>
+      </div>
     </section>
 
-    <aside class="lab-panel" aria-label="VRMA pose importer controls">
-      <h1>動作範本匯入器</h1>
-      <p>載入 VRMA，取樣上半身姿勢，匯出 NaturalPosePreset JSON。</p>
-
-      <label class="lab-file">
-        <span>載入 VRMA</span>
-        <input id="vrmaFileInput" type="file" accept=".vrma,model/gltf-binary">
-      </label>
-
-      <label class="lab-example">
-        <span>範例動作</span>
-        <select id="exampleVrmaSelect">
-          <option value="Angry.vrma">Angry.vrma</option>
-          <option value="Clapping.vrma">Clapping.vrma</option>
-          <option value="Goodbye.vrma">Goodbye.vrma</option>
-          <option value="Jump.vrma">Jump.vrma</option>
-          <option value="LookAround.vrma">LookAround.vrma</option>
-          <option value="Relax.vrma">Relax.vrma</option>
-          <option value="Sad.vrma">Sad.vrma</option>
-          <option value="Sleepy.vrma">Sleepy.vrma</option>
-          <option value="Surprised.vrma">Surprised.vrma</option>
-          <option value="Thinking.vrma">Thinking.vrma</option>
-        </select>
-        <button id="btnLoadExample" type="button">載入範例</button>
-      </label>
-
-      <div class="lab-actions">
-        <button id="btnSampleFirst" type="button">取第一幀</button>
-        <button id="btnSampleTime" type="button">取指定時間</button>
-        <button id="btnPlayMotion" type="button">播放動作</button>
-        <button id="btnPauseMotion" type="button">暫停</button>
-        <button id="btnStopMotion" type="button">停止</button>
-        <button id="btnCopyJson" type="button">複製 JSON</button>
-        <button id="btnDownloadJson" type="button">下載 JSON</button>
+    <section class="lab-mining-panel miner-classifier">
+      <section class="mine-explorer-panel" aria-label="VRMA Explorer">
+        <h2>VRMA Explorer</h2>
+        <div class="mine-explorer-actions">
+          <button id="btnPlayMotion" type="button">播放</button>
+          <button id="btnPauseMotion" type="button">暫停</button>
+          <button id="btnStopMotion" type="button">停止</button>
+          <button id="btnPinMoment" type="button">釘選這一刻</button>
+        </div>
+        <label class="lab-slider">
+          <span>時間軸</span>
+          <input id="sampleTime" type="range" min="0" max="0" step="0.033" value="0">
+          <output id="sampleTimeLabel">0.000s / 0.000s</output>
+        </label>
+        <div class="suggested-time-actions">
+          <button id="btnSuggestedPrevious" type="button">上一個建議取樣點</button>
+          <button id="btnSuggestedNext" type="button">下一個建議取樣點</button>
+          <button id="btnSampleFirst" type="button">取第一幀</button>
+          <button id="btnSampleTime" type="button">取目前時間</button>
+        </div>
+      </section>
+      <section id="quickReviewPanel" class="lab-quick-panel" aria-label="快速標註 Quick Review Mode">
+        <h2>已釘選片段最像？</h2>
+        <div class="lab-quick-grid">
+          <button id="quickReviewPresent" class="lab-quick-button" type="button" data-quick-category="present" data-quick-key="Q" data-miner-key="1">
+            <kbd>1</kbd><span>介紹<small>present</small></span>
+          </button>
+          <button id="quickReviewPoint" class="lab-quick-button" type="button" data-quick-category="point" data-quick-key="W" data-miner-key="2">
+            <kbd>2</kbd><span>指向<small>point</small></span>
+          </button>
+          <button id="quickReviewThink" class="lab-quick-button" type="button" data-quick-category="think" data-quick-key="E" data-miner-key="3">
+            <kbd>3</kbd><span>思考<small>think</small></span>
+          </button>
+          <button id="quickReviewWarning" class="lab-quick-button" type="button" data-quick-category="warning" data-quick-key="R" data-miner-key="4">
+            <kbd>4</kbd><span>警告<small>warning</small></span>
+          </button>
+          <button id="quickReviewSuccess" class="lab-quick-button" type="button" data-quick-category="success" data-quick-key="T" data-miner-key="5">
+            <kbd>5</kbd><span>成功<small>success</small></span>
+          </button>
+          <button id="quickReviewFuture" class="lab-quick-button" type="button" data-quick-category="candidate_future" data-quick-key="C" data-miner-key="6">
+            <kbd>6</kbd><span>未來候選<small>candidate_future</small></span>
+          </button>
+          <button id="quickReviewReject" class="lab-quick-button" type="button" data-quick-category="reject" data-quick-key="X" data-miner-key="X">
+            <kbd>X</kbd><span>淘汰<small>reject</small></span>
+          </button>
+        </div>
+      </section>
+      <div class="miner-nav-actions">
+        <button id="btnMinerPrevious" type="button">← 上一個候選</button>
+        <button id="btnMinerNext" type="button">下一個候選</button>
+        <button id="btnUndoMiningCandidate" type="button">復原上一步</button>
       </div>
+      <p class="miner-auto-copy">先釘選 moment，再用分類按鈕標記；不再強迫審核每個 frame。</p>
+    </section>
 
-      <fieldset class="lab-preview-control">
-        <legend>Preview Mode</legend>
-        <div class="lab-preview-options">
-          <label>
-            <input id="previewModeOriginal" type="radio" name="previewMode" value="original">
-            <span>原始 VRMA</span>
-          </label>
-          <label>
-            <input id="previewModeAgent" type="radio" name="previewMode" value="agent" checked>
-            <span>Agent Pose</span>
-          </label>
-        </div>
-      </fieldset>
-
-      <label class="lab-slider">
-        <span>取樣時間</span>
-        <input id="sampleTime" type="range" min="0" max="0" step="0.033" value="0">
-        <output id="sampleTimeLabel">0.000s / 0.000s</output>
-      </label>
-
-      <dl class="lab-summary">
-        <div><dt>來源檔案</dt><dd id="sourceFile">未載入</dd></div>
-        <div><dt>動畫長度</dt><dd id="durationLabel">0.000s</dd></div>
-        <div><dt>骨架範圍</dt><dd>Upper Body</dd></div>
-        <div><dt>預覽模式</dt><dd id="previewModeLabel">Agent Pose / 鎖定下半身</dd></div>
-        <div><dt>匯出骨骼</dt><dd id="exportedBoneCount">0</dd></div>
-      </dl>
-
-      <section class="lab-warning-panel">
-        <h2>警告</h2>
-        <ul id="warningList"></ul>
+    <aside class="lab-panel miner-sidebar" aria-label="採礦狀態與進階工具">
+      <section class="miner-card">
+        <h2>進度統計</h2>
+        <dl class="miner-stat-list">
+          <div><dt>來源 VRMA</dt><dd id="sourceVrmaCount">0</dd></div>
+          <div><dt>已釘選</dt><dd id="pinnedCandidateCount">0</dd></div>
+          <div><dt>已分類</dt><dd id="classifiedCandidateCount">0</dd></div>
+        </dl>
+        <div class="miner-progress-track"><span id="minerSideProgressBar"></span></div>
       </section>
 
-      <section class="lab-mining-panel">
-        <h2>動作採礦紀錄 / Motion Mining Workbench</h2>
-        <section id="quickReviewPanel" class="lab-quick-panel" aria-label="快速標註 Quick Review Mode">
-          <h2>快速標註 / Quick Review Mode</h2>
-          <p>看完姿勢直接按分類或鍵盤快捷鍵；系統會用預設分數與標籤加入候選。</p>
-          <div class="lab-quick-grid">
-            <button id="quickReviewPresent" class="lab-quick-button" type="button" data-quick-category="present" data-quick-key="Q">
-              <kbd>Q</kbd><span>介紹<small>present / 5-4-5</small></span>
-            </button>
-            <button id="quickReviewPoint" class="lab-quick-button" type="button" data-quick-category="point" data-quick-key="W">
-              <kbd>W</kbd><span>指向<small>point / 5-4-5</small></span>
-            </button>
-            <button id="quickReviewThink" class="lab-quick-button" type="button" data-quick-category="think" data-quick-key="E">
-              <kbd>E</kbd><span>思考<small>think / 5-4-5</small></span>
-            </button>
-            <button id="quickReviewWarning" class="lab-quick-button" type="button" data-quick-category="warning" data-quick-key="R">
-              <kbd>R</kbd><span>警告<small>warning / 4-4-4</small></span>
-            </button>
-            <button id="quickReviewSuccess" class="lab-quick-button" type="button" data-quick-category="success" data-quick-key="T">
-              <kbd>T</kbd><span>成功<small>success / 4-4-4</small></span>
-            </button>
-            <button id="quickReviewFuture" class="lab-quick-button" type="button" data-quick-category="candidate_future" data-quick-key="C">
-              <kbd>C</kbd><span>未來候選<small>candidate_future / source 5 agent 2</small></span>
-            </button>
-            <button id="quickReviewReject" class="lab-quick-button" type="button" data-quick-category="reject" data-quick-key="X">
-              <kbd>X</kbd><span>淘汰<small>reject / source 2 agent 1</small></span>
-            </button>
-          </div>
-        </section>
-        <section id="reviewQueuePanel" class="lab-review-panel" aria-label="審核清單 Review Queue">
-          <h2>審核清單 <small>Review Queue</small></h2>
-          <p>從範例 VRMA 產生待分類取樣點；選取一筆後可播放、切換預覽模式，並用快速標註覆蓋分類。</p>
-          <div class="lab-review-controls">
-            <button id="btnGenerateReviewQueue" type="button">產生清單</button>
-            <select id="reviewQueueFilter" aria-label="審核清單篩選">
-              <option value="pending">待分類</option>
-              <option value="classified">已分類</option>
-              <option value="all">全部</option>
+      <section class="miner-card">
+        <h2>候選片段</h2>
+        <p>只分類你釘選過的 moment。</p>
+        <ol id="pinnedCandidateList" class="pinned-candidate-list"></ol>
+      </section>
+
+      <section id="miningSuggestionPanel" class="miner-card miner-suggestion">
+        <h2>自動推薦</h2>
+        <p>推薦：<strong id="suggestedCategoryLabel">等待取樣</strong></p>
+        <p>信心：<span id="suggestionConfidence">0%</span></p>
+        <p id="suggestionReason">載入並選取樣本後，系統會用規則式特徵提供建議。</p>
+        <ul id="suggestionAlternatives"></ul>
+      </section>
+
+      <section class="miner-card">
+        <h2>快速提示</h2>
+        <p>只顯示必要資訊：目前 VRMA、已釘選數、推薦，讓你專注於找礦。</p>
+        <p>介紹：自我介紹、開場、打招呼<br>指向：指人、指物、指位置<br>思考：分析、困惑、計算<br>警告：危險、不可用<br>成功：完成、正確、達成</p>
+      </section>
+
+      <details id="minerAdvancedTools" class="miner-advanced-tools">
+        <summary>進階工具</summary>
+        <div class="miner-advanced-body">
+          <label class="lab-file">
+            <span>載入 VRMA</span>
+            <input id="vrmaFileInput" type="file" accept=".vrma,model/gltf-binary">
+          </label>
+
+          <label class="lab-example">
+            <span>範例動作</span>
+            <select id="exampleVrmaSelect">
+              <option value="Angry.vrma">Angry.vrma</option>
+              <option value="Clapping.vrma">Clapping.vrma</option>
+              <option value="Goodbye.vrma">Goodbye.vrma</option>
+              <option value="Jump.vrma">Jump.vrma</option>
+              <option value="LookAround.vrma">LookAround.vrma</option>
+              <option value="Relax.vrma">Relax.vrma</option>
+              <option value="Sad.vrma">Sad.vrma</option>
+              <option value="Sleepy.vrma">Sleepy.vrma</option>
+              <option value="Surprised.vrma">Surprised.vrma</option>
+              <option value="Thinking.vrma">Thinking.vrma</option>
             </select>
-            <button id="btnReviewPrevious" type="button">上一筆</button>
-            <button id="btnReviewNext" type="button">下一筆</button>
-          </div>
-          <div id="reviewQueueSummary" class="lab-review-summary">尚未產生清單</div>
-          <ol id="reviewQueueList" class="lab-review-list"></ol>
-        </section>
-        <details id="advancedMiningDetails" class="lab-advanced-mining">
-          <summary>Advanced / 編輯詳細欄位</summary>
-          <div class="lab-advanced-mining-body">
-            <div class="lab-mining-grid">
-              <label class="lab-field">
-                <span>分類</span>
-                <select id="miningCategory"></select>
-              </label>
-              <label class="lab-field">
-                <span>分數</span>
-                <select id="miningScore">
-                  <option value="5">5 / 高價值</option>
-                  <option value="4">4 / 可用</option>
-                  <option value="3" selected>3 / 待觀察</option>
-                  <option value="2">2 / 局部可參考</option>
-                  <option value="1">1 / 不可用</option>
-                </select>
-              </label>
-              <label class="lab-field">
-                <span>來源分數</span>
-                <select id="miningSourceScore">
-                  <option value="5">5 / 原始很好</option>
-                  <option value="4">4 / 原始可用</option>
-                  <option value="3" selected>3 / 原始待觀察</option>
-                  <option value="2">2 / 局部參考</option>
-                  <option value="1">1 / 原始不可用</option>
-                </select>
-              </label>
-              <label class="lab-field">
-                <span>Agent 分數</span>
-                <select id="miningAgentScore">
-                  <option value="5">5 / Agent 很好</option>
-                  <option value="4">4 / Agent 可用</option>
-                  <option value="3" selected>3 / Agent 待觀察</option>
-                  <option value="2">2 / 需未來能力</option>
-                  <option value="1">1 / Agent 不可用</option>
-                </select>
-              </label>
-              <label class="lab-field lab-field-full">
-                <span>淘汰原因</span>
-                <select id="miningRejectReason"></select>
-              </label>
-              <label class="lab-field lab-field-full">
-                <span>Future 原因</span>
-                <select id="miningFutureReason"></select>
-              </label>
-              <label class="lab-field lab-field-full">
-                <span>標籤</span>
-                <input id="miningTags" type="text" value="upper_body, agent_friendly">
-              </label>
-              <label class="lab-field lab-field-full">
-                <span>備註</span>
-                <textarea id="miningNote" placeholder="例如：雙手自然打開，適合介紹"></textarea>
-              </label>
-            </div>
-            <div class="lab-actions lab-mining-actions">
-              <button id="btnAddMiningCandidate" type="button">加入候選</button>
-            </div>
-          </div>
-        </details>
-        <div class="lab-actions lab-mining-actions">
-          <button id="btnUndoMiningCandidate" type="button">撤銷上一筆</button>
-          <button id="btnExportMiningLog" type="button">匯出 mining_log.json</button>
-        </div>
-        <ol id="miningCandidateList" class="lab-mining-list"></ol>
-      </section>
+            <button id="btnLoadExample" type="button">載入範例</button>
+          </label>
 
-      <section class="lab-json-panel">
-        <h2>匯出 NaturalPosePreset</h2>
-        <pre id="motion-template-json">{}</pre>
-      </section>
+          <div class="lab-actions">
+            <button id="btnCopyJson" type="button">複製 JSON</button>
+            <button id="btnDownloadJson" type="button">下載 JSON</button>
+            <button id="btnExportMiningLog" type="button">匯出 mining_log.json</button>
+          </div>
+
+          <fieldset class="lab-preview-control">
+            <legend>Preview Mode</legend>
+            <div class="lab-preview-options">
+              <label>
+                <input id="previewModeOriginal" type="radio" name="previewMode" value="original">
+                <span>原始 VRMA</span>
+              </label>
+              <label>
+                <input id="previewModeAgent" type="radio" name="previewMode" value="agent" checked>
+                <span>Agent Pose</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <dl class="lab-summary">
+            <div><dt>來源檔案</dt><dd id="sourceFile">未載入</dd></div>
+            <div><dt>動畫長度</dt><dd id="durationLabel">0.000s</dd></div>
+            <div><dt>骨架範圍</dt><dd>Upper Body</dd></div>
+            <div><dt>預覽模式</dt><dd id="previewModeLabel">Agent Pose / 鎖定下半身</dd></div>
+            <div><dt>匯出骨骼</dt><dd id="exportedBoneCount">0</dd></div>
+          </dl>
+
+          <section class="lab-warning-panel">
+            <h2>警告</h2>
+            <ul id="warningList"></ul>
+          </section>
+
+          <section id="reviewQueuePanel" class="lab-review-panel" aria-label="審核清單 Review Queue">
+            <h2>建議取樣點 <small>Suggested Samples</small></h2>
+            <p>自動切點只作為提示，不再變成必審清單；真正要分類的 moment 請先釘選。</p>
+            <div class="lab-review-controls">
+              <button id="btnGenerateReviewQueue" type="button">產生清單</button>
+              <select id="reviewQueueFilter" aria-label="審核清單篩選">
+                <option value="pending">待分類</option>
+                <option value="classified">已分類</option>
+                <option value="all">全部</option>
+              </select>
+              <button id="btnReviewPrevious" type="button">上一筆</button>
+              <button id="btnReviewNext" type="button">下一筆</button>
+            </div>
+            <div id="reviewQueueSummary" class="lab-review-summary">尚未產生清單</div>
+            <ol id="reviewQueueList" class="lab-review-list"></ol>
+          </section>
+
+          <details id="advancedMiningDetails" class="lab-advanced-mining">
+            <summary>編輯詳細欄位</summary>
+            <div class="lab-advanced-mining-body">
+              <div class="lab-mining-grid">
+                <label class="lab-field">
+                  <span>分類</span>
+                  <select id="miningCategory"></select>
+                </label>
+                <label class="lab-field">
+                  <span>分數</span>
+                  <select id="miningScore">
+                    <option value="5">5 / 高價值</option>
+                    <option value="4">4 / 可用</option>
+                    <option value="3" selected>3 / 待觀察</option>
+                    <option value="2">2 / 局部可參考</option>
+                    <option value="1">1 / 不可用</option>
+                  </select>
+                </label>
+                <label class="lab-field">
+                  <span>來源分數</span>
+                  <select id="miningSourceScore">
+                    <option value="5">5 / 原始很好</option>
+                    <option value="4">4 / 原始可用</option>
+                    <option value="3" selected>3 / 原始待觀察</option>
+                    <option value="2">2 / 局部參考</option>
+                    <option value="1">1 / 原始不可用</option>
+                  </select>
+                </label>
+                <label class="lab-field">
+                  <span>Agent 分數</span>
+                  <select id="miningAgentScore">
+                    <option value="5">5 / Agent 很好</option>
+                    <option value="4">4 / Agent 可用</option>
+                    <option value="3" selected>3 / Agent 待觀察</option>
+                    <option value="2">2 / 需未來能力</option>
+                    <option value="1">1 / Agent 不可用</option>
+                  </select>
+                </label>
+                <label class="lab-field lab-field-full">
+                  <span>淘汰原因</span>
+                  <select id="miningRejectReason"></select>
+                </label>
+                <label class="lab-field lab-field-full">
+                  <span>Future 原因</span>
+                  <select id="miningFutureReason"></select>
+                </label>
+                <label class="lab-field lab-field-full">
+                  <span>標籤</span>
+                  <input id="miningTags" type="text" value="upper_body, agent_friendly">
+                </label>
+                <label class="lab-field lab-field-full">
+                  <span>備註</span>
+                  <textarea id="miningNote" placeholder="例如：雙手自然打開，適合介紹"></textarea>
+                </label>
+              </div>
+              <div class="lab-actions lab-mining-actions">
+                <button id="btnAddMiningCandidate" type="button">加入候選</button>
+              </div>
+            </div>
+          </details>
+
+          <ol id="miningCandidateList" class="lab-mining-list"></ol>
+
+          <section class="lab-json-panel">
+            <h2>匯出 NaturalPosePreset</h2>
+            <pre id="motion-template-json">{}</pre>
+          </section>
+        </div>
+      </details>
     </aside>
   </main>
 
@@ -847,6 +1422,25 @@
     const els = {
       viewport: document.getElementById('labViewport'),
       loadState: document.getElementById('labLoadState'),
+      mineList: document.getElementById('mineList'),
+      minerCurrentSample: document.getElementById('minerCurrentSample'),
+      minerProgressText: document.getElementById('minerProgressText'),
+      minerProgressBar: document.getElementById('minerProgressBar'),
+      minerProgressPercent: document.getElementById('minerProgressPercent'),
+      sourceVrmaCount: document.getElementById('sourceVrmaCount'),
+      pinnedCandidateCount: document.getElementById('pinnedCandidateCount'),
+      classifiedCandidateCount: document.getElementById('classifiedCandidateCount'),
+      minerSideProgressBar: document.getElementById('minerSideProgressBar'),
+      suggestedCategoryLabel: document.getElementById('suggestedCategoryLabel'),
+      suggestionConfidence: document.getElementById('suggestionConfidence'),
+      suggestionReason: document.getElementById('suggestionReason'),
+      suggestionAlternatives: document.getElementById('suggestionAlternatives'),
+      btnMinerPrevious: document.getElementById('btnMinerPrevious'),
+      btnMinerNext: document.getElementById('btnMinerNext'),
+      btnPinMoment: document.getElementById('btnPinMoment'),
+      btnSuggestedPrevious: document.getElementById('btnSuggestedPrevious'),
+      btnSuggestedNext: document.getElementById('btnSuggestedNext'),
+      pinnedCandidateList: document.getElementById('pinnedCandidateList'),
       fileInput: document.getElementById('vrmaFileInput'),
       exampleSelect: document.getElementById('exampleVrmaSelect'),
       btnLoadExample: document.getElementById('btnLoadExample'),
@@ -906,6 +1500,7 @@
     let sourceWarnings = [];
     const miningEntries = [];
     const reviewQueue = [];
+    const suggestedSamples = [];
     const reviewActionHistory = [];
     let selectedReviewQueueId = '';
 
@@ -943,12 +1538,19 @@
       renderer.setAnimationLoop(render);
 
       renderMiningOptions();
-      generateReviewQueue({ silent: true });
+      renderMineList();
+      renderPinnedCandidates();
       renderMiningList();
       bindEvents();
       setWarnings([]);
-      setStatus('已載入 Alicia');
       renderJson(basePreset);
+      updateMinerProgress();
+      const firstExample = getExampleVrmaFiles()[0];
+      if (firstExample) {
+        setStatus('正在載入第一支 VRMA');
+        await loadExampleVrma(firstExample);
+      }
+      setStatus('已載入 Alicia');
     }
 
     async function loadBasePreset() {
@@ -1028,6 +1630,7 @@
       updateTimeLabel(0);
       setStatus('已載入 VRMA');
       sampleAt(0);
+      renderMineList();
     }
 
     function sampleAt(value) {
@@ -1078,6 +1681,8 @@
       els.exportedBoneCount.textContent = String(Object.keys(rotations).length);
       setWarnings(warnings);
       renderJson(latestPreset);
+      renderMiningSuggestion(suggestMiningCategory(latestPreset));
+      updateMinerCurrentSample();
       setStatus('已取樣');
     }
 
@@ -1204,6 +1809,45 @@
         .sort((a, b) => a.localeCompare(b));
     }
 
+    function renderMineList() {
+      const files = getExampleVrmaFiles();
+      els.mineList.replaceChildren(...files.map((fileName) => {
+        const li = document.createElement('li');
+        const button = document.createElement('button');
+        const title = document.createElement('strong');
+        const meta = document.createElement('span');
+        const pinned = reviewQueue.filter((entry) => entry.source === fileName);
+        const classified = pinned.filter((entry) => entry.status === 'classified');
+        const distribution = buildMineCategorySummary(classified);
+
+        button.type = 'button';
+        button.dataset.mineSource = fileName;
+        button.className = [
+          'mine-card-button',
+          sourceFileName === fileName ? 'is-selected' : '',
+        ].filter(Boolean).join(' ');
+        title.textContent = fileName;
+        meta.textContent = `已釘選 ${pinned.length} / 已分類 ${classified.length}${distribution ? ` / ${distribution}` : ''}`;
+        button.append(title, meta);
+        button.addEventListener('click', () => {
+          loadExampleVrma(fileName).catch(handleReviewQueueError);
+        });
+        li.append(button);
+        return li;
+      }));
+    }
+
+    function buildMineCategorySummary(entries = []) {
+      const counts = entries.reduce((acc, entry) => {
+        acc[entry.category] = (acc[entry.category] || 0) + 1;
+        return acc;
+      }, {});
+
+      return Object.entries(counts)
+        .map(([category, count]) => `${getCategoryLabel(category).split(' ')[0]} x${count}`)
+        .join('、');
+    }
+
     function buildReviewQueueItems(files = [], durations = {}) {
       const counters = {};
       return files.flatMap((fileName) => {
@@ -1253,15 +1897,55 @@
 
     function generateReviewQueue({ silent = false } = {}) {
       const items = buildReviewQueueItems(getExampleVrmaFiles(), EXAMPLE_VRMA_DURATIONS);
-      reviewQueue.splice(0, reviewQueue.length, ...items);
-      reviewActionHistory.length = 0;
-      selectedReviewQueueId = '';
+      suggestedSamples.splice(0, suggestedSamples.length, ...items);
       renderReviewQueue();
-      renderMiningList();
 
       if (!silent) {
-        setStatus(`已產生 ${items.length} 筆待分類`);
+        setStatus(`已產生 ${items.length} 筆建議取樣點`);
       }
+    }
+
+    function pinCurrentMoment() {
+      if (!sourceFileName || !clip) {
+        setWarnings(['請先載入 VRMA 並調整到想釘選的時間']);
+        return false;
+      }
+
+      const sampleTime = roundReviewTime(Number(els.sampleTime.value || 0));
+      sampleAt(sampleTime);
+      if (!latestPreset) {
+        setWarnings(['目前時間無法取樣，請稍後再釘選']);
+        return false;
+      }
+
+      const queueKey = `${sourceFileName}@${formatSeconds(sampleTime)}`;
+      const existing = reviewQueue.find((entry) => entry.queueKey === queueKey);
+      if (existing) {
+        selectedReviewQueueId = existing.queueKey;
+        renderReviewQueue();
+        renderPinnedCandidates();
+        setStatus(`已選取既有候選片段 ${sourceFileName} @ ${formatSeconds(sampleTime)}s`);
+        return false;
+      }
+
+      const item = {
+        id: `${slugSourceFile(sourceFileName)}_pin_${String(reviewQueue.length + 1).padStart(3, '0')}`,
+        source: sourceFileName,
+        sampleTime,
+        status: 'pending',
+        queueKey,
+        createdAt: formatLocalIsoDateTime(),
+      };
+
+      reviewQueue.push(item);
+      selectedReviewQueueId = item.queueKey;
+      reviewActionHistory.push({ type: 'pin', queueKey: item.queueKey });
+      renderReviewQueue();
+      renderPinnedCandidates();
+      renderMineList();
+      renderMiningList();
+      setStatus(`已釘選 ${sourceFileName} @ ${formatSeconds(sampleTime)}s`);
+      return true;
     }
 
     async function selectReviewQueueItem(queueKey) {
@@ -1280,6 +1964,12 @@
       sampleAt(sampleTime);
       setStatus(`已選取 ${item.source} @ ${formatSeconds(sampleTime)}s`);
       renderReviewQueue();
+      renderPinnedCandidates();
+      renderMineList();
+    }
+
+    function selectPinnedCandidate(queueKey) {
+      selectReviewQueueItem(queueKey).catch(handleReviewQueueError);
     }
 
     function classifySelectedReviewItem(category) {
@@ -1324,6 +2014,8 @@
       reviewActionHistory.push({ type: 'classify', queueKey: item.queueKey, before: pendingBaseline });
       selectedReviewQueueId = item.queueKey;
       renderReviewQueue();
+      renderPinnedCandidates();
+      renderMineList();
       renderMiningList();
       setStatus(`已分類 ${entry.id}`);
       return true;
@@ -1347,16 +2039,16 @@
 
     function getVisibleReviewQueueItems(filter = els.reviewQueueFilter.value || 'pending') {
       if (filter === 'classified') {
-        return reviewQueue.filter((entry) => entry.status === 'classified');
+        return suggestedSamples.filter((entry) => entry.status === 'classified');
       }
-      if (filter === 'all') return reviewQueue;
-      return reviewQueue.filter((entry) => entry.status === 'pending');
+      if (filter === 'all') return suggestedSamples;
+      return suggestedSamples.filter((entry) => entry.status === 'pending');
     }
 
     function selectAdjacentReviewItem(direction) {
       const visible = getVisibleReviewQueueItems();
       if (visible.length === 0) {
-        setWarnings(['目前沒有可選取的審核項目']);
+        setWarnings(['目前沒有建議取樣點，請先按「產生清單」']);
         return;
       }
 
@@ -1365,7 +2057,57 @@
       const nextIndex = currentIndex === -1
         ? fallbackIndex
         : (currentIndex + direction + visible.length) % visible.length;
-      selectReviewQueueItem(visible[nextIndex].queueKey).catch(handleReviewQueueError);
+      selectSuggestedSampleItem(visible[nextIndex].queueKey).catch(handleReviewQueueError);
+    }
+
+    async function selectSuggestedSampleItem(queueKey) {
+      const item = suggestedSamples.find((entry) => entry.queueKey === queueKey);
+      if (!item) return;
+
+      if (sourceFileName !== item.source || !clip) {
+        await loadExampleVrma(item.source);
+      }
+
+      const sampleTime = clampSampleTime(item.sampleTime, clip?.duration || item.sampleTime);
+      els.sampleTime.value = String(sampleTime);
+      sampleAt(sampleTime);
+      setStatus(`已跳到建議取樣點 ${item.source} @ ${formatSeconds(sampleTime)}s`);
+      renderReviewQueue();
+    }
+
+    async function advanceToNextPendingReviewItem(fromQueueKey = selectedReviewQueueId) {
+      const pendingItems = reviewQueue.filter((entry) => entry.status === 'pending');
+      if (pendingItems.length === 0) {
+        setStatus('已完成所有待分類');
+        renderReviewQueue();
+        return;
+      }
+
+      const fromIndex = reviewQueue.findIndex((entry) => entry.queueKey === fromQueueKey);
+      const nextItem = pendingItems.find((entry) => reviewQueue.indexOf(entry) > fromIndex) || pendingItems[0];
+      await selectReviewQueueItem(nextItem.queueKey);
+    }
+
+    function selectAdjacentPinnedCandidate(direction) {
+      if (reviewQueue.length === 0) {
+        setWarnings(['目前沒有已釘選的候選片段，請先按「釘選這一刻」']);
+        return;
+      }
+
+      const currentIndex = reviewQueue.findIndex((entry) => entry.queueKey === selectedReviewQueueId);
+      const fallbackIndex = direction > 0 ? 0 : reviewQueue.length - 1;
+      const nextIndex = currentIndex === -1
+        ? fallbackIndex
+        : (currentIndex + direction + reviewQueue.length) % reviewQueue.length;
+      selectReviewQueueItem(reviewQueue[nextIndex].queueKey).catch(handleReviewQueueError);
+    }
+
+    function handleMinerNext() {
+      selectAdjacentPinnedCandidate(1);
+    }
+
+    function handleMinerPrevious() {
+      selectAdjacentPinnedCandidate(-1);
     }
 
     function handleReviewQueueError(err) {
@@ -1455,36 +2197,48 @@
         return;
       }
 
-      const preset = getQuickReviewPreset(category);
-      if (!preset) return;
-
-      if (mixer && action && clip) {
-        sampleAt(Number(els.sampleTime.value || 0));
-      }
-
-      if (!latestPreset || !sourceFileName) {
-        setWarnings(['請先載入 VRMA 並取樣後再使用快速標註']);
-        return;
-      }
-
-      const sequence = miningEntries.filter((entry) => entry.category === preset.category).length + 1;
-      const entry = buildMotionMiningEntry({
-        source: sourceFileName,
-        sampleTime: Number(els.sampleTime.value || 0),
-        ...preset,
-        sequence,
-      });
-      Object.assign(entry, { status: 'classified' });
-
-      addMiningEntry(entry, `快速標註 ${entry.id}`);
+      setWarnings(['請先按「釘選這一刻」，再替這個候選片段分類']);
     }
 
     function handleQuickReviewKeydown(event) {
       if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
       if (isQuickReviewEditableTarget(event.target)) return;
 
+      if (event.key === ' ') {
+        event.preventDefault();
+        togglePlayback();
+        return;
+      }
+
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        sampleAdjacentSuggestedTime(1);
+        return;
+      }
+
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        sampleAdjacentSuggestedTime(-1);
+        return;
+      }
+
+      if (event.key.toUpperCase() === 'P') {
+        event.preventDefault();
+        pinCurrentMoment();
+        return;
+      }
+
+      if (event.key.toUpperCase() === 'Z') {
+        event.preventDefault();
+        undoLastMiningCandidate();
+        return;
+      }
+
       const key = String(event.key || '').toUpperCase();
-      const button = els.quickReviewButtons.find((item) => item.dataset.quickKey === key);
+      const button = els.quickReviewButtons.find((item) => (
+        item.dataset.quickKey === key
+        || item.dataset.minerKey === key
+      ));
       if (!button) return;
 
       event.preventDefault();
@@ -1535,6 +2289,7 @@
       miningEntries.push(entry);
       reviewActionHistory.push({ type: 'append', entry: cloneReviewQueueItem(entry) });
       renderMiningList();
+      updateMinerProgress();
       setStatus(statusText);
       return true;
     }
@@ -1557,8 +2312,24 @@
           replaceObject(item, action.before);
           selectedReviewQueueId = action.before.queueKey;
           renderReviewQueue();
+          renderPinnedCandidates();
+          renderMineList();
           renderMiningList();
           setStatus(`已撤銷 ${action.before.source} @ ${formatSeconds(action.before.sampleTime)}s`);
+          return;
+        }
+      }
+
+      if (action?.type === 'pin') {
+        const index = reviewQueue.findIndex((entry) => entry.queueKey === action.queueKey);
+        if (index !== -1) {
+          const removed = reviewQueue.splice(index, 1)[0];
+          selectedReviewQueueId = '';
+          renderReviewQueue();
+          renderPinnedCandidates();
+          renderMineList();
+          renderMiningList();
+          setStatus(`已撤銷釘選 ${removed.source} @ ${formatSeconds(removed.sampleTime)}s`);
           return;
         }
       }
@@ -1566,6 +2337,7 @@
       if (action?.type === 'append' && miningEntries.length > 0) {
         const removed = miningEntries.pop();
         renderMiningList();
+        updateMinerProgress();
         setStatus(`已撤銷 ${removed.id}`);
         return;
       }
@@ -1577,6 +2349,7 @@
 
       const removed = miningEntries.pop();
       renderMiningList();
+      updateMinerProgress();
       setStatus(`已撤銷 ${removed.id}`);
     }
 
@@ -1619,6 +2392,174 @@
         ...exportEntry
       } = entry;
       return exportEntry;
+    }
+
+    function updateMinerProgress() {
+      const sourceCount = getExampleVrmaFiles().length;
+      const pinnedCount = reviewQueue.length;
+      const classifiedCount = reviewQueue.filter((entry) => entry.status === 'classified').length;
+      const percent = pinnedCount > 0 ? Math.round((classifiedCount / pinnedCount) * 100) : 0;
+
+      els.minerProgressText.textContent = `${classifiedCount} / ${pinnedCount}`;
+      els.minerProgressPercent.textContent = `${percent}%`;
+      els.sourceVrmaCount.textContent = String(sourceCount);
+      els.pinnedCandidateCount.textContent = String(pinnedCount);
+      els.classifiedCandidateCount.textContent = String(classifiedCount);
+      els.minerProgressBar.style.width = `${percent}%`;
+      els.minerSideProgressBar.style.width = `${percent}%`;
+    }
+
+    function updateMinerCurrentSample() {
+      const item = getSelectedReviewQueueItem();
+      const sampleTime = item?.sampleTime ?? Number(els.sampleTime.value || 0);
+      const fileName = item?.source || sourceFileName || '尚未選取';
+      els.minerCurrentSample.textContent = `${fileName} · ${formatSeconds(sampleTime)}s`;
+    }
+
+    function renderPinnedCandidates() {
+      updateMinerProgress();
+      if (reviewQueue.length === 0) {
+        const empty = document.createElement('li');
+        empty.textContent = '尚未釘選候選片段';
+        els.pinnedCandidateList.replaceChildren(empty);
+        return;
+      }
+
+      els.pinnedCandidateList.replaceChildren(...reviewQueue.map((entry) => {
+        const li = document.createElement('li');
+        const button = document.createElement('button');
+        const title = document.createElement('strong');
+        const meta = document.createElement('span');
+        const status = entry.status === 'classified'
+          ? `已分類 / ${getCategoryLabel(entry.category)} / ${entry.score} 分`
+          : '待分類';
+
+        button.type = 'button';
+        button.dataset.pinnedCandidateId = entry.queueKey;
+        button.className = [
+          'pinned-candidate-button',
+          entry.queueKey === selectedReviewQueueId ? 'is-selected' : '',
+          entry.status === 'classified' ? 'is-classified' : '',
+        ].filter(Boolean).join(' ');
+        title.textContent = `${entry.source} @ ${formatSeconds(entry.sampleTime)}s`;
+        meta.textContent = status;
+        button.append(title, meta);
+        button.addEventListener('click', () => selectPinnedCandidate(entry.queueKey));
+        li.append(button);
+        return li;
+      }));
+    }
+
+    function renderMiningSuggestion(suggestion = suggestMiningCategory(latestPreset)) {
+      if (!suggestion) {
+        setRecommendedCategory('');
+        els.suggestedCategoryLabel.textContent = '等待取樣';
+        els.suggestionConfidence.textContent = '0%';
+        els.suggestionReason.textContent = '載入並選取樣本後，系統會用規則式特徵提供建議。';
+        els.suggestionAlternatives.replaceChildren();
+        return;
+      }
+
+      setRecommendedCategory(suggestion.category);
+      els.suggestedCategoryLabel.textContent = suggestion.label;
+      els.suggestionConfidence.textContent = `${Math.round(suggestion.confidence * 100)}%`;
+      els.suggestionReason.textContent = suggestion.reason;
+      els.suggestionAlternatives.replaceChildren(...(suggestion.alternatives || []).map((item) => {
+        const li = document.createElement('li');
+        li.textContent = `${item.label} ${Math.round(item.confidence * 100)}%`;
+        return li;
+      }));
+    }
+
+    function setRecommendedCategory(category) {
+      for (const button of els.quickReviewButtons) {
+        button.classList.toggle('is-recommended', button.dataset.quickCategory === category);
+      }
+    }
+
+    function suggestMiningCategory(pose) {
+      const features = extractPoseFeatures(pose);
+      const source = String(sourceFileName || '').toLowerCase();
+
+      if (source.includes('angry') || features.forwardPressure) {
+        return buildSuggestion('warning', 0.68, '上半身有前壓或情緒張力，適合提醒、限制或異常狀態。', [
+          ['think', 0.18],
+          ['candidate_future', 0.14],
+        ]);
+      }
+
+      if (source.includes('thinking') || (features.handNearFace && features.headDown)) {
+        return buildSuggestion('think', 0.72, '手靠近臉部或頭部略低，像思考、分析或等待工具結果。', [
+          ['point', 0.18],
+          ['candidate_future', 0.1],
+        ]);
+      }
+
+      if (features.armExtended && features.handAwayFromBody) {
+        return buildSuggestion('point', 0.66, '手臂明顯外伸，像是在指示方向、物件或畫面位置。', [
+          ['present', 0.22],
+          ['candidate_future', 0.12],
+        ]);
+      }
+
+      if (features.armRaised && features.openChest) {
+        return buildSuggestion('present', 0.61, '上半身較打開，手部有展示感，適合介紹或說明。', [
+          ['success', 0.21],
+          ['point', 0.18],
+        ]);
+      }
+
+      if (source.includes('goodbye') || source.includes('clapping')) {
+        return buildSuggestion('success', 0.58, '原始動作偏正向回饋，可先視為完成、成功或招呼類候選。', [
+          ['present', 0.24],
+          ['candidate_future', 0.18],
+        ]);
+      }
+
+      return buildSuggestion('candidate_future', 0.4, '姿勢有特徵，但目前規則無法穩定判斷，建議保留為未來候選。', [
+        ['think', 0.22],
+        ['present', 0.18],
+      ]);
+    }
+
+    function extractPoseFeatures(pose) {
+      const rotation = pose?.basePose?.rotation || {};
+      const leftUpperArm = rotation.leftUpperArm || {};
+      const rightUpperArm = rotation.rightUpperArm || {};
+      const leftLowerArm = rotation.leftLowerArm || {};
+      const rightLowerArm = rotation.rightLowerArm || {};
+      const leftHand = rotation.leftHand || {};
+      const rightHand = rotation.rightHand || {};
+      const chest = rotation.chest || {};
+      const spine = rotation.spine || {};
+
+      const lowerArmCurl = Math.max(Math.abs(leftLowerArm.x || 0), Math.abs(rightLowerArm.x || 0));
+      const upperArmSpread = Math.max(Math.abs(leftUpperArm.z || 0), Math.abs(rightUpperArm.z || 0));
+      const handTwist = Math.max(Math.abs(leftHand.z || 0), Math.abs(rightHand.z || 0), Math.abs(leftHand.y || 0), Math.abs(rightHand.y || 0));
+
+      return {
+        handNearFace: lowerArmCurl > 32 && handTwist > 12,
+        headDown: (chest.x || 0) < -3 || (spine.x || 0) < -3,
+        armExtended: upperArmSpread > 42,
+        handAwayFromBody: handTwist > 18 || lowerArmCurl < 24,
+        armRaised: Math.max(Math.abs(leftUpperArm.x || 0), Math.abs(rightUpperArm.x || 0)) > 18,
+        openChest: Math.abs(chest.z || 0) < 18 && upperArmSpread > 28,
+        forwardPressure: (chest.x || 0) < -8 || (spine.x || 0) < -8,
+      };
+    }
+
+    function buildSuggestion(category, confidence, reason, alternatives = []) {
+      return {
+        category,
+        label: getCategoryLabel(category).split(' ')[0],
+        confidence,
+        reason,
+        alternatives: alternatives.map(([name, value]) => ({
+          category: name,
+          label: getCategoryLabel(name).split(' ')[0],
+          confidence: value,
+        })),
+      };
     }
 
     function renderMiningOptions() {
@@ -1675,11 +2616,13 @@
     }
 
     function renderReviewQueue() {
-      const pendingCount = reviewQueue.filter((entry) => entry.status === 'pending').length;
-      const classifiedCount = reviewQueue.filter((entry) => entry.status === 'classified').length;
+      const pendingCount = suggestedSamples.filter((entry) => entry.status === 'pending').length;
+      const classifiedCount = suggestedSamples.filter((entry) => entry.status === 'classified').length;
       const visible = getVisibleReviewQueueItems();
 
-      els.reviewQueueSummary.textContent = `待分類 ${pendingCount} / 已分類 ${classifiedCount} / 全部 ${reviewQueue.length}`;
+      els.reviewQueueSummary.textContent = `建議取樣點 ${pendingCount} / 已採用 ${classifiedCount} / 全部 ${suggestedSamples.length}`;
+      updateMinerProgress();
+      updateMinerCurrentSample();
       els.btnReviewPrevious.disabled = visible.length === 0;
       els.btnReviewNext.disabled = visible.length === 0;
 
@@ -1689,7 +2632,7 @@
         button.type = 'button';
         button.className = 'lab-review-item';
         button.disabled = true;
-        button.textContent = reviewQueue.length === 0 ? '尚未產生清單' : '目前篩選沒有項目';
+        button.textContent = suggestedSamples.length === 0 ? '尚未產生建議取樣點' : '目前篩選沒有項目';
         empty.append(button);
         els.reviewQueueList.replaceChildren(empty);
         return;
@@ -1721,7 +2664,7 @@
           : statusLabel;
         button.append(title, meta);
         button.addEventListener('click', () => {
-          selectReviewQueueItem(entry.queueKey).catch(handleReviewQueueError);
+          selectSuggestedSampleItem(entry.queueKey).catch(handleReviewQueueError);
         });
         li.append(button);
         return li;
@@ -1828,6 +2771,32 @@
       setStatus('播放完成');
     }
 
+    function togglePlayback() {
+      if (isPlaying) {
+        pauseMotion();
+        return;
+      }
+      playMotion();
+    }
+
+    function sampleAdjacentSuggestedTime(direction) {
+      if (!clip) {
+        setWarnings(['請先載入 VRMA']);
+        return;
+      }
+
+      const times = getReviewSampleTimes(clip.duration || 0);
+      if (times.length === 0) return;
+
+      const current = Number(els.sampleTime.value || 0);
+      const sorted = [...times].sort((a, b) => a - b);
+      const next = direction > 0
+        ? sorted.find((time) => time > current + 0.001) ?? sorted[0]
+        : [...sorted].reverse().find((time) => time < current - 0.001) ?? sorted[sorted.length - 1];
+      sampleAt(next);
+      setStatus(`已跳到建議取樣點 ${formatSeconds(next)}s`);
+    }
+
     function bindEvents() {
       els.fileInput.addEventListener('change', async () => {
         try {
@@ -1849,16 +2818,21 @@
       });
       els.btnSampleFirst.addEventListener('click', () => sampleAt(0));
       els.btnSampleTime.addEventListener('click', () => sampleAt(Number(els.sampleTime.value || 0)));
-      els.sampleTime.addEventListener('input', () => updateTimeLabel(Number(els.sampleTime.value || 0)));
+      els.sampleTime.addEventListener('input', () => sampleAt(Number(els.sampleTime.value || 0)));
       els.previewModeOriginal.addEventListener('change', () => setPreviewMode('original'));
       els.previewModeAgent.addEventListener('change', () => setPreviewMode('agent'));
       els.btnPlayMotion.addEventListener('click', playMotion);
       els.btnPauseMotion.addEventListener('click', pauseMotion);
       els.btnStopMotion.addEventListener('click', () => stopPlayback());
+      els.btnPinMoment.addEventListener('click', pinCurrentMoment);
+      els.btnSuggestedPrevious.addEventListener('click', () => sampleAdjacentSuggestedTime(-1));
+      els.btnSuggestedNext.addEventListener('click', () => sampleAdjacentSuggestedTime(1));
       for (const button of els.quickReviewButtons) {
         button.addEventListener('click', () => addQuickReviewCandidate(button.dataset.quickCategory));
       }
       document.addEventListener('keydown', handleQuickReviewKeydown);
+      els.btnMinerPrevious.addEventListener('click', handleMinerPrevious);
+      els.btnMinerNext.addEventListener('click', handleMinerNext);
       els.btnGenerateReviewQueue.addEventListener('click', () => generateReviewQueue());
       els.reviewQueueFilter.addEventListener('change', renderReviewQueue);
       els.btnReviewPrevious.addEventListener('click', () => selectAdjacentReviewItem(-1));
