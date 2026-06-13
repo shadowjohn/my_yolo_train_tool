@@ -400,6 +400,48 @@ function testLabGuardsAccidentalDuplicateMiningEntries() {
   assert.match(html, /btnUndoMiningCandidate\.addEventListener/);
 }
 
+function testLabIncludesReviewQueueControls() {
+  const html = read(LAB_PATH);
+
+  assert.match(html, /id="reviewQueuePanel"/);
+  assert.match(html, /審核清單/);
+  assert.match(html, /id="btnGenerateReviewQueue"/);
+  assert.match(html, /id="reviewQueueFilter"/);
+  assert.match(html, /id="btnReviewPrevious"/);
+  assert.match(html, /id="btnReviewNext"/);
+  assert.match(html, /id="reviewQueueList"/);
+  assert.match(html, /function\s+buildReviewQueueItems\s*\(/);
+  assert.match(html, /function\s+selectReviewQueueItem\s*\(/);
+  assert.match(html, /function\s+classifySelectedReviewItem\s*\(/);
+}
+
+function testReviewQueueUsesChineseFirstLabels() {
+  const html = read(LAB_PATH);
+
+  assert.match(html, /待分類/);
+  assert.match(html, /已分類/);
+  assert.match(html, /全部/);
+  assert.match(html, /產生清單/);
+  assert.match(html, /上一筆/);
+  assert.match(html, /下一筆/);
+  assert.doesNotMatch(html, />\s*Generate Queue\s*</);
+  assert.doesNotMatch(html, />\s*Pending\s*</);
+  assert.doesNotMatch(html, />\s*Classified\s*</);
+}
+
+function testReviewQueueSchemaAndBehaviorContracts() {
+  const html = read(LAB_PATH);
+
+  assert.match(html, /const\s+MINING_CATEGORIES\s*=/);
+  assert.match(html, /status:\s*'pending'/);
+  assert.match(html, /status:\s*'classified'/);
+  assert.match(html, /duration\s*-\s*0\.001/);
+  assert.match(html, /selectedReviewQueueId/);
+  assert.match(html, /updatedAt/);
+  assert.match(html, /reviewActionHistory/);
+  assert.match(html, /entry\.status\s*===\s*'classified'/);
+}
+
 async function testBuildNaturalPosePresetMergesUpperBodyOnly() {
   const {
     buildNaturalPosePreset,
@@ -534,6 +576,9 @@ async function run() {
     testLabIncludesMotionMiningWorkbenchControls,
     testLabIncludesQuickReviewModeControls,
     testLabGuardsAccidentalDuplicateMiningEntries,
+    testLabIncludesReviewQueueControls,
+    testReviewQueueUsesChineseFirstLabels,
+    testReviewQueueSchemaAndBehaviorContracts,
     testMotionMiningLogHasSprintReviewedSamples,
     testMotionMiningReportMatchesLog,
     testBuildNaturalPosePresetMergesUpperBodyOnly,

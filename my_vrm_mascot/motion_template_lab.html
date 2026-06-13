@@ -336,6 +336,113 @@
       border-color: rgba(252, 165, 165, 0.48);
     }
 
+    .lab-review-panel {
+      display: grid;
+      gap: 12px;
+      margin: 0 0 14px;
+      padding: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 8px;
+      background: rgba(5, 10, 18, 0.24);
+    }
+
+    .lab-review-panel h2 {
+      margin: 0;
+    }
+
+    .lab-review-panel h2 small {
+      margin-left: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .lab-review-panel p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .lab-review-controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .lab-review-controls select {
+      min-height: 42px;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 8px;
+      background: #050a12;
+      color: var(--text);
+      padding: 8px 10px;
+      font: inherit;
+    }
+
+    .lab-review-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .lab-review-list {
+      display: grid;
+      gap: 8px;
+      max-height: 260px;
+      overflow: auto;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .lab-review-list li {
+      margin: 0;
+    }
+
+    .lab-review-item {
+      display: grid;
+      gap: 4px;
+      width: 100%;
+      min-height: 54px;
+      padding: 9px 10px;
+      border-color: rgba(148, 163, 184, 0.24);
+      text-align: left;
+    }
+
+    .lab-review-item.is-selected {
+      border-color: rgba(103, 232, 249, 0.82);
+      box-shadow: 0 0 0 1px rgba(103, 232, 249, 0.2) inset;
+    }
+
+    .lab-review-item.is-classified {
+      border-color: rgba(45, 212, 191, 0.42);
+    }
+
+    .lab-review-item.is-reject {
+      border-color: rgba(252, 165, 165, 0.4);
+      opacity: 0.86;
+    }
+
+    .lab-review-item.is-candidate-future {
+      border-color: rgba(251, 191, 36, 0.52);
+    }
+
+    .lab-review-item strong {
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .lab-review-item span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
     .lab-advanced-mining {
       margin: 0 0 12px;
       border: 1px solid rgba(148, 163, 184, 0.18);
@@ -573,27 +680,43 @@
           <p>看完姿勢直接按分類或鍵盤快捷鍵；系統會用預設分數與標籤加入候選。</p>
           <div class="lab-quick-grid">
             <button id="quickReviewPresent" class="lab-quick-button" type="button" data-quick-category="present" data-quick-key="Q">
-              <kbd>Q</kbd><span>Present<small>介紹 / 5-4-5</small></span>
+              <kbd>Q</kbd><span>介紹<small>present / 5-4-5</small></span>
             </button>
             <button id="quickReviewPoint" class="lab-quick-button" type="button" data-quick-category="point" data-quick-key="W">
-              <kbd>W</kbd><span>Point<small>指向 / 5-4-5</small></span>
+              <kbd>W</kbd><span>指向<small>point / 5-4-5</small></span>
             </button>
             <button id="quickReviewThink" class="lab-quick-button" type="button" data-quick-category="think" data-quick-key="E">
-              <kbd>E</kbd><span>Think<small>思考 / 5-4-5</small></span>
+              <kbd>E</kbd><span>思考<small>think / 5-4-5</small></span>
             </button>
             <button id="quickReviewWarning" class="lab-quick-button" type="button" data-quick-category="warning" data-quick-key="R">
-              <kbd>R</kbd><span>Warning<small>警告 / 4-4-4</small></span>
+              <kbd>R</kbd><span>警告<small>warning / 4-4-4</small></span>
             </button>
             <button id="quickReviewSuccess" class="lab-quick-button" type="button" data-quick-category="success" data-quick-key="T">
-              <kbd>T</kbd><span>Success<small>成功 / 4-4-4</small></span>
+              <kbd>T</kbd><span>成功<small>success / 4-4-4</small></span>
             </button>
             <button id="quickReviewFuture" class="lab-quick-button" type="button" data-quick-category="candidate_future" data-quick-key="C">
-              <kbd>C</kbd><span>Future<small>未來候選 / source 5 agent 2</small></span>
+              <kbd>C</kbd><span>未來候選<small>candidate_future / source 5 agent 2</small></span>
             </button>
             <button id="quickReviewReject" class="lab-quick-button" type="button" data-quick-category="reject" data-quick-key="X">
-              <kbd>X</kbd><span>Reject<small>淘汰 / source 2 agent 1</small></span>
+              <kbd>X</kbd><span>淘汰<small>reject / source 2 agent 1</small></span>
             </button>
           </div>
+        </section>
+        <section id="reviewQueuePanel" class="lab-review-panel" aria-label="審核清單 Review Queue">
+          <h2>審核清單 <small>Review Queue</small></h2>
+          <p>從範例 VRMA 產生待分類取樣點；選取一筆後可播放、切換預覽模式，並用快速標註覆蓋分類。</p>
+          <div class="lab-review-controls">
+            <button id="btnGenerateReviewQueue" type="button">產生清單</button>
+            <select id="reviewQueueFilter" aria-label="審核清單篩選">
+              <option value="pending">待分類</option>
+              <option value="classified">已分類</option>
+              <option value="all">全部</option>
+            </select>
+            <button id="btnReviewPrevious" type="button">上一筆</button>
+            <button id="btnReviewNext" type="button">下一筆</button>
+          </div>
+          <div id="reviewQueueSummary" class="lab-review-summary">尚未產生清單</div>
+          <ol id="reviewQueueList" class="lab-review-list"></ol>
         </section>
         <details id="advancedMiningDetails" class="lab-advanced-mining">
           <summary>Advanced / 編輯詳細欄位</summary>
@@ -700,11 +823,25 @@
       buildMotionMiningEntry,
       buildNaturalPosePreset,
       clampSampleTime,
+      formatLocalIsoDateTime,
       stableStringifyMiningLog,
       stableStringifyPreset,
     } from './js/MotionTemplateImporter.js';
 
     const EXAMPLE_VRMA_BASE = 'examples/m6_7_vrma_samples/';
+    const EXAMPLE_VRMA_DURATIONS = Object.freeze({
+      'Angry.vrma': 3.933,
+      'Clapping.vrma': 3.933,
+      'Goodbye.vrma': 3.933,
+      'Jump.vrma': 3.933,
+      'LookAround.vrma': 3.933,
+      'Relax.vrma': 3.933,
+      'Sad.vrma': 3.933,
+      'Sleepy.vrma': 3.933,
+      'Surprised.vrma': 3.933,
+      'Thinking.vrma': 3.933,
+    });
+    const MINING_CATEGORIES = [...MOTION_MINING_CATEGORIES];
     const DEG = Math.PI / 180;
 
     const els = {
@@ -731,6 +868,12 @@
       warningList: document.getElementById('warningList'),
       json: document.getElementById('motion-template-json'),
       quickReviewButtons: Array.from(document.querySelectorAll('.lab-quick-button[data-quick-category]')),
+      btnGenerateReviewQueue: document.getElementById('btnGenerateReviewQueue'),
+      reviewQueueFilter: document.getElementById('reviewQueueFilter'),
+      btnReviewPrevious: document.getElementById('btnReviewPrevious'),
+      btnReviewNext: document.getElementById('btnReviewNext'),
+      reviewQueueSummary: document.getElementById('reviewQueueSummary'),
+      reviewQueueList: document.getElementById('reviewQueueList'),
       miningCategory: document.getElementById('miningCategory'),
       miningScore: document.getElementById('miningScore'),
       miningSourceScore: document.getElementById('miningSourceScore'),
@@ -762,6 +905,9 @@
     let previewMode = 'agent';
     let sourceWarnings = [];
     const miningEntries = [];
+    const reviewQueue = [];
+    const reviewActionHistory = [];
+    let selectedReviewQueueId = '';
 
     init().catch((err) => {
       setStatus('載入失敗');
@@ -797,6 +943,7 @@
       renderer.setAnimationLoop(render);
 
       renderMiningOptions();
+      generateReviewQueue({ silent: true });
       renderMiningList();
       bindEvents();
       setWarnings([]);
@@ -849,8 +996,8 @@
       }
     }
 
-    async function loadExampleVrma() {
-      const fileName = els.exampleSelect.value || 'Relax.vrma';
+    async function loadExampleVrma(fileName = els.exampleSelect.value || 'Relax.vrma') {
+      els.exampleSelect.value = fileName;
       await loadVrmaFromUrl(`${EXAMPLE_VRMA_BASE}${encodeURIComponent(fileName)}`, fileName);
     }
 
@@ -1050,6 +1197,194 @@
       setStatus('匯出完成');
     }
 
+    function getExampleVrmaFiles() {
+      return Array.from(els.exampleSelect.options)
+        .map((option) => option.value)
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b));
+    }
+
+    function buildReviewQueueItems(files = [], durations = {}) {
+      const counters = {};
+      return files.flatMap((fileName) => {
+        const slug = slugSourceFile(fileName);
+        const duration = Number(durations[fileName] || 0);
+        return getReviewSampleTimes(duration).map((sampleTime) => {
+          counters[slug] = (counters[slug] || 0) + 1;
+          return {
+            queueKey: `${fileName}@${formatSeconds(sampleTime)}`,
+            id: `${slug}_pending_${String(counters[slug]).padStart(3, '0')}`,
+            source: fileName,
+            sampleTime,
+            status: 'pending',
+          };
+        });
+      });
+    }
+
+    function getReviewSampleTimes(duration = 0) {
+      const numericDuration = Math.max(0, Number(duration) || 0);
+      const candidates = numericDuration > 0
+        ? [0, numericDuration * 0.25, numericDuration * 0.5, numericDuration * 0.75, duration - 0.001]
+        : [0];
+      const seen = new Set();
+
+      return candidates
+        .map((value) => roundReviewTime(clampSampleTime(value, numericDuration)))
+        .filter((value) => {
+          const key = formatSeconds(value);
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+    }
+
+    function roundReviewTime(value) {
+      return Number(Number(value || 0).toFixed(3));
+    }
+
+    function slugSourceFile(fileName) {
+      return String(fileName || 'sample')
+        .replace(/\.[^.]+$/, '')
+        .replace(/[^a-zA-Z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .toLowerCase() || 'sample';
+    }
+
+    function generateReviewQueue({ silent = false } = {}) {
+      const items = buildReviewQueueItems(getExampleVrmaFiles(), EXAMPLE_VRMA_DURATIONS);
+      reviewQueue.splice(0, reviewQueue.length, ...items);
+      reviewActionHistory.length = 0;
+      selectedReviewQueueId = '';
+      renderReviewQueue();
+      renderMiningList();
+
+      if (!silent) {
+        setStatus(`已產生 ${items.length} 筆待分類`);
+      }
+    }
+
+    async function selectReviewQueueItem(queueKey) {
+      const item = reviewQueue.find((entry) => entry.queueKey === queueKey);
+      if (!item) return;
+
+      selectedReviewQueueId = item.queueKey;
+      renderReviewQueue();
+
+      if (sourceFileName !== item.source || !clip) {
+        await loadExampleVrma(item.source);
+      }
+
+      const sampleTime = clampSampleTime(item.sampleTime, clip?.duration || item.sampleTime);
+      els.sampleTime.value = String(sampleTime);
+      sampleAt(sampleTime);
+      setStatus(`已選取 ${item.source} @ ${formatSeconds(sampleTime)}s`);
+      renderReviewQueue();
+    }
+
+    function classifySelectedReviewItem(category) {
+      const item = getSelectedReviewQueueItem();
+      if (!item) return false;
+
+      const preset = getQuickReviewPreset(category);
+      if (!preset) return true;
+
+      if (sourceFileName !== item.source || !latestPreset) {
+        setWarnings(['請先選取審核清單項目並完成取樣']);
+        return true;
+      }
+
+      sampleAt(item.sampleTime);
+      if (!latestPreset) return true;
+
+      const before = cloneReviewQueueItem(item);
+      const pendingBaseline = before.status === 'pending'
+        ? before
+        : cloneReviewQueueItem(before.pendingSnapshot || before);
+      const sequence = getNextCategorySequence(preset.category, item.queueKey);
+      const entry = buildMotionMiningEntry({
+        source: item.source,
+        sampleTime: item.sampleTime,
+        ...preset,
+        sequence,
+        createdAt: item.createdAt,
+      });
+
+      Object.assign(entry, {
+        status: 'classified',
+        queueKey: item.queueKey,
+        pendingSnapshot: cloneReviewQueueItem(pendingBaseline),
+      });
+      if (before.status === 'classified' && before.createdAt) {
+        entry.createdAt = before.createdAt;
+        entry.updatedAt = formatLocalIsoDateTime();
+      }
+
+      replaceObject(item, entry);
+      reviewActionHistory.push({ type: 'classify', queueKey: item.queueKey, before: pendingBaseline });
+      selectedReviewQueueId = item.queueKey;
+      renderReviewQueue();
+      renderMiningList();
+      setStatus(`已分類 ${entry.id}`);
+      return true;
+    }
+
+    function getSelectedReviewQueueItem() {
+      if (!selectedReviewQueueId) return null;
+      return reviewQueue.find((entry) => entry.queueKey === selectedReviewQueueId) || null;
+    }
+
+    function getNextCategorySequence(category, excludeQueueKey = '') {
+      const prefix = `${category}_`;
+      const used = getClassifiedMiningEntries()
+        .filter((entry) => entry.queueKey !== excludeQueueKey)
+        .map((entry) => String(entry.id || ''))
+        .filter((id) => id.startsWith(prefix))
+        .map((id) => Number(id.slice(prefix.length)) || 0);
+
+      return Math.max(0, ...used) + 1;
+    }
+
+    function getVisibleReviewQueueItems(filter = els.reviewQueueFilter.value || 'pending') {
+      if (filter === 'classified') {
+        return reviewQueue.filter((entry) => entry.status === 'classified');
+      }
+      if (filter === 'all') return reviewQueue;
+      return reviewQueue.filter((entry) => entry.status === 'pending');
+    }
+
+    function selectAdjacentReviewItem(direction) {
+      const visible = getVisibleReviewQueueItems();
+      if (visible.length === 0) {
+        setWarnings(['目前沒有可選取的審核項目']);
+        return;
+      }
+
+      const currentIndex = visible.findIndex((entry) => entry.queueKey === selectedReviewQueueId);
+      const fallbackIndex = direction > 0 ? 0 : visible.length - 1;
+      const nextIndex = currentIndex === -1
+        ? fallbackIndex
+        : (currentIndex + direction + visible.length) % visible.length;
+      selectReviewQueueItem(visible[nextIndex].queueKey).catch(handleReviewQueueError);
+    }
+
+    function handleReviewQueueError(err) {
+      setStatus('審核清單操作失敗');
+      setWarnings([err?.message || String(err)]);
+      console.error(err);
+    }
+
+    function cloneReviewQueueItem(item) {
+      return JSON.parse(JSON.stringify(item));
+    }
+
+    function replaceObject(target, source) {
+      for (const key of Object.keys(target)) {
+        delete target[key];
+      }
+      Object.assign(target, source);
+    }
+
     function getQuickReviewPreset(category) {
       const presets = {
         present: {
@@ -1116,6 +1451,10 @@
     }
 
     function addQuickReviewCandidate(category) {
+      if (classifySelectedReviewItem(category)) {
+        return;
+      }
+
       const preset = getQuickReviewPreset(category);
       if (!preset) return;
 
@@ -1135,6 +1474,7 @@
         ...preset,
         sequence,
       });
+      Object.assign(entry, { status: 'classified' });
 
       addMiningEntry(entry, `快速標註 ${entry.id}`);
     }
@@ -1180,6 +1520,7 @@
         tags: els.miningTags.value,
         sequence,
       });
+      Object.assign(entry, { status: 'classified' });
 
       addMiningEntry(entry, `已加入候選 ${entry.id}`);
     }
@@ -1192,13 +1533,14 @@
       }
 
       miningEntries.push(entry);
+      reviewActionHistory.push({ type: 'append', entry: cloneReviewQueueItem(entry) });
       renderMiningList();
       setStatus(statusText);
       return true;
     }
 
     function findDuplicateMiningEntry(entry) {
-      return miningEntries.find((item) => (
+      return getClassifiedMiningEntries().find((item) => (
         item.source === entry.source
         && item.sampleTime === entry.sampleTime
         && item.category === entry.category
@@ -1208,6 +1550,26 @@
     }
 
     function undoLastMiningCandidate() {
+      const action = reviewActionHistory.pop();
+      if (action?.type === 'classify') {
+        const item = reviewQueue.find((entry) => entry.queueKey === action.queueKey);
+        if (item) {
+          replaceObject(item, action.before);
+          selectedReviewQueueId = action.before.queueKey;
+          renderReviewQueue();
+          renderMiningList();
+          setStatus(`已撤銷 ${action.before.source} @ ${formatSeconds(action.before.sampleTime)}s`);
+          return;
+        }
+      }
+
+      if (action?.type === 'append' && miningEntries.length > 0) {
+        const removed = miningEntries.pop();
+        renderMiningList();
+        setStatus(`已撤銷 ${removed.id}`);
+        return;
+      }
+
       if (miningEntries.length === 0) {
         setWarnings(['目前沒有候選可撤銷']);
         return;
@@ -1219,12 +1581,13 @@
     }
 
     function downloadMiningLog() {
-      if (miningEntries.length === 0) {
+      const entries = getExportableMiningEntries();
+      if (entries.length === 0) {
         setWarnings(['目前沒有候選紀錄可匯出']);
         return;
       }
 
-      const blob = new Blob([stableStringifyMiningLog(miningEntries)], { type: 'application/json;charset=utf-8' });
+      const blob = new Blob([stableStringifyMiningLog(entries)], { type: 'application/json;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -1236,8 +1599,30 @@
       setStatus('已匯出 mining_log.json');
     }
 
+    function getClassifiedMiningEntries() {
+      return [
+        ...reviewQueue.filter((entry) => entry.status === 'classified'),
+        ...miningEntries,
+      ];
+    }
+
+    function getExportableMiningEntries() {
+      return getClassifiedMiningEntries()
+        .filter((entry) => entry.status === 'classified')
+        .map(stripReviewQueueFields);
+    }
+
+    function stripReviewQueueFields(entry) {
+      const {
+        queueKey,
+        pendingSnapshot,
+        ...exportEntry
+      } = entry;
+      return exportEntry;
+    }
+
     function renderMiningOptions() {
-      els.miningCategory.replaceChildren(...MOTION_MINING_CATEGORIES.map((category) => {
+      els.miningCategory.replaceChildren(...MINING_CATEGORIES.map((category) => {
         const option = document.createElement('option');
         option.value = category;
         option.textContent = getCategoryLabel(category);
@@ -1264,16 +1649,17 @@
     }
 
     function renderMiningList() {
-      els.btnUndoMiningCandidate.disabled = miningEntries.length === 0;
+      const entries = getClassifiedMiningEntries();
+      els.btnUndoMiningCandidate.disabled = reviewActionHistory.length === 0 && miningEntries.length === 0;
 
-      if (miningEntries.length === 0) {
+      if (entries.length === 0) {
         const empty = document.createElement('li');
         empty.textContent = '尚無候選';
         els.miningCandidateList.replaceChildren(empty);
         return;
       }
 
-      els.miningCandidateList.replaceChildren(...miningEntries.map((entry) => {
+      els.miningCandidateList.replaceChildren(...entries.map((entry) => {
         const li = document.createElement('li');
         const reason = entry.rejectReason ? ` / ${entry.rejectReason}` : '';
         const futureReason = entry.reason ? ` / ${entry.reason}` : '';
@@ -1284,6 +1670,60 @@
         const note = document.createElement('span');
         note.textContent = entry.note || '無備註';
         li.append(title, meta, document.createElement('br'), note);
+        return li;
+      }));
+    }
+
+    function renderReviewQueue() {
+      const pendingCount = reviewQueue.filter((entry) => entry.status === 'pending').length;
+      const classifiedCount = reviewQueue.filter((entry) => entry.status === 'classified').length;
+      const visible = getVisibleReviewQueueItems();
+
+      els.reviewQueueSummary.textContent = `待分類 ${pendingCount} / 已分類 ${classifiedCount} / 全部 ${reviewQueue.length}`;
+      els.btnReviewPrevious.disabled = visible.length === 0;
+      els.btnReviewNext.disabled = visible.length === 0;
+
+      if (visible.length === 0) {
+        const empty = document.createElement('li');
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'lab-review-item';
+        button.disabled = true;
+        button.textContent = reviewQueue.length === 0 ? '尚未產生清單' : '目前篩選沒有項目';
+        empty.append(button);
+        els.reviewQueueList.replaceChildren(empty);
+        return;
+      }
+
+      els.reviewQueueList.replaceChildren(...visible.map((entry) => {
+        const li = document.createElement('li');
+        const button = document.createElement('button');
+        const title = document.createElement('strong');
+        const meta = document.createElement('span');
+        const statusLabel = entry.status === 'classified'
+          ? `已分類 / ${getCategoryLabel(entry.category)} / ${entry.score} 分`
+          : '待分類';
+
+        button.type = 'button';
+        button.dataset.reviewQueueId = entry.queueKey;
+        button.className = [
+          'lab-review-item',
+          entry.status === 'classified' ? 'is-classified' : 'is-pending',
+          entry.category === 'reject' ? 'is-reject' : '',
+          entry.category === 'candidate_future' ? 'is-candidate-future' : '',
+          entry.queueKey === selectedReviewQueueId ? 'is-selected' : '',
+        ].filter(Boolean).join(' ');
+        title.textContent = entry.status === 'classified'
+          ? entry.id
+          : `${entry.source} @ ${formatSeconds(entry.sampleTime)}s`;
+        meta.textContent = entry.status === 'classified'
+          ? `${entry.source} @ ${formatSeconds(entry.sampleTime)}s / ${statusLabel}`
+          : statusLabel;
+        button.append(title, meta);
+        button.addEventListener('click', () => {
+          selectReviewQueueItem(entry.queueKey).catch(handleReviewQueueError);
+        });
+        li.append(button);
         return li;
       }));
     }
@@ -1419,6 +1859,10 @@
         button.addEventListener('click', () => addQuickReviewCandidate(button.dataset.quickCategory));
       }
       document.addEventListener('keydown', handleQuickReviewKeydown);
+      els.btnGenerateReviewQueue.addEventListener('click', () => generateReviewQueue());
+      els.reviewQueueFilter.addEventListener('change', renderReviewQueue);
+      els.btnReviewPrevious.addEventListener('click', () => selectAdjacentReviewItem(-1));
+      els.btnReviewNext.addEventListener('click', () => selectAdjacentReviewItem(1));
       els.miningCategory.addEventListener('change', updateRejectReasonState);
       els.btnAddMiningCandidate.addEventListener('click', addMiningCandidate);
       els.btnUndoMiningCandidate.addEventListener('click', undoLastMiningCandidate);
