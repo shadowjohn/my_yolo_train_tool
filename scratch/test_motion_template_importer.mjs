@@ -386,6 +386,20 @@ function testLabIncludesQuickReviewModeControls() {
   assert.match(html, /category:\s*'reject'[\s\S]*rejectReason:\s*'unclear_intent'/);
 }
 
+function testLabGuardsAccidentalDuplicateMiningEntries() {
+  const html = read(LAB_PATH);
+
+  assert.match(html, /id="btnUndoMiningCandidate"/);
+  assert.match(html, /function\s+findDuplicateMiningEntry\s*\(/);
+  assert.match(html, /function\s+addMiningEntry\s*\(/);
+  assert.match(html, /function\s+undoLastMiningCandidate\s*\(/);
+  assert.match(html, /findDuplicateMiningEntry\(entry\)/);
+  assert.match(html, /已略過重複候選/);
+  assert.match(html, /miningEntries\.pop\(\)/);
+  assert.match(html, /已撤銷/);
+  assert.match(html, /btnUndoMiningCandidate\.addEventListener/);
+}
+
 async function testBuildNaturalPosePresetMergesUpperBodyOnly() {
   const {
     buildNaturalPosePreset,
@@ -519,6 +533,7 @@ async function run() {
     testMotionMiningSchemaBuildsCandidateAndRejectEntries,
     testLabIncludesMotionMiningWorkbenchControls,
     testLabIncludesQuickReviewModeControls,
+    testLabGuardsAccidentalDuplicateMiningEntries,
     testMotionMiningLogHasSprintReviewedSamples,
     testMotionMiningReportMatchesLog,
     testBuildNaturalPosePresetMergesUpperBodyOnly,

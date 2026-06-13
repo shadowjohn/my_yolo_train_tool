@@ -652,10 +652,13 @@
             </div>
             <div class="lab-actions lab-mining-actions">
               <button id="btnAddMiningCandidate" type="button">加入候選</button>
-              <button id="btnExportMiningLog" type="button">匯出 mining_log.json</button>
             </div>
           </div>
         </details>
+        <div class="lab-actions lab-mining-actions">
+          <button id="btnUndoMiningCandidate" type="button">撤銷上一筆</button>
+          <button id="btnExportMiningLog" type="button">匯出 mining_log.json</button>
+        </div>
         <ol id="miningCandidateList" class="lab-mining-list"></ol>
       </section>
 
@@ -737,6 +740,7 @@
       miningNote: document.getElementById('miningNote'),
       miningTags: document.getElementById('miningTags'),
       btnAddMiningCandidate: document.getElementById('btnAddMiningCandidate'),
+      btnUndoMiningCandidate: document.getElementById('btnUndoMiningCandidate'),
       btnExportMiningLog: document.getElementById('btnExportMiningLog'),
       miningCandidateList: document.getElementById('miningCandidateList'),
     };
@@ -1132,9 +1136,7 @@
         sequence,
       });
 
-      miningEntries.push(entry);
-      renderMiningList();
-      setStatus(`快速標註 ${entry.id}`);
+      addMiningEntry(entry, `快速標註 ${entry.id}`);
     }
 
     function handleQuickReviewKeydown(event) {
@@ -1179,9 +1181,41 @@
         sequence,
       });
 
+      addMiningEntry(entry, `已加入候選 ${entry.id}`);
+    }
+
+    function addMiningEntry(entry, statusText) {
+      const duplicate = findDuplicateMiningEntry(entry);
+      if (duplicate) {
+        setStatus(`已略過重複候選 ${duplicate.id}`);
+        return false;
+      }
+
       miningEntries.push(entry);
       renderMiningList();
-      setStatus(`已加入候選 ${entry.id}`);
+      setStatus(statusText);
+      return true;
+    }
+
+    function findDuplicateMiningEntry(entry) {
+      return miningEntries.find((item) => (
+        item.source === entry.source
+        && item.sampleTime === entry.sampleTime
+        && item.category === entry.category
+        && (item.reason || '') === (entry.reason || '')
+        && (item.rejectReason || '') === (entry.rejectReason || '')
+      ));
+    }
+
+    function undoLastMiningCandidate() {
+      if (miningEntries.length === 0) {
+        setWarnings(['目前沒有候選可撤銷']);
+        return;
+      }
+
+      const removed = miningEntries.pop();
+      renderMiningList();
+      setStatus(`已撤銷 ${removed.id}`);
     }
 
     function downloadMiningLog() {
@@ -1230,6 +1264,8 @@
     }
 
     function renderMiningList() {
+      els.btnUndoMiningCandidate.disabled = miningEntries.length === 0;
+
       if (miningEntries.length === 0) {
         const empty = document.createElement('li');
         empty.textContent = '尚無候選';
@@ -1385,6 +1421,7 @@
       document.addEventListener('keydown', handleQuickReviewKeydown);
       els.miningCategory.addEventListener('change', updateRejectReasonState);
       els.btnAddMiningCandidate.addEventListener('click', addMiningCandidate);
+      els.btnUndoMiningCandidate.addEventListener('click', undoLastMiningCandidate);
       els.btnExportMiningLog.addEventListener('click', downloadMiningLog);
       els.btnCopyJson.addEventListener('click', () => copyJson().catch((err) => {
         setWarnings([`複製失敗：${err?.message || err}`]);
