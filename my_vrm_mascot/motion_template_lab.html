@@ -440,7 +440,6 @@
       vrm = gltf.userData.vrm;
 
       VRMUtils.removeUnnecessaryVertices(vrm.scene);
-      VRMUtils.removeUnnecessaryJoints(vrm.scene);
       vrm.scene.traverse((obj) => {
         obj.frustumCulled = false;
       });
