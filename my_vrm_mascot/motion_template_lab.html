@@ -470,7 +470,6 @@
         mixer = new THREE.AnimationMixer(vrm.scene);
         action = mixer.clipAction(clip);
         action.play();
-        action.paused = true;
 
         sourceFileName = file.name;
         els.sourceFile.textContent = file.name;
@@ -496,9 +495,13 @@
       const warnings = [];
       const rotations = {};
 
-      mixer.setTime(0);
-      mixer.update(0);
+      // paused 會讓 Three.js 將 action 視為 timeScale 0，導致指定時間採樣失準。
+      action.enabled = true;
+      action.paused = false;
+      action.timeScale = 1;
+      action.time = sampleTime;
       mixer.setTime(sampleTime);
+      mixer.update(0);
       vrm.update?.(0);
 
       for (const bone of UPPER_BODY_BONES) {
