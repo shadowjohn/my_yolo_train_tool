@@ -23,6 +23,27 @@ export const LOWER_BODY_PREVIEW_LOCK_BONES = Object.freeze([
   'rightToes',
 ]);
 
+export const MOTION_MINING_CATEGORIES = Object.freeze([
+  'present',
+  'point',
+  'think',
+  'warning',
+  'success',
+  'reject',
+]);
+
+export const MOTION_MINING_REJECT_REASONS = Object.freeze([
+  'too_large_motion',
+  'hands_cover_face',
+  'off_balance',
+  'too_dance_like',
+  'bad_silhouette',
+  'arm_cross_body',
+  'not_agentic',
+  'costume_clip',
+  'unclear_intent',
+]);
+
 export const DEFAULT_EXPORT_PRECISION = 2;
 export const SAMPLE_TIME_EPSILON = 0.001;
 
@@ -103,6 +124,72 @@ export function stableStringifyPreset(preset) {
   return JSON.stringify(sortObjectDeep(preset), null, 2);
 }
 
+export function buildMotionMiningEntry({
+  source = '',
+  sampleTime = 0,
+  category = 'present',
+  score = 3,
+  rejectReason = '',
+  note = '',
+  tags = [],
+  sequence = 1,
+  createdAt = formatLocalIsoDateTime(),
+} = {}) {
+  const normalizedCategory = MOTION_MINING_CATEGORIES.includes(category) ? category : 'reject';
+  const numericSequence = Math.max(1, Math.trunc(Number(sequence) || 1));
+  const id = `${normalizedCategory}_${String(numericSequence).padStart(3, '0')}`;
+  const entry = {
+    id,
+    source: String(source || ''),
+    sampleTime: roundDegrees(sampleTime, 4),
+    category: normalizedCategory,
+    score: clampScore(score),
+    note: String(note || '').trim(),
+    tags: normalizeTags(tags),
+  };
+
+  if (normalizedCategory === 'reject') {
+    entry.rejectReason = MOTION_MINING_REJECT_REASONS.includes(rejectReason)
+      ? rejectReason
+      : 'unclear_intent';
+  } else {
+    entry.exportedPoseFile = `${id}.json`;
+  }
+
+  entry.createdAt = String(createdAt || formatLocalIsoDateTime());
+  return entry;
+}
+
+export function stableStringifyMiningLog(entries = []) {
+  return JSON.stringify(Array.isArray(entries) ? entries : [], null, 2);
+}
+
+export function formatLocalIsoDateTime(date = new Date()) {
+  const pad = (value) => String(Math.trunc(Math.abs(value))).padStart(2, '0');
+  const timezoneMinutes = -date.getTimezoneOffset();
+  const sign = timezoneMinutes >= 0 ? '+' : '-';
+  const hours = pad(timezoneMinutes / 60);
+  const minutes = pad(timezoneMinutes % 60);
+
+  return [
+    date.getFullYear(),
+    '-',
+    pad(date.getMonth() + 1),
+    '-',
+    pad(date.getDate()),
+    'T',
+    pad(date.getHours()),
+    ':',
+    pad(date.getMinutes()),
+    ':',
+    pad(date.getSeconds()),
+    sign,
+    hours,
+    ':',
+    minutes,
+  ].join('');
+}
+
 function normalizeSource(source = {}, warnings = []) {
   const normalizedWarnings = Array.from(new Set(
     (Array.isArray(warnings) ? warnings : [])
@@ -117,6 +204,23 @@ function normalizeSource(source = {}, warnings = []) {
     boneScope: 'upper_body',
     warnings: normalizedWarnings,
   });
+}
+
+function clampScore(value) {
+  const numeric = Math.trunc(Number(value) || 1);
+  return Math.max(1, Math.min(5, numeric));
+}
+
+function normalizeTags(tags = []) {
+  const values = Array.isArray(tags)
+    ? tags
+    : String(tags || '').split(/[,，\s]+/);
+
+  return Array.from(new Set(
+    values
+      .map((item) => String(item || '').trim())
+      .filter(Boolean),
+  ));
 }
 
 function clonePosition(position = {}, precision = DEFAULT_EXPORT_PRECISION) {

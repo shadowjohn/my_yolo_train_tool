@@ -139,6 +139,95 @@ async function testLowerBodyPreviewLockIsExplicitAndSeparateFromExportScope() {
   }
 }
 
+async function testMotionMiningSchemaBuildsCandidateAndRejectEntries() {
+  const mod = await importImporterModule();
+
+  assert.deepEqual(mod.MOTION_MINING_CATEGORIES, [
+    'present',
+    'point',
+    'think',
+    'warning',
+    'success',
+    'reject',
+  ]);
+  assert.deepEqual(mod.MOTION_MINING_REJECT_REASONS, [
+    'too_large_motion',
+    'hands_cover_face',
+    'off_balance',
+    'too_dance_like',
+    'bad_silhouette',
+    'arm_cross_body',
+    'not_agentic',
+    'costume_clip',
+    'unclear_intent',
+  ]);
+
+  const candidate = mod.buildMotionMiningEntry({
+    source: 'Relax.vrma',
+    sampleTime: 0.46234,
+    category: 'present',
+    score: 5,
+    note: '雙手自然打開，適合介紹',
+    tags: 'upper_body, agent_friendly',
+    sequence: 1,
+    createdAt: '2026-06-13T12:00:00+08:00',
+  });
+
+  assert.deepEqual(candidate, {
+    id: 'present_001',
+    source: 'Relax.vrma',
+    sampleTime: 0.4623,
+    category: 'present',
+    score: 5,
+    note: '雙手自然打開，適合介紹',
+    tags: ['upper_body', 'agent_friendly'],
+    exportedPoseFile: 'present_001.json',
+    createdAt: '2026-06-13T12:00:00+08:00',
+  });
+
+  const reject = mod.buildMotionMiningEntry({
+    source: 'Clapping.vrma',
+    sampleTime: 1.2,
+    category: 'reject',
+    score: 2,
+    rejectReason: 'hands_cover_face',
+    note: '手遮住臉，但手腕角度可參考',
+    tags: 'negative_sample',
+    sequence: 3,
+    createdAt: '2026-06-13T12:10:00+08:00',
+  });
+
+  assert.deepEqual(reject, {
+    id: 'reject_003',
+    source: 'Clapping.vrma',
+    sampleTime: 1.2,
+    category: 'reject',
+    score: 2,
+    rejectReason: 'hands_cover_face',
+    note: '手遮住臉，但手腕角度可參考',
+    tags: ['negative_sample'],
+    createdAt: '2026-06-13T12:10:00+08:00',
+  });
+}
+
+function testLabIncludesMotionMiningWorkbenchControls() {
+  const html = read(LAB_PATH);
+
+  assert.match(html, /Motion Mining Workbench/);
+  assert.match(html, /id="miningCategory"/);
+  assert.match(html, /id="miningScore"/);
+  assert.match(html, /id="miningRejectReason"/);
+  assert.match(html, /id="miningNote"/);
+  assert.match(html, /id="miningTags"/);
+  assert.match(html, /id="btnAddMiningCandidate"/);
+  assert.match(html, /id="btnExportMiningLog"/);
+  assert.match(html, /id="miningCandidateList"/);
+  assert.match(html, /function\s+addMiningCandidate\s*\(/);
+  assert.match(html, /function\s+downloadMiningLog\s*\(/);
+  assert.match(html, /mining_log\.json/);
+  assert.doesNotMatch(html, /innerHTML/);
+}
+
 async function testBuildNaturalPosePresetMergesUpperBodyOnly() {
   const {
     buildNaturalPosePreset,
@@ -269,6 +358,8 @@ async function run() {
     testLabDoesNotImportAgentRuntime,
     testUpperBodyWhitelistIsExplicitAndStable,
     testLowerBodyPreviewLockIsExplicitAndSeparateFromExportScope,
+    testMotionMiningSchemaBuildsCandidateAndRejectEntries,
+    testLabIncludesMotionMiningWorkbenchControls,
     testBuildNaturalPosePresetMergesUpperBodyOnly,
     testStableExportIsDeterministic,
     testClampSampleTime,

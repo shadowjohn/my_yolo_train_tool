@@ -224,8 +224,81 @@
     }
 
     .lab-warning-panel,
-    .lab-json-panel {
+    .lab-json-panel,
+    .lab-mining-panel {
       margin-top: 18px;
+    }
+
+    .lab-mining-panel {
+      padding: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.64);
+    }
+
+    .lab-mining-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .lab-field {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .lab-field-full {
+      grid-column: 1 / -1;
+    }
+
+    .lab-field select,
+    .lab-field input,
+    .lab-field textarea {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 6px;
+      background: #050a12;
+      color: var(--text);
+      padding: 8px 10px;
+      font: inherit;
+    }
+
+    .lab-field textarea {
+      min-height: 76px;
+      resize: vertical;
+    }
+
+    .lab-field select:disabled {
+      opacity: 0.42;
+    }
+
+    .lab-mining-actions {
+      margin: 12px 0;
+    }
+
+    .lab-mining-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .lab-mining-list li {
+      padding: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 8px;
+      background: rgba(5, 10, 18, 0.36);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .lab-mining-list strong {
+      color: var(--text);
     }
 
     .lab-warning-panel ul {
@@ -280,7 +353,8 @@
       }
 
       .lab-actions,
-      .lab-summary div {
+      .lab-summary div,
+      .lab-mining-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -347,6 +421,43 @@
         <ul id="warningList"></ul>
       </section>
 
+      <section class="lab-mining-panel">
+        <h2>動作採礦紀錄 / Motion Mining Workbench</h2>
+        <div class="lab-mining-grid">
+          <label class="lab-field">
+            <span>分類</span>
+            <select id="miningCategory"></select>
+          </label>
+          <label class="lab-field">
+            <span>分數</span>
+            <select id="miningScore">
+              <option value="5">5 / 高價值</option>
+              <option value="4">4 / 可用</option>
+              <option value="3" selected>3 / 待觀察</option>
+              <option value="2">2 / 局部可參考</option>
+              <option value="1">1 / 不可用</option>
+            </select>
+          </label>
+          <label class="lab-field lab-field-full">
+            <span>淘汰原因</span>
+            <select id="miningRejectReason"></select>
+          </label>
+          <label class="lab-field lab-field-full">
+            <span>標籤</span>
+            <input id="miningTags" type="text" value="upper_body, agent_friendly">
+          </label>
+          <label class="lab-field lab-field-full">
+            <span>備註</span>
+            <textarea id="miningNote" placeholder="例如：雙手自然打開，適合介紹"></textarea>
+          </label>
+        </div>
+        <div class="lab-actions lab-mining-actions">
+          <button id="btnAddMiningCandidate" type="button">加入候選</button>
+          <button id="btnExportMiningLog" type="button">匯出 mining_log.json</button>
+        </div>
+        <ol id="miningCandidateList" class="lab-mining-list"></ol>
+      </section>
+
       <section class="lab-json-panel">
         <h2>匯出 NaturalPosePreset</h2>
         <pre id="motion-template-json">{}</pre>
@@ -379,9 +490,13 @@
     } from '@pixiv/three-vrm-animation';
     import {
       LOWER_BODY_PREVIEW_LOCK_BONES,
+      MOTION_MINING_CATEGORIES,
+      MOTION_MINING_REJECT_REASONS,
       UPPER_BODY_BONES,
+      buildMotionMiningEntry,
       buildNaturalPosePreset,
       clampSampleTime,
+      stableStringifyMiningLog,
       stableStringifyPreset,
     } from './js/MotionTemplateImporter.js';
 
@@ -408,6 +523,14 @@
       exportedBoneCount: document.getElementById('exportedBoneCount'),
       warningList: document.getElementById('warningList'),
       json: document.getElementById('motion-template-json'),
+      miningCategory: document.getElementById('miningCategory'),
+      miningScore: document.getElementById('miningScore'),
+      miningRejectReason: document.getElementById('miningRejectReason'),
+      miningNote: document.getElementById('miningNote'),
+      miningTags: document.getElementById('miningTags'),
+      btnAddMiningCandidate: document.getElementById('btnAddMiningCandidate'),
+      btnExportMiningLog: document.getElementById('btnExportMiningLog'),
+      miningCandidateList: document.getElementById('miningCandidateList'),
     };
 
     let renderer;
@@ -425,6 +548,7 @@
     let latestPreset = null;
     let isPlaying = false;
     let sourceWarnings = [];
+    const miningEntries = [];
 
     init().catch((err) => {
       setStatus('載入失敗');
@@ -459,6 +583,8 @@
       resize();
       renderer.setAnimationLoop(render);
 
+      renderMiningOptions();
+      renderMiningList();
       bindEvents();
       setWarnings([]);
       setStatus('已載入 Alicia');
@@ -681,6 +807,113 @@
       setStatus('匯出完成');
     }
 
+    function addMiningCandidate() {
+      if (!latestPreset || !sourceFileName) {
+        setWarnings(['請先載入 VRMA 並取樣後再加入候選']);
+        return;
+      }
+
+      const category = els.miningCategory.value || 'present';
+      const sequence = miningEntries.filter((entry) => entry.category === category).length + 1;
+      const entry = buildMotionMiningEntry({
+        source: sourceFileName,
+        sampleTime: Number(els.sampleTime.value || 0),
+        category,
+        score: Number(els.miningScore.value || 3),
+        rejectReason: els.miningRejectReason.value,
+        note: els.miningNote.value,
+        tags: els.miningTags.value,
+        sequence,
+      });
+
+      miningEntries.push(entry);
+      renderMiningList();
+      setStatus(`已加入候選 ${entry.id}`);
+    }
+
+    function downloadMiningLog() {
+      if (miningEntries.length === 0) {
+        setWarnings(['目前沒有候選紀錄可匯出']);
+        return;
+      }
+
+      const blob = new Blob([stableStringifyMiningLog(miningEntries)], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'mining_log.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setStatus('已匯出 mining_log.json');
+    }
+
+    function renderMiningOptions() {
+      els.miningCategory.replaceChildren(...MOTION_MINING_CATEGORIES.map((category) => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = getCategoryLabel(category);
+        return option;
+      }));
+
+      els.miningRejectReason.replaceChildren(...MOTION_MINING_REJECT_REASONS.map((reason) => {
+        const option = document.createElement('option');
+        option.value = reason;
+        option.textContent = reason;
+        return option;
+      }));
+
+      updateRejectReasonState();
+    }
+
+    function renderMiningList() {
+      if (miningEntries.length === 0) {
+        const empty = document.createElement('li');
+        empty.textContent = '尚無候選';
+        els.miningCandidateList.replaceChildren(empty);
+        return;
+      }
+
+      els.miningCandidateList.replaceChildren(...miningEntries.map((entry) => {
+        const li = document.createElement('li');
+        const reason = entry.rejectReason ? ` / ${entry.rejectReason}` : '';
+        const file = entry.exportedPoseFile ? ` / ${entry.exportedPoseFile}` : '';
+        const title = document.createElement('strong');
+        title.textContent = entry.id;
+        const meta = document.createTextNode(` ${entry.source} @ ${formatSeconds(entry.sampleTime)}s / ${entry.category}${reason} / ${entry.score} 分${file}`);
+        const note = document.createElement('span');
+        note.textContent = entry.note || '無備註';
+        li.append(title, meta, document.createElement('br'), note);
+        return li;
+      }));
+    }
+
+    function updateRejectReasonState() {
+      const isReject = els.miningCategory.value === 'reject';
+      els.miningRejectReason.disabled = !isReject;
+
+      const currentTags = els.miningTags.value.trim();
+      if (isReject && (!currentTags || currentTags === 'upper_body, agent_friendly')) {
+        els.miningTags.value = 'negative_sample';
+      }
+      if (!isReject && (!currentTags || currentTags === 'negative_sample')) {
+        els.miningTags.value = 'upper_body, agent_friendly';
+      }
+    }
+
+    function getCategoryLabel(category) {
+      const labels = {
+        present: '介紹 present',
+        point: '指向 point',
+        think: '思考 think',
+        warning: '警告 warning',
+        success: '成功 success',
+        reject: '淘汰 reject',
+      };
+      return labels[category] || category;
+    }
+
     function playMotion() {
       if (!mixer || !action || !clip) {
         setWarnings(['請先載入 VRMA']);
@@ -772,6 +1005,9 @@
       els.btnPlayMotion.addEventListener('click', playMotion);
       els.btnPauseMotion.addEventListener('click', pauseMotion);
       els.btnStopMotion.addEventListener('click', () => stopPlayback());
+      els.miningCategory.addEventListener('change', updateRejectReasonState);
+      els.btnAddMiningCandidate.addEventListener('click', addMiningCandidate);
+      els.btnExportMiningLog.addEventListener('click', downloadMiningLog);
       els.btnCopyJson.addEventListener('click', () => copyJson().catch((err) => {
         setWarnings([`複製失敗：${err?.message || err}`]);
         console.error(err);
