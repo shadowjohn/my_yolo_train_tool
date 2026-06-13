@@ -62,6 +62,16 @@ class StateContext {
   hideBubble() {
     this.#machine.onSay?.(null);
   }
+
+  /**
+   * 將對話狀態交給 ActingBridge；StateMachine 不直接知道表情 / clip / gaze 策略。
+   * @param {string} state
+   * @param {object} [meta]
+   * @returns {object|null}
+   */
+  notifyTalkingState(state, meta = {}) {
+    return this.#mascot.notifyTalkingState?.(state, meta) || null;
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -133,8 +143,11 @@ class IdleState extends MascotState {
 
   onEnter(ctx, params) {
     super.onEnter(ctx, params);
-    ctx.motion.play('idle');
-    ctx.expression.set(null);
+    const talkingResult = ctx.notifyTalkingState('idle', { source: 'idle_state' });
+    if (!talkingResult || talkingResult.state === 'idle') {
+      ctx.motion.play('idle');
+      ctx.expression.set(null);
+    }
     this.#idleTime = 0;
     this.#nextTriggerTime = 8 + Math.random() * 7; // 8~15 秒隨機觸發
   }
@@ -222,12 +235,12 @@ class ThinkingState extends MascotState {
   onEnter(ctx, params) {
     super.onEnter(ctx, params);
     this.#elapsed = 0;
-    ctx.mascot.act('thinking');
+    ctx.notifyTalkingState('thinking', { source: 'thinking_state' });
   }
 
   onExit(ctx) {
     super.onExit(ctx);
-    ctx.expression.set(null, 0, 0.3);
+    ctx.notifyTalkingState('idle', { source: 'thinking_exit' });
   }
 
   update(ctx, dt) {
@@ -265,16 +278,17 @@ class TalkingState extends MascotState {
 
     ctx.showBubble(this.#text);
 
-    // M5：若有 actingState，優先由 ActingPolicy 決定 expression / clip / gaze。
-    if (params?.actingState) {
-      ctx.mascot.act(params.actingState, {
-        source: 'talking',
-        text: this.#text,
-      });
-    } else if (params?.emotion) {
+    // M6：保留舊的顯式 emotion/motion，但以 ActingBridge 的裁決避免覆蓋高優先權 trace pose。
+    const talkingResult = ctx.notifyTalkingState(params?.actingState || 'speaking', {
+      source: 'talking_state',
+      text: this.#text,
+    });
+    const canApplyLegacyPose = !params?.actingState && (!talkingResult || talkingResult.state === 'speaking');
+
+    if (canApplyLegacyPose && params?.emotion) {
       ctx.expression.set(params.emotion, 0.8, 0.3);
     }
-    if (!params?.actingState && params?.motion) {
+    if (canApplyLegacyPose && params?.motion) {
       ctx.motion.play(params.motion);
     }
   }
@@ -323,8 +337,7 @@ class TalkingState extends MascotState {
       }
     }
     ctx.hideBubble();
-    // 說話完畢後表情慢慢退回 default
-    ctx.expression.set(null, 0, 0.4);
+    ctx.notifyTalkingState('idle', { source: 'talking_exit' });
   }
 }
 

@@ -157,7 +157,7 @@ function testPoseDirectorAppliesActingPolicyToControllers() {
   ]);
 }
 
-function createFakeMascotForStateMachine() {
+function createFakeMascotForStateMachine(options = {}) {
   const { calls, motion, expression, lookAt } = createFakeControllers();
   const mascot = {
     motion,
@@ -166,8 +166,12 @@ function createFakeMascotForStateMachine() {
     queue: { length: 0, isExecuting: false },
     isUserInteracting: false,
     act(state, meta) {
-      const director = new PoseDirector({ motion, expression, lookAt });
-      return director.act(state, meta);
+      calls.push({ type: 'act', state, meta });
+      return { state, meta };
+    },
+    notifyTalkingState(state, meta) {
+      calls.push({ type: 'talkingState', state, meta });
+      return options.notifyTalkingState?.(state, meta) ?? { state, meta };
     },
     _getBlendShapeProxy() {
       return null;
@@ -189,12 +193,79 @@ function testTalkingStateUsesActingStatePolicyWhenPresent() {
 
   assert.deepEqual(calls, [
     {
-      type: 'expressionProfile',
-      name: 'happy',
-      options: { intensity: 0.85, duration: 1200, fadeSec: 0.18 },
+      type: 'talkingState',
+      state: 'success',
+      meta: { source: 'talking_state', text: '完成' },
     },
-    { type: 'clip', name: 'victory' },
-    { type: 'gaze', mode: 'mouse', data: undefined },
+  ]);
+}
+
+function testPlainTalkingKeepsLegacyEmotionMotionAndNotifiesSpeaking() {
+  const { calls, mascot } = createFakeMascotForStateMachine();
+  const machine = new MascotStateMachine(mascot);
+
+  machine.dispatch('talking', {
+    text: '一般說話',
+    emotion: 'joy',
+    motion: 'wave',
+  });
+
+  assert.deepEqual(calls, [
+    {
+      type: 'talkingState',
+      state: 'speaking',
+      meta: { source: 'talking_state', text: '一般說話' },
+    },
+    { type: 'expression', name: 'joy', weight: 0.8, fadeSec: 0.3 },
+    { type: 'motion', name: 'wave' },
+  ]);
+}
+
+function testIdleDoesNotOverrideActiveTracePose() {
+  const { calls, mascot } = createFakeMascotForStateMachine({
+    notifyTalkingState(state, meta) {
+      if (state === 'idle') {
+        return { state: 'running', skipped: true, meta };
+      }
+      return { state, meta };
+    },
+  });
+  const machine = new MascotStateMachine(mascot);
+
+  machine.dispatch('idle');
+
+  assert.deepEqual(calls, [
+    {
+      type: 'talkingState',
+      state: 'idle',
+      meta: { source: 'idle_state' },
+    },
+  ]);
+}
+
+function testPlainTalkingDoesNotOverrideActiveTracePose() {
+  const { calls, mascot } = createFakeMascotForStateMachine({
+    notifyTalkingState(state, meta) {
+      if (state === 'speaking') {
+        return { state: 'running', skipped: true, meta };
+      }
+      return { state, meta };
+    },
+  });
+  const machine = new MascotStateMachine(mascot);
+
+  machine.dispatch('talking', {
+    text: '執行中仍說話',
+    emotion: 'joy',
+    motion: 'wave',
+  });
+
+  assert.deepEqual(calls, [
+    {
+      type: 'talkingState',
+      state: 'speaking',
+      meta: { source: 'talking_state', text: '執行中仍說話' },
+    },
   ]);
 }
 
@@ -245,6 +316,9 @@ const tests = [
   testPolicyReferencesOnlyExistingExpressionClipAndGazeModes,
   testPoseDirectorAppliesActingPolicyToControllers,
   testTalkingStateUsesActingStatePolicyWhenPresent,
+  testPlainTalkingKeepsLegacyEmotionMotionAndNotifiesSpeaking,
+  testIdleDoesNotOverrideActiveTracePose,
+  testPlainTalkingDoesNotOverrideActiveTracePose,
   testActionQueueForwardsActingStateToTalkingDispatch,
   testVrmMascotExposesActApiWithoutContextDigestPollution,
 ];

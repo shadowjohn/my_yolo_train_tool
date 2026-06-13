@@ -454,14 +454,13 @@ function testVrmMascotUsesBridgeForTraceUpdates() {
 function testStateMachineEmitsTalkingEventsToBridge() {
   const source = readFileSync('my_vrm_mascot/js/MascotStateMachine.js', 'utf8');
 
-  if (!/notifyTalkingState\s*\(/.test(source)) {
-    return 'skip';
-  }
-
   assert.match(source, /notifyTalkingState\s*\(\s*state\s*,\s*meta\s*=\s*\{\s*\}\s*\)/);
+  assert.match(source, /this\.\#mascot\.notifyTalkingState\?\.\(\s*state\s*,\s*meta\s*\)\s*\|\|\s*null/);
+  assert.match(source, /ctx\.notifyTalkingState\s*\(\s*['"]idle['"]\s*,\s*\{\s*source:\s*['"]idle_state['"]/);
   assert.match(source, /ctx\.notifyTalkingState\s*\(\s*['"]thinking['"]/);
+  assert.match(source, /ctx\.notifyTalkingState\s*\(\s*['"]idle['"]\s*,\s*\{\s*source:\s*['"]thinking_exit['"]/);
   assert.match(source, /ctx\.notifyTalkingState\s*\(\s*params\s*\?\.\s*actingState\s*\|\|\s*['"]speaking['"]/);
-  assert.match(source, /ctx\.notifyTalkingState\s*\(\s*['"]idle['"]/);
+  assert.match(source, /ctx\.notifyTalkingState\s*\(\s*['"]idle['"]\s*,\s*\{\s*source:\s*['"]talking_exit['"]/);
 }
 
 function testContextDigestStillDoesNotContainActingData() {
