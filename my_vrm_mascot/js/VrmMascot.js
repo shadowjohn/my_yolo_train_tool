@@ -647,7 +647,6 @@ export class VrmMascot {
     const text = normalizedIntent.beforeText || normalizedIntent.text || preset.text;
     const safeText = String(text || "").slice(0, 120);
 
-    const hasExplicitActingOverride = !!(normalizedIntent.emotion || normalizedIntent.motion);
     const emotion = normalizedIntent.emotion || preset.emotion;
     const motion = normalizedIntent.motion || preset.motion;
 
