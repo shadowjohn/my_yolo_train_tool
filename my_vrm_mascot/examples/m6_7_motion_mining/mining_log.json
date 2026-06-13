@@ -504,5 +504,355 @@
     "createdAt": "2026-06-13T16:29:00+08:00",
     "sourceScore": 4,
     "agentScore": 4
+  },
+  {
+    "id": "warning_007",
+    "source": "Angry.vrma",
+    "sampleTime": 0.099,
+    "category": "warning",
+    "score": 3,
+    "sourceScore": 4,
+    "agentScore": 3,
+    "note": "起手肩線已帶有壓迫感，可作輕量 warning 的前導姿勢。",
+    "tags": [
+      "upper_body",
+      "warning",
+      "early_frame"
+    ],
+    "exportedPoseFile": "warning_007.json",
+    "createdAt": "2026-06-14T10:00:00+08:00"
+  },
+  {
+    "id": "reject_008",
+    "source": "Angry.vrma",
+    "sampleTime": 3.498,
+    "category": "reject",
+    "score": 2,
+    "sourceScore": 4,
+    "agentScore": 2,
+    "rejectReason": "too_large_motion",
+    "note": "原始情緒收束有張力，但 Agent Pose 下仍過度戲劇化，只留手臂角度參考。",
+    "tags": [
+      "negative_sample",
+      "too_large_motion",
+      "warning_reference"
+    ],
+    "createdAt": "2026-06-14T10:01:00+08:00"
+  },
+  {
+    "id": "success_006",
+    "source": "Clapping.vrma",
+    "sampleTime": 0.099,
+    "category": "success",
+    "score": 3,
+    "sourceScore": 3,
+    "agentScore": 3,
+    "note": "拍手前置動作幅度尚可，可作低強度完成提示候選。",
+    "tags": [
+      "upper_body",
+      "success",
+      "clap_start"
+    ],
+    "exportedPoseFile": "success_006.json",
+    "createdAt": "2026-06-14T10:02:00+08:00"
+  },
+  {
+    "id": "reject_009",
+    "source": "Clapping.vrma",
+    "sampleTime": 3.498,
+    "category": "reject",
+    "score": 2,
+    "sourceScore": 3,
+    "agentScore": 2,
+    "rejectReason": "hands_cover_face",
+    "note": "收尾手部仍偏臉部區域，容易遮擋表情，不適合作常態成功姿勢。",
+    "tags": [
+      "negative_sample",
+      "face_occlusion",
+      "clap_end"
+    ],
+    "createdAt": "2026-06-14T10:03:00+08:00"
+  },
+  {
+    "id": "present_004",
+    "source": "Goodbye.vrma",
+    "sampleTime": 0.099,
+    "category": "present",
+    "score": 4,
+    "sourceScore": 4,
+    "agentScore": 4,
+    "note": "單手外展輪廓乾淨，適合介紹或引導使用者看右側資訊。",
+    "tags": [
+      "upper_body",
+      "agent_friendly",
+      "present",
+      "one_hand"
+    ],
+    "exportedPoseFile": "present_004.json",
+    "createdAt": "2026-06-14T10:04:00+08:00"
+  },
+  {
+    "id": "point_003",
+    "source": "Goodbye.vrma",
+    "sampleTime": 3.498,
+    "category": "point",
+    "score": 3,
+    "sourceScore": 4,
+    "agentScore": 3,
+    "note": "尾段手臂方向性仍可讀，適合拆成 point_right 或告別式提示變體。",
+    "tags": [
+      "upper_body",
+      "point",
+      "right_side",
+      "late_frame"
+    ],
+    "exportedPoseFile": "point_003.json",
+    "createdAt": "2026-06-14T10:05:00+08:00"
+  },
+  {
+    "id": "candidate_future_004",
+    "source": "Jump.vrma",
+    "sampleTime": 0.099,
+    "category": "candidate_future",
+    "score": 4,
+    "sourceScore": 4,
+    "agentScore": 1,
+    "reason": "requires_locomotion",
+    "note": "起跳準備在原始動作有動能，但鎖下半身後語意斷裂，保留給 locomotion。",
+    "tags": [
+      "future_candidate",
+      "requires_locomotion",
+      "jump_start"
+    ],
+    "exportedPoseFile": "candidate_future_004.json",
+    "createdAt": "2026-06-14T10:06:00+08:00"
+  },
+  {
+    "id": "candidate_future_005",
+    "source": "Jump.vrma",
+    "sampleTime": 3.498,
+    "category": "candidate_future",
+    "score": 3,
+    "sourceScore": 4,
+    "agentScore": 2,
+    "reason": "requires_weight_shift",
+    "note": "落地後上身有正向情緒，但目前缺重心回收，需 weight shift 才能成立。",
+    "tags": [
+      "future_candidate",
+      "requires_weight_shift",
+      "success_reference"
+    ],
+    "exportedPoseFile": "candidate_future_005.json",
+    "createdAt": "2026-06-14T10:07:00+08:00"
+  },
+  {
+    "id": "think_008",
+    "source": "LookAround.vrma",
+    "sampleTime": 0.099,
+    "category": "think",
+    "score": 4,
+    "sourceScore": 4,
+    "agentScore": 4,
+    "note": "視線探索起手自然，適合查詢前的短暫觀察狀態。",
+    "tags": [
+      "upper_body",
+      "agent_friendly",
+      "thinking",
+      "scan_start"
+    ],
+    "exportedPoseFile": "think_008.json",
+    "createdAt": "2026-06-14T10:08:00+08:00"
+  },
+  {
+    "id": "point_004",
+    "source": "LookAround.vrma",
+    "sampleTime": 3.498,
+    "category": "point",
+    "score": 3,
+    "sourceScore": 4,
+    "agentScore": 3,
+    "note": "末段身體方向仍可形成側向提示，可作 point_left/right 的候選素材。",
+    "tags": [
+      "upper_body",
+      "point",
+      "look_direction"
+    ],
+    "exportedPoseFile": "point_004.json",
+    "createdAt": "2026-06-14T10:09:00+08:00"
+  },
+  {
+    "id": "present_005",
+    "source": "Relax.vrma",
+    "sampleTime": 0.099,
+    "category": "present",
+    "score": 5,
+    "sourceScore": 5,
+    "agentScore": 5,
+    "note": "放鬆起手非常適合 Agent 介紹姿勢，輪廓開放且不誇張。",
+    "tags": [
+      "upper_body",
+      "agent_friendly",
+      "present",
+      "top_candidate"
+    ],
+    "exportedPoseFile": "present_005.json",
+    "createdAt": "2026-06-14T10:10:00+08:00"
+  },
+  {
+    "id": "success_007",
+    "source": "Relax.vrma",
+    "sampleTime": 3.498,
+    "category": "success",
+    "score": 3,
+    "sourceScore": 3,
+    "agentScore": 3,
+    "note": "收束穩定，適合低調完成或回到 idle 前的柔和過渡。",
+    "tags": [
+      "upper_body",
+      "success",
+      "subtle",
+      "transition"
+    ],
+    "exportedPoseFile": "success_007.json",
+    "createdAt": "2026-06-14T10:11:00+08:00"
+  },
+  {
+    "id": "warning_008",
+    "source": "Sad.vrma",
+    "sampleTime": 0.099,
+    "category": "warning",
+    "score": 3,
+    "sourceScore": 3,
+    "agentScore": 3,
+    "note": "低姿態起手適合資料不足或溫和提醒，不適合高強度 blocked。",
+    "tags": [
+      "upper_body",
+      "warning",
+      "soft_warning"
+    ],
+    "exportedPoseFile": "warning_008.json",
+    "createdAt": "2026-06-14T10:12:00+08:00"
+  },
+  {
+    "id": "reject_010",
+    "source": "Sad.vrma",
+    "sampleTime": 3.498,
+    "category": "reject",
+    "score": 2,
+    "sourceScore": 2,
+    "agentScore": 2,
+    "rejectReason": "not_agentic",
+    "note": "尾段情緒太低，容易讓 Agent 看起來失去回應能力，只保留負面樣本。",
+    "tags": [
+      "negative_sample",
+      "not_agentic",
+      "sad_end"
+    ],
+    "createdAt": "2026-06-14T10:13:00+08:00"
+  },
+  {
+    "id": "think_009",
+    "source": "Sleepy.vrma",
+    "sampleTime": 0.099,
+    "category": "think",
+    "score": 3,
+    "sourceScore": 3,
+    "agentScore": 3,
+    "note": "慢速起手可參考為等待資料，但需避免睡意過強。",
+    "tags": [
+      "upper_body",
+      "thinking",
+      "slow_start"
+    ],
+    "exportedPoseFile": "think_009.json",
+    "createdAt": "2026-06-14T10:14:00+08:00"
+  },
+  {
+    "id": "reject_011",
+    "source": "Sleepy.vrma",
+    "sampleTime": 3.498,
+    "category": "reject",
+    "score": 2,
+    "sourceScore": 3,
+    "agentScore": 2,
+    "rejectReason": "unclear_intent",
+    "note": "末段語意偏疲倦，和 GIS Agent 分析中狀態容易混淆。",
+    "tags": [
+      "negative_sample",
+      "sleepy",
+      "unclear_intent"
+    ],
+    "createdAt": "2026-06-14T10:15:00+08:00"
+  },
+  {
+    "id": "warning_009",
+    "source": "Surprised.vrma",
+    "sampleTime": 0.099,
+    "category": "warning",
+    "score": 4,
+    "sourceScore": 4,
+    "agentScore": 4,
+    "note": "驚訝起手清楚，適合異常偵測或政策阻擋前的反應姿勢。",
+    "tags": [
+      "upper_body",
+      "agent_friendly",
+      "warning",
+      "surprised_start"
+    ],
+    "exportedPoseFile": "warning_009.json",
+    "createdAt": "2026-06-14T10:16:00+08:00"
+  },
+  {
+    "id": "reject_012",
+    "source": "Surprised.vrma",
+    "sampleTime": 3.498,
+    "category": "reject",
+    "score": 2,
+    "sourceScore": 3,
+    "agentScore": 2,
+    "rejectReason": "hands_cover_face",
+    "note": "尾段手勢仍有遮臉風險，不適合長時間顯示，但可作 warning clip 中間幀參考。",
+    "tags": [
+      "negative_sample",
+      "face_occlusion",
+      "warning_reference"
+    ],
+    "createdAt": "2026-06-14T10:17:00+08:00"
+  },
+  {
+    "id": "think_010",
+    "source": "Thinking.vrma",
+    "sampleTime": 0.099,
+    "category": "think",
+    "score": 5,
+    "sourceScore": 5,
+    "agentScore": 5,
+    "note": "思考起手自然且辨識度高，是查詢中姿勢 Top candidate。",
+    "tags": [
+      "upper_body",
+      "agent_friendly",
+      "thinking",
+      "top_candidate"
+    ],
+    "exportedPoseFile": "think_010.json",
+    "createdAt": "2026-06-14T10:18:00+08:00"
+  },
+  {
+    "id": "think_011",
+    "source": "Thinking.vrma",
+    "sampleTime": 3.498,
+    "category": "think",
+    "score": 4,
+    "sourceScore": 4,
+    "agentScore": 4,
+    "note": "收尾仍保有分析中語意，可作 idle-thinking loop 的候選結尾。",
+    "tags": [
+      "upper_body",
+      "agent_friendly",
+      "thinking",
+      "loop_end"
+    ],
+    "exportedPoseFile": "think_011.json",
+    "createdAt": "2026-06-14T10:19:00+08:00"
   }
 ]
