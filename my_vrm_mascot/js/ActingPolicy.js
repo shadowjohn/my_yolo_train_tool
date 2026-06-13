@@ -14,6 +14,7 @@ export const ACTING_POLICY_STATES = Object.freeze([
   'warning',
   'blocked',
   'thinking',
+  'speaking',
   'pending',
   'running',
   'error',
@@ -56,6 +57,9 @@ const ACTING_POLICIES = Object.freeze({
     expression: { name: 'thinking', intensity: 0.72, duration: 1600, fadeSec: 0.22 },
     motion: { name: 'idle' },
     gaze: { mode: 'mouse' },
+  },
+  speaking: {
+    state: 'speaking',
   },
   pending: {
     state: 'pending',

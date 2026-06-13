@@ -80,6 +80,16 @@ function testThinkingPolicyDoesNotReferenceFakeClip() {
   assert.equal(policy.gaze.mode, 'mouse');
 }
 
+function testSpeakingPolicyIsNoOpForBridge() {
+  const policy = resolveActingPolicyForState('speaking');
+
+  assert.equal(policy.state, 'speaking');
+  assert.equal(policy.expression, undefined);
+  assert.equal(policy.clip, undefined);
+  assert.equal(policy.motion, undefined);
+  assert.equal(policy.gaze, undefined);
+}
+
 function testUnknownPolicyFallsBackToNeutralIdle() {
   const policy = resolveActingPolicyForState('not_real');
 
@@ -229,6 +239,7 @@ const tests = [
   testRunningPolicyUsesPresentingAndPointGaze,
   testBlockedPolicyUsesWarningNodNotLongWarningPose,
   testThinkingPolicyDoesNotReferenceFakeClip,
+  testSpeakingPolicyIsNoOpForBridge,
   testUnknownPolicyFallsBackToNeutralIdle,
   testTracePolicyMappingUsesRuntimeStatus,
   testPolicyReferencesOnlyExistingExpressionClipAndGazeModes,
