@@ -182,12 +182,23 @@ async function testStableExportIsDeterministic() {
 }
 
 async function testClampSampleTime() {
-  const { clampSampleTime } = await importImporterModule();
+  const { clampSampleTime, SAMPLE_TIME_EPSILON } = await importImporterModule();
 
   assert.equal(clampSampleTime(-1, 2), 0);
-  assert.equal(clampSampleTime(3, 2), 2);
+  assert.equal(clampSampleTime(3, 2), 2 - SAMPLE_TIME_EPSILON);
   assert.equal(clampSampleTime(1.23456, 2), 1.23456);
   assert.equal(clampSampleTime(Number.NaN, 2), 0);
+}
+
+async function testClampSampleTimeAvoidsDurationLoopBoundary() {
+  const { clampSampleTime, SAMPLE_TIME_EPSILON } = await importImporterModule();
+
+  const duration = 2;
+  const safeLastFrame = duration - SAMPLE_TIME_EPSILON;
+
+  assert.equal(clampSampleTime(duration, duration), safeLastFrame);
+  assert.equal(clampSampleTime(duration + 1, duration), safeLastFrame);
+  assert.equal(clampSampleTime(safeLastFrame, duration), safeLastFrame);
 }
 
 async function run() {
@@ -200,6 +211,7 @@ async function run() {
     testBuildNaturalPosePresetMergesUpperBodyOnly,
     testStableExportIsDeterministic,
     testClampSampleTime,
+    testClampSampleTimeAvoidsDurationLoopBoundary,
   ];
 
   for (const test of tests) {

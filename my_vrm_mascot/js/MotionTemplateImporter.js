@@ -12,14 +12,16 @@ export const UPPER_BODY_BONES = Object.freeze([
 ]);
 
 export const DEFAULT_EXPORT_PRECISION = 2;
+export const SAMPLE_TIME_EPSILON = 0.001;
 
 const UPPER_BODY_BONE_SET = new Set(UPPER_BODY_BONES);
 
 export function clampSampleTime(value, duration = 0) {
   const numeric = Number(value);
   const max = Number.isFinite(Number(duration)) && Number(duration) > 0 ? Number(duration) : 0;
+  const safeMax = Math.max(0, max - SAMPLE_TIME_EPSILON);
   if (!Number.isFinite(numeric) || numeric <= 0) return 0;
-  if (numeric >= max) return max;
+  if (numeric >= safeMax) return safeMax;
   return numeric;
 }
 
