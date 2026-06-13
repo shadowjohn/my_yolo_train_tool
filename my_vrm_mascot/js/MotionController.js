@@ -352,15 +352,7 @@ export class MotionController {
   #doIdle() {
     const t = this.#elapsed;
     this.#applyNaturalPose(t);
-    this.#applyBreathingOverlay(t, 1);
-
-    // 手臂在自然垂放上加一點微動，避免站樁。
-    if (this.#bones.leftUpperArm) {
-      this.#bones.leftUpperArm.rotation.z += Math.sin(t * 0.9) * 0.008;
-    }
-    if (this.#bones.rightUpperArm) {
-      this.#bones.rightUpperArm.rotation.z += Math.sin(t * 0.9 + 0.5) * 0.008;
-    }
+    this.#applyIdleMicroMotion(t);
   }
 
   // ── Wave：右手揮手 ──────────────────────
@@ -696,6 +688,64 @@ export class MotionController {
     if (this.#bones.hips) {
       this.#bones.hips.position.x += Math.sin(t * 0.65) * 0.001 * scale;
       this.#bones.hips.position.y += Math.sin(t * 1.4) * 0.002 * scale;
+    }
+  }
+
+  /** 待機微動：只給 idle 使用，避免污染語意動作。 */
+  #applyIdleMicroMotion(t) {
+    const breathSpine = Math.sin(t * 1.18);
+    const breathChest = Math.sin(t * 1.42 + 0.35);
+    const weight = Math.sin(t * 0.55 + 0.2);
+    const slow = Math.sin(t * 0.33 + 0.6);
+
+    if (this.#bones.spine) {
+      this.#bones.spine.rotation.x += breathSpine * 0.006 + slow * 0.002;
+      this.#bones.spine.rotation.z += weight * 0.004;
+    }
+    if (this.#bones.chest) {
+      this.#bones.chest.rotation.x += breathChest * 0.005;
+      this.#bones.chest.rotation.y += Math.sin(t * 0.41 + 1.1) * 0.003;
+    }
+    if (this.#bones.hips) {
+      this.#bones.hips.position.x += weight * 0.0026;
+      this.#bones.hips.position.y += breathChest * 0.0024;
+      this.#bones.hips.position.z += Math.sin(t * 0.37 + 0.8) * 0.001;
+    }
+
+    if (this.#bones.leftShoulder) {
+      this.#bones.leftShoulder.rotation.z += Math.sin(t * 0.62 + 0.4) * 0.01;
+      this.#bones.leftShoulder.rotation.x += Math.sin(t * 0.48 + 1.5) * 0.004;
+    }
+    if (this.#bones.rightShoulder) {
+      this.#bones.rightShoulder.rotation.z += Math.sin(t * 0.58 + 2.0) * 0.01;
+      this.#bones.rightShoulder.rotation.x += Math.sin(t * 0.45 + 2.4) * 0.004;
+    }
+
+    if (this.#bones.leftUpperArm) {
+      this.#bones.leftUpperArm.rotation.z += Math.sin(t * 0.9) * 0.006;
+      this.#bones.leftUpperArm.rotation.x += Math.sin(t * 0.52 + 0.2) * 0.003;
+    }
+    if (this.#bones.rightUpperArm) {
+      this.#bones.rightUpperArm.rotation.z += Math.sin(t * 0.9 + 0.5) * 0.006;
+      this.#bones.rightUpperArm.rotation.x += Math.sin(t * 0.5 + 1.1) * 0.003;
+    }
+
+    if (this.#bones.leftLowerArm) {
+      this.#bones.leftLowerArm.rotation.y += Math.sin(t * 0.72 + 1.1) * 0.008;
+      this.#bones.leftLowerArm.rotation.z += Math.sin(t * 0.43 + 0.7) * 0.004;
+    }
+    if (this.#bones.rightLowerArm) {
+      this.#bones.rightLowerArm.rotation.y += Math.sin(t * 0.7 + 2.4) * 0.008;
+      this.#bones.rightLowerArm.rotation.z += Math.sin(t * 0.44 + 2.2) * 0.004;
+    }
+
+    if (this.#bones.leftHand) {
+      this.#bones.leftHand.rotation.z += Math.sin(t * 0.8 + 1.8) * 0.007;
+      this.#bones.leftHand.rotation.x += Math.sin(t * 0.54 + 0.3) * 0.004;
+    }
+    if (this.#bones.rightHand) {
+      this.#bones.rightHand.rotation.z += Math.sin(t * 0.78 + 2.7) * 0.007;
+      this.#bones.rightHand.rotation.x += Math.sin(t * 0.55 + 1.3) * 0.004;
     }
   }
 

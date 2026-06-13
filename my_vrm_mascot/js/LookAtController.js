@@ -10,6 +10,8 @@ export class LookAtController {
   #headBone = null;
   #neckBone = null;
   #enabled = true;
+  #targetMode = 'mouse';
+  #elapsed = 0;
 
   // 目標（滑鼠正規化座標 -1~1）
   #targetX = 0;
@@ -34,11 +36,13 @@ export class LookAtController {
     // getBoneNode 使用 VRM 0.6.7 的 lowercase bone names
     this.#headBone = vrm.humanoid?.getBoneNode('head') ?? null;
     this.#neckBone = vrm.humanoid?.getBoneNode('neck') ?? null;
+    this.#elapsed = 0;
   }
 
   /** 開啟/關閉注視 */
   setEnabled(flag) {
     this.#enabled = flag;
+    this.#targetMode = flag ? 'mouse' : 'disabled';
     if (!flag) {
       this.#targetX = 0;
       this.#targetY = 0;
@@ -59,12 +63,17 @@ export class LookAtController {
     switch (type) {
       case 'none':
         this.#enabled = false;
+        this.#targetMode = 'none';
+        this.#targetX = 0;
+        this.#targetY = 0;
         break;
       case 'mouse':
         this.#enabled = true;
+        this.#targetMode = 'mouse';
         break;
       case 'point':
         this.#enabled = true;
+        this.#targetMode = 'point';
         if (data) {
           this.#targetX = data.x ?? 0;
           this.#targetY = data.y ?? 0;
@@ -100,7 +109,15 @@ export class LookAtController {
    * @param {number} dt - deltaTime in seconds
    */
   update(dt) {
-    if (!this.#enabled || !this.#headBone) return;
+    if (!this.#headBone) return;
+    this.#elapsed += dt;
+
+    if (!this.#enabled) {
+      if (this.#targetMode === 'none') {
+        this.#applyIdleHeadDrift();
+      }
+      return;
+    }
 
     // EMA 平滑
     this.#smoothX += (this.#targetX - this.#smoothX) * this.#alpha;
@@ -119,6 +136,23 @@ export class LookAtController {
     const headRatio = 1 - this.#neckRatio;
     this.#headBone.rotation.y = yawRad * headRatio;
     this.#headBone.rotation.x = pitchRad * headRatio;
+    this.#headBone.rotation.z = 0;
+  }
+
+  #applyIdleHeadDrift() {
+    const yawRad = Math.sin(this.#elapsed * 0.38 + 0.4) * 1.2 * Math.PI / 180;
+    const pitchRad = Math.sin(this.#elapsed * 0.44 + 1.2) * 0.9 * Math.PI / 180;
+    const rollRad = Math.sin(this.#elapsed * 0.31 + 0.8) * 0.6 * Math.PI / 180;
+
+    if (this.#neckBone) {
+      this.#neckBone.rotation.y = yawRad * 0.25;
+      this.#neckBone.rotation.x = pitchRad * 0.25;
+      this.#neckBone.rotation.z = rollRad * 0.2;
+    }
+
+    this.#headBone.rotation.y = yawRad * 0.75;
+    this.#headBone.rotation.x = pitchRad * 0.75;
+    this.#headBone.rotation.z = rollRad * 0.8;
   }
 
   /** 清理 */

@@ -8,6 +8,7 @@ import {
   getPosePresetUrlForModel,
   MotionController,
 } from '../my_vrm_mascot/js/MotionController.js';
+import { LookAtController } from '../my_vrm_mascot/js/LookAtController.js';
 
 function createFakeControllers() {
   const calls = [];
@@ -60,10 +61,14 @@ function createFakeVrm() {
     'leftLowerArm',
     'rightUpperArm',
     'rightLowerArm',
+    'leftHand',
+    'rightHand',
     'leftUpperLeg',
     'rightUpperLeg',
     'leftShoulder',
     'rightShoulder',
+    'head',
+    'neck',
   ];
   const bones = Object.fromEntries(names.map(name => [name, createBone()]));
   bones.hips.position.y = 1.2;
@@ -178,6 +183,61 @@ function testIdleBuildsOnNaturalPose() {
   assert.ok(Math.abs(bones.rightUpperArm.rotation.z) > radians(12));
   assert.ok(Math.abs(bones.hips.position.x) > 0.001);
   assert.notEqual(bones.hips.position.y, 1.2);
+}
+
+function testIdleMicroMotionAddsBoundedLifeSignals() {
+  const motion = new MotionController();
+  const { vrm, bones } = createFakeVrm();
+
+  motion.setVrm(vrm);
+  motion.loadPosePreset(JSON.parse(readFileSync('my_vrm_mascot/motions/poses/alicia_solid.json', 'utf8')));
+  const natural = {
+    hipsX: bones.hips.position.x,
+    hipsY: bones.hips.position.y,
+    spineX: bones.spine.rotation.x,
+    chestX: bones.chest.rotation.x,
+    leftShoulderZ: bones.leftShoulder.rotation.z,
+    rightShoulderZ: bones.rightShoulder.rotation.z,
+    leftLowerArmY: bones.leftLowerArm.rotation.y,
+    rightLowerArmY: bones.rightLowerArm.rotation.y,
+    leftHandZ: bones.leftHand.rotation.z,
+    rightHandZ: bones.rightHand.rotation.z,
+  };
+
+  motion.update(0.75);
+
+  assert.notEqual(bones.spine.rotation.x, natural.spineX, 'idle should add layered spine breathing');
+  assert.notEqual(bones.chest.rotation.x, natural.chestX, 'idle should add layered chest breathing');
+  assert.notEqual(bones.hips.position.x, natural.hipsX, 'idle should add tiny weight shift');
+  assert.notEqual(bones.leftShoulder.rotation.z, natural.leftShoulderZ, 'idle should relax left shoulder');
+  assert.notEqual(bones.rightShoulder.rotation.z, natural.rightShoulderZ, 'idle should relax right shoulder');
+  assert.notEqual(bones.leftLowerArm.rotation.y, natural.leftLowerArmY, 'idle should add forearm micro motion');
+  assert.notEqual(bones.rightLowerArm.rotation.y, natural.rightLowerArmY, 'idle should add forearm micro motion');
+  assert.notEqual(bones.leftHand.rotation.z, natural.leftHandZ, 'idle should add wrist micro motion');
+  assert.notEqual(bones.rightHand.rotation.z, natural.rightHandZ, 'idle should add wrist micro motion');
+
+  assert.ok(Math.abs(bones.hips.position.x - natural.hipsX) <= 0.004);
+  assert.ok(Math.abs(bones.hips.position.y - natural.hipsY) <= 0.004);
+  assert.ok(Math.abs(bones.leftShoulder.rotation.z - natural.leftShoulderZ) <= radians(1.2));
+  assert.ok(Math.abs(bones.rightShoulder.rotation.z - natural.rightShoulderZ) <= radians(1.2));
+  assert.ok(Math.abs(bones.leftHand.rotation.z - natural.leftHandZ) <= radians(1));
+  assert.ok(Math.abs(bones.rightHand.rotation.z - natural.rightHandZ) <= radians(1));
+}
+
+function testIdleMicroMotionDoesNotLeakIntoPresenting() {
+  const motion = new MotionController();
+  const { vrm, bones } = createFakeVrm();
+
+  motion.setVrm(vrm);
+  motion.loadPosePreset(JSON.parse(readFileSync('my_vrm_mascot/motions/poses/alicia_solid.json', 'utf8')));
+  const naturalLeftHandZ = bones.leftHand.rotation.z;
+  const naturalLeftShoulderZ = bones.leftShoulder.rotation.z;
+
+  motion.play('presenting');
+  motion.update(0.75);
+
+  assert.equal(bones.leftHand.rotation.z, naturalLeftHandZ);
+  assert.equal(bones.leftShoulder.rotation.z, naturalLeftShoulderZ);
 }
 
 function testPresentingUsesRightHandOnly() {
@@ -331,6 +391,34 @@ function testVrmMascotLoadsModelSpecificPosePresetWithFileLoader() {
   assert.doesNotMatch(source, /fetch\([^)]*pose/i);
 }
 
+function testLookAtNoneAddsBoundedIdleHeadDrift() {
+  const lookAt = new LookAtController();
+  const { vrm, bones } = createFakeVrm();
+
+  lookAt.setVrm(vrm);
+  lookAt.setTarget('none');
+  lookAt.update(0.75);
+
+  assert.notEqual(bones.head.rotation.x, 0);
+  assert.notEqual(bones.head.rotation.y, 0);
+  assert.notEqual(bones.neck.rotation.x, 0);
+  assert.ok(Math.abs(bones.head.rotation.x) <= radians(1.2));
+  assert.ok(Math.abs(bones.head.rotation.y) <= radians(1.4));
+  assert.ok(Math.abs(bones.neck.rotation.x) <= radians(0.5));
+}
+
+function testLookAtPointDoesNotUseIdleDriftMode() {
+  const lookAt = new LookAtController();
+  const { vrm, bones } = createFakeVrm();
+
+  lookAt.setVrm(vrm);
+  lookAt.setTarget('point', { x: 0.5, y: 0 });
+  lookAt.update(0.75);
+
+  assert.ok(bones.head.rotation.y > radians(0.5));
+  assert.equal(bones.head.rotation.z, 0);
+}
+
 const tests = [
   testRunningTraceResolvesPresentingPose,
   testDoneTraceResolvesWavePose,
@@ -340,6 +428,8 @@ const tests = [
   testSetVrmAppliesNaturalPoseImmediately,
   testResetToNaturalPoseDoesNotZeroBones,
   testIdleBuildsOnNaturalPose,
+  testIdleMicroMotionAddsBoundedLifeSignals,
+  testIdleMicroMotionDoesNotLeakIntoPresenting,
   testPresentingUsesRightHandOnly,
   testLoadPosePresetUsesDegreeRotationAndHipsPosition,
   testSetBasePoseRotationUpdatesPresetAndCurrentPose,
@@ -350,6 +440,8 @@ const tests = [
   testAliciaPresetKeepsArmsAwayFromTPose,
   testAliciaPresetFileIsModelSpecificAndNatural,
   testVrmMascotLoadsModelSpecificPosePresetWithFileLoader,
+  testLookAtNoneAddsBoundedIdleHeadDrift,
+  testLookAtPointDoesNotUseIdleDriftMode,
 ];
 
 for (const test of tests) {

@@ -140,6 +140,8 @@ mascot.poseForIntentResult('done', intent);  // wave
 
 MotionController 會在 VRM 載入後立即套用 Natural Pose；所有內建程序式動作都建立在這個自然站姿上，再疊加呼吸、展示、警告或揮手動作，避免回到模型 bind/rest pose 的 T-Pose。
 
+M2 Idle Micro Motion 只強化待機層：idle 會疊加胸口/脊椎/重心分層呼吸、肩膀放鬆、前臂與手腕微擺；LookAt `none` 時會加小幅頭部 drift，目標注視時不啟用這個漂移。
+
 Base pose preset 會依模型載入：
 
 - `models/mascot.vrm` -> `motions/poses/alicia_solid.json`
