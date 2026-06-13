@@ -8,12 +8,18 @@ const MODULE_PATH = 'my_vrm_mascot/js/MotionTemplateImporter.js';
 const INDEX_PATH = 'my_vrm_mascot/index.html';
 const EXAMPLE_DIR = 'my_vrm_mascot/examples/m6_7_vrma_samples';
 const REQUIRED_EXAMPLE_VRMA = [
-  'Relax.vrma',
-  'Thinking.vrma',
-  'Goodbye.vrma',
+  'Angry.vrma',
   'Clapping.vrma',
+  'Goodbye.vrma',
+  'Jump.vrma',
+  'LookAround.vrma',
+  'Relax.vrma',
+  'Sad.vrma',
+  'Sleepy.vrma',
   'Surprised.vrma',
+  'Thinking.vrma',
 ];
+const MINING_LOG_PATH = 'my_vrm_mascot/examples/m6_7_motion_mining/mining_log.json';
 
 function read(path) {
   return readFileSync(path, 'utf8');
@@ -63,6 +69,9 @@ function testLabIncludesExampleAndPlaybackControls() {
 
   assert.match(html, /範例動作/);
   assert.match(html, /載入範例/);
+  for (const fileName of REQUIRED_EXAMPLE_VRMA) {
+    assert.match(html, new RegExp(fileName.replace('.', '\\.')));
+  }
   assert.match(html, /播放動作/);
   assert.match(html, /暫停/);
   assert.match(html, /停止/);
@@ -75,6 +84,35 @@ function testLabIncludesExampleAndPlaybackControls() {
   assert.match(html, /mixer\.update\(dt\)/);
   assert.match(html, /applyLowerBodyPreviewLock\(\)/);
   assert.match(html, /startTime\s*>=\s*duration\s*-\s*0\.034/);
+}
+
+function testMotionMiningLogHasThirtyReviewedSamples() {
+  assert.equal(existsSync(MINING_LOG_PATH), true, `${MINING_LOG_PATH} should exist`);
+
+  const log = JSON.parse(read(MINING_LOG_PATH));
+  assert.equal(log.length, 30);
+  assert.equal(new Set(log.map((entry) => entry.source)).size, 10);
+
+  for (const source of REQUIRED_EXAMPLE_VRMA) {
+    assert.equal(log.filter((entry) => entry.source === source).length, 3, `${source} should have 3 mined samples`);
+  }
+
+  for (const entry of log) {
+    assert.match(entry.id, /^(present|point|think|warning|success|reject)_\d{3}$/);
+    assert.equal(REQUIRED_EXAMPLE_VRMA.includes(entry.source), true);
+    assert.equal(typeof entry.sampleTime, 'number');
+    assert.ok(entry.sampleTime >= 0);
+    assert.match(entry.createdAt, /^2026-06-13T\d{2}:\d{2}:\d{2}\+08:00$/);
+    assert.equal(Array.isArray(entry.tags), true);
+    assert.equal(entry.tags.length > 0, true);
+
+    if (entry.category === 'reject') {
+      assert.equal(typeof entry.rejectReason, 'string');
+      assert.equal(entry.exportedPoseFile, undefined);
+    } else {
+      assert.equal(entry.exportedPoseFile, `${entry.id}.json`);
+    }
+  }
 }
 
 function testLabReferencesVrmaCapabilityOnlyInLab() {
@@ -360,6 +398,7 @@ async function run() {
     testLowerBodyPreviewLockIsExplicitAndSeparateFromExportScope,
     testMotionMiningSchemaBuildsCandidateAndRejectEntries,
     testLabIncludesMotionMiningWorkbenchControls,
+    testMotionMiningLogHasThirtyReviewedSamples,
     testBuildNaturalPosePresetMergesUpperBodyOnly,
     testStableExportIsDeterministic,
     testClampSampleTime,

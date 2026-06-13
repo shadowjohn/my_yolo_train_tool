@@ -16,9 +16,13 @@ https://github.com/tk256ailab/vrm-viewer
 
 Files included:
 
-- `Relax.vrma`
-- `Thinking.vrma`
-- `Goodbye.vrma`
+- `Angry.vrma`
 - `Clapping.vrma`
+- `Goodbye.vrma`
+- `Jump.vrma`
+- `LookAround.vrma`
+- `Relax.vrma`
+- `Sad.vrma`
+- `Sleepy.vrma`
 - `Surprised.vrma`
-
+- `Thinking.vrma`
