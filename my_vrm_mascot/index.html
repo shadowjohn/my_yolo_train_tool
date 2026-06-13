@@ -421,7 +421,7 @@
     };
     let currentSuggestedActions = [];
 
-    const INSPECTOR_STORAGE_PREFIX = 'vrmMascot.posePreset.';
+    const INSPECTOR_STORAGE_PREFIX = 'vrmMascot.posePreset.v2.';
     const INSPECTOR_POSITION_BONES = new Set(['hips']);
     const INSPECTOR_MIRROR_PAIRS = {
       leftUpperArm: 'rightUpperArm',
@@ -703,8 +703,7 @@
           mascot.motion.loadPosePreset(JSON.parse(raw));
           setInspectorStatus('已載入本機設定');
         } else {
-          mascot.motion.loadPosePreset({ model: document.getElementById('modelSelector')?.value || 'default' });
-          setInspectorStatus('預設姿勢');
+          setInspectorStatus('模型預設姿勢');
         }
       } catch (err) {
         console.warn('Failed to load local pose preset:', err);
@@ -798,6 +797,7 @@
     mascot.onLoaded = () => {
       overlay.classList.add('hidden');
       setTimeout(() => { overlay.style.display = 'none'; }, 500);
+      loadInspectorPresetFromLocal();
     };
 
     mascot.onLoadError = (err) => {

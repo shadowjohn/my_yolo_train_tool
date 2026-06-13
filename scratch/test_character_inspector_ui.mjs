@@ -82,6 +82,15 @@ function testIndexHtmlKeepsInspectorContracts() {
   assert.match(indexHtml, /id="btnInspectorResetAll"/);
 }
 
+function testInspectorLocalPresetDoesNotOverwriteModelDefault() {
+  assert.match(indexHtml, /vrmMascot\.posePreset\.v2\./);
+  assert.match(indexHtml, /mascot\.onLoaded = \(\) => \{[\s\S]*loadInspectorPresetFromLocal\(\)/);
+  assert.doesNotMatch(
+    indexHtml,
+    /else\s*\{\s*mascot\.motion\.loadPosePreset\(\{ model: document\.getElementById\('modelSelector'\)\?\.value \|\| 'default' \}\);/
+  );
+}
+
 function testCssUsesCharacterInspectorNamespace() {
   assert.match(css, /\.character-inspector-container/);
   assert.match(css, /\.character-inspector-deck/);
@@ -95,6 +104,7 @@ const tests = [
   testBoneLabelsKeepChineseAndHumanoidIds,
   testIndexHtmlUsesCharacterInspectorCopy,
   testIndexHtmlKeepsInspectorContracts,
+  testInspectorLocalPresetDoesNotOverwriteModelDefault,
   testCssUsesCharacterInspectorNamespace,
 ];
 

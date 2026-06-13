@@ -20,7 +20,11 @@
  *   只需改這幾個 helper，其他模組完全不動。
  */
 
-import { MotionController }     from './MotionController.js';
+import {
+  DEFAULT_POSE_PRESET_URL,
+  getPosePresetUrlForModel,
+  MotionController,
+} from './MotionController.js';
 import { ExpressionController } from './ExpressionController.js';
 import { LookAtController }     from './LookAtController.js';
 import { MascotStateMachine }   from './MascotStateMachine.js';
@@ -903,6 +907,64 @@ export class VrmMascot {
   // ── 模型載入 ──────────────────────────
 
   /**
+   * 讀取靜態 JSON 資產；沿用 Three.js loader，避免新增前端請求實作。
+   * @param {string} url
+   * @returns {Promise<object>}
+   */
+  #loadJsonAsset(url) {
+    return new Promise((resolve, reject) => {
+      if (typeof THREE === 'undefined' || !THREE.FileLoader) {
+        reject(new Error('THREE.FileLoader is not available'));
+        return;
+      }
+
+      const loader = new THREE.FileLoader();
+      loader.setResponseType?.('text');
+      loader.load(
+        url,
+        (text) => {
+          try {
+            resolve(JSON.parse(text));
+          } catch (err) {
+            reject(err);
+          }
+        },
+        undefined,
+        reject
+      );
+    });
+  }
+
+  /**
+   * 依模型套用 base pose preset；model-specific 失敗時退回 default。
+   * @param {string} url
+   * @returns {Promise<void>}
+   */
+  async #loadPosePresetForModel(url) {
+    const presetUrl = getPosePresetUrlForModel(url);
+    try {
+      const preset = await this.#loadJsonAsset(presetUrl);
+      this.#motion.loadPosePreset(preset);
+      return;
+    } catch (err) {
+      console.warn(`[VrmMascot] Failed to load pose preset ${presetUrl}:`, err);
+    }
+
+    if (presetUrl === DEFAULT_POSE_PRESET_URL) {
+      this.#motion.resetBasePoseAll();
+      return;
+    }
+
+    try {
+      const fallbackPreset = await this.#loadJsonAsset(DEFAULT_POSE_PRESET_URL);
+      this.#motion.loadPosePreset(fallbackPreset);
+    } catch (err) {
+      console.warn('[VrmMascot] Failed to load default pose preset:', err);
+      this.#motion.resetBasePoseAll();
+    }
+  }
+
+  /**
    * 載入 VRM 模型（主要 API）
    * @param {string} url - .vrm 檔案路徑
    * @returns {Promise<void>}
@@ -916,7 +978,7 @@ export class VrmMascot {
       loader.load(
         url,
         (gltf) => {
-          this._vrmFromGltf(gltf).then((vrm) => {
+          this._vrmFromGltf(gltf).then(async (vrm) => {
             this.#currentVRM = vrm;
             this.#scene.add(vrm.scene);
 
@@ -934,6 +996,7 @@ export class VrmMascot {
 
             // 綁定子系統
             this.#motion.setVrm(vrm);
+            await this.#loadPosePresetForModel(url);
             this.#expression.setVrm(vrm);
             this.#lookAtCtrl.setVrm(vrm);
 

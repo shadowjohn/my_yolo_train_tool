@@ -27,6 +27,14 @@ function getBoneNames() {
 
 const DEG = Math.PI / 180;
 
+export const DEFAULT_POSE_PRESET_URL = 'motions/poses/default.json';
+export const ALICIA_SOLID_POSE_PRESET_URL = 'motions/poses/alicia_solid.json';
+
+const MODEL_POSE_PRESET_URLS = {
+  'models/mascot.vrm': ALICIA_SOLID_POSE_PRESET_URL,
+  'mascot.vrm': ALICIA_SOLID_POSE_PRESET_URL,
+};
+
 export const POSE_CALIBRATION_BONES = [
   'hips',
   'spine',
@@ -106,6 +114,32 @@ function assertAxis(axis) {
   if (!AXES.includes(axis)) {
     throw new Error(`Invalid pose axis: ${axis}`);
   }
+}
+
+function normalizeModelPresetKey(url = '') {
+  return String(url)
+    .split(/[?#]/)[0]
+    .replace(/\\/g, '/')
+    .replace(/^.*\/models\//, 'models/')
+    .replace(/^.*\//, '')
+    .toLowerCase();
+}
+
+/**
+ * 依模型 URL 取得 base pose preset；找不到 model-specific preset 時回到 default。
+ * @param {string} modelUrl
+ * @returns {string}
+ */
+export function getPosePresetUrlForModel(modelUrl = '') {
+  const normalized = String(modelUrl)
+    .split(/[?#]/)[0]
+    .replace(/\\/g, '/')
+    .toLowerCase();
+  const direct = MODEL_POSE_PRESET_URLS[normalized];
+  if (direct) return direct;
+
+  const key = normalizeModelPresetKey(modelUrl);
+  return MODEL_POSE_PRESET_URLS[key] || DEFAULT_POSE_PRESET_URL;
 }
 
 /** 平滑插值 */
@@ -528,12 +562,12 @@ export class MotionController {
       this.#bones.chest.rotation.y += -10 * DEG * intensity;
     }
     if (this.#bones.rightUpperArm) {
-      this.#bones.rightUpperArm.rotation.z += 30 * DEG * intensity + accent;
-      this.#bones.rightUpperArm.rotation.x += -6 * DEG * intensity;
-      this.#bones.rightUpperArm.rotation.y += -12 * DEG * intensity;
+      this.#bones.rightUpperArm.rotation.z += 18 * DEG * intensity + accent;
+      this.#bones.rightUpperArm.rotation.x += -4 * DEG * intensity;
+      this.#bones.rightUpperArm.rotation.y += -16 * DEG * intensity;
     }
     if (this.#bones.rightLowerArm) {
-      this.#bones.rightLowerArm.rotation.y += 24 * DEG * intensity;
+      this.#bones.rightLowerArm.rotation.y += 28 * DEG * intensity;
     }
   }
 

@@ -140,6 +140,12 @@ mascot.poseForIntentResult('done', intent);  // wave
 
 MotionController 會在 VRM 載入後立即套用 Natural Pose；所有內建程序式動作都建立在這個自然站姿上，再疊加呼吸、展示、警告或揮手動作，避免回到模型 bind/rest pose 的 T-Pose。
 
+Base pose preset 會依模型載入：
+
+- `models/mascot.vrm` -> `motions/poses/alicia_solid.json`
+- 未知或上傳模型 -> `motions/poses/default.json`
+- Character Inspector 的本機設定只在有 localStorage preset 時覆蓋模型預設。
+
 ## 可用動作
 
 | 名稱 | 說明 | 持續時間 |
