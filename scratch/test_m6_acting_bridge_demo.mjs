@@ -12,7 +12,7 @@ function testDemoHtmlContractExists() {
   const html = readDemo();
 
   assert.match(html, /Phase M6\.5/);
-  assert.match(html, /Acting Bridge Demo Harness/);
+  assert.match(html, /演出橋接測試台/);
   assert.match(html, /id=["']demoTraceList["']/);
   assert.match(html, /id=["']demoBridgeState["']/);
   assert.match(html, /id=["']demoLog["']/);
@@ -42,6 +42,28 @@ function testDemoButtonsExposeRequiredActions() {
   for (const action of requiredActions) {
     assert.match(html, new RegExp(`data-demo-action=["']${action}["']`));
   }
+
+  const requiredLabels = [
+    '演出：成功',
+    '演出：警告',
+    '演出：阻擋',
+    '演出：失敗',
+    '追蹤：等待中',
+    '追蹤：執行中',
+    '追蹤：完成',
+    '追蹤：失敗',
+    '追蹤：已阻擋',
+    '對話：思考中',
+    '對話：說話中',
+    '對話：待機',
+    '情境：工具成功流程',
+    '情境：工具失敗流程',
+    '情境：執行中說話',
+  ];
+
+  for (const label of requiredLabels) {
+    assert.match(html, new RegExp(label));
+  }
 }
 
 function testDemoUsesBridgeFacingApisOnly() {
@@ -59,6 +81,9 @@ function testDemoUsesBridgeFacingApisOnly() {
 function testDemoIncludesScenarioAndTraceHelpers() {
   const html = readDemo();
 
+  assert.match(html, /追蹤時間線/);
+  assert.match(html, /事件紀錄/);
+  assert.match(html, /工具執行中仍維持展示動作/);
   assert.match(html, /function\s+applyTraceStatus\s*\(/);
   assert.match(html, /function\s+runScenario\s*\(/);
   assert.match(html, /function\s+renderTrace\s*\(/);

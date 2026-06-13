@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Phase M6.5 Acting Bridge Demo Harness</title>
-  <meta name="description" content="VRM Mascot M6.5 Acting Bridge Demo Harness">
+  <title>Phase M6.5 演出橋接測試台</title>
+  <meta name="description" content="VRM Mascot M6.5 演出橋接測試台">
   <link rel="stylesheet" href="css/mascot.css">
   <style>
     body {
@@ -292,13 +292,13 @@
 </head>
 <body>
   <main class="demo-shell">
-    <section class="demo-stage" aria-label="VRM acting bridge preview">
+    <section class="demo-stage" aria-label="VRM 演出橋接預覽">
       <header class="demo-header">
         <div class="demo-title">
-          <strong>Phase M6.5 Acting Bridge Demo Harness</strong>
-          <span>人工觸發 trace / talking lifecycle，觀察 Alicia 自動演出。</span>
+          <strong>Phase M6.5 演出橋接測試台</strong>
+          <span>人工觸發追蹤事件與對話生命週期，觀察 Alicia 自動演出。</span>
         </div>
-        <div class="demo-status-pill" id="demoLoadState">loading</div>
+        <div class="demo-status-pill" id="demoLoadState">載入中</div>
       </header>
 
       <div class="demo-viewport" id="demoViewport">
@@ -306,128 +306,128 @@
       </div>
 
       <footer class="demo-footer">
-        <div class="demo-state-grid" aria-label="Bridge state summary">
+        <div class="demo-state-grid" aria-label="演出橋接狀態摘要">
           <div class="demo-state-box">
-            <span>Bridge</span>
-            <strong id="demoBridgeState">none</strong>
+            <span>橋接狀態</span>
+            <strong id="demoBridgeState">無</strong>
           </div>
           <div class="demo-state-box">
-            <span>Trace</span>
-            <strong id="demoTraceState">idle</strong>
+            <span>工具追蹤</span>
+            <strong id="demoTraceState">待機</strong>
           </div>
           <div class="demo-state-box">
-            <span>Talking</span>
-            <strong id="demoTalkingState">idle</strong>
+            <span>對話狀態</span>
+            <strong id="demoTalkingState">待機</strong>
           </div>
           <div class="demo-state-box">
-            <span>Current Action</span>
-            <strong id="demoCurrentAction">boot</strong>
+            <span>目前操作</span>
+            <strong id="demoCurrentAction">啟動中</strong>
           </div>
         </div>
       </footer>
     </section>
 
-    <aside class="demo-panel" aria-label="Acting bridge controls">
+    <aside class="demo-panel" aria-label="演出橋接控制台">
       <div class="demo-panel-inner">
         <section class="demo-card">
           <div class="demo-card-header">
-            <h2>Act</h2>
+            <h2>直接演出</h2>
             <code>mascot.act()</code>
           </div>
           <div class="demo-button-grid">
             <button class="btn demo-btn" type="button" data-demo-action="act:success">
-              <strong>Act: success</strong>
-              <span>happy + victory</span>
+              <strong>演出：成功</strong>
+              <span>開心表情 + 勝利動作</span>
             </button>
             <button class="btn demo-btn" type="button" data-demo-action="act:warning">
-              <strong>Act: warning</strong>
-              <span>surprised + warning_nod</span>
+              <strong>演出：警告</strong>
+              <span>驚訝表情 + 警示點頭</span>
             </button>
             <button class="btn demo-btn" type="button" data-demo-action="act:blocked">
-              <strong>Act: blocked</strong>
-              <span>angry + warning_nod</span>
+              <strong>演出：阻擋</strong>
+              <span>生氣表情 + 警示點頭</span>
             </button>
             <button class="btn demo-btn" type="button" data-demo-action="act:failed">
-              <strong>Act: failed</strong>
-              <span>sad + shake_head</span>
+              <strong>演出：失敗</strong>
+              <span>難過表情 + 搖頭動作</span>
             </button>
           </div>
         </section>
 
         <section class="demo-card">
           <div class="demo-card-header">
-            <h2>Trace</h2>
+            <h2>工具追蹤</h2>
             <code>updateIntentTrace()</code>
           </div>
           <div class="demo-button-grid">
             <button class="btn demo-btn" type="button" data-demo-action="trace:pending">
-              <strong>Trace: pending</strong>
-              <span>thinking policy</span>
+              <strong>追蹤：等待中</strong>
+              <span>進入思考演出</span>
             </button>
             <button class="btn demo-btn" type="button" data-demo-action="trace:running">
-              <strong>Trace: running</strong>
-              <span>presenting priority</span>
+              <strong>追蹤：執行中</strong>
+              <span>展示動作優先</span>
             </button>
             <button class="btn demo-btn" type="button" data-demo-action="trace:done">
-              <strong>Trace: done</strong>
-              <span>wave transient</span>
+              <strong>追蹤：完成</strong>
+              <span>短暫揮手後釋放</span>
             </button>
             <button class="btn demo-btn" type="button" data-demo-action="trace:failed">
-              <strong>Trace: failed</strong>
-              <span>timeout -> failed</span>
+              <strong>追蹤：失敗</strong>
+              <span>逾時轉為失敗演出</span>
             </button>
             <button class="btn demo-btn" type="button" data-demo-action="trace:blocked">
-              <strong>Trace: blocked</strong>
-              <span>policy_blocked</span>
+              <strong>追蹤：已阻擋</strong>
+              <span>政策阻擋，不執行工具</span>
             </button>
           </div>
         </section>
 
         <section class="demo-card">
           <div class="demo-card-header">
-            <h2>Talking</h2>
+            <h2>對話生命週期</h2>
             <code>notifyTalkingState()</code>
           </div>
           <div class="demo-button-grid">
             <button class="btn demo-btn" type="button" data-demo-action="talking:thinking">
-              <strong>Talking: thinking</strong>
-              <span>conversation thinking</span>
+              <strong>對話：思考中</strong>
+              <span>對話流程正在思考</span>
             </button>
             <button class="btn demo-btn" type="button" data-demo-action="talking:speaking">
-              <strong>Talking: speaking</strong>
-              <span>speaking lifecycle</span>
+              <strong>對話：說話中</strong>
+              <span>進入說話生命週期</span>
             </button>
             <button class="btn demo-btn" type="button" data-demo-action="talking:idle">
-              <strong>Talking: idle</strong>
-              <span>release talking state</span>
+              <strong>對話：待機</strong>
+              <span>釋放對話狀態</span>
             </button>
           </div>
         </section>
 
         <section class="demo-card">
           <div class="demo-card-header">
-            <h2>Scenario</h2>
-            <code>bridge priority</code>
+            <h2>驗證情境</h2>
+            <code>優先權測試</code>
           </div>
           <div class="demo-button-grid" data-cols="1">
             <button class="btn demo-btn" type="button" data-demo-action="scenario:tool_success">
-              <strong>Scenario: tool success flow</strong>
-              <span>pending -> running -> done -> idle</span>
+              <strong>情境：工具成功流程</strong>
+              <span>等待中 -> 執行中 -> 完成 -> 待機</span>
             </button>
             <button class="btn demo-btn" type="button" data-demo-action="scenario:tool_failed">
-              <strong>Scenario: tool failed flow</strong>
-              <span>pending -> running -> failed</span>
+              <strong>情境：工具失敗流程</strong>
+              <span>等待中 -> 執行中 -> 失敗</span>
             </button>
             <button class="btn demo-btn" type="button" data-demo-action="scenario:speaking_while_running">
-              <strong>Scenario: speaking while running</strong>
-              <span>running priority stays above speaking</span>
+              <strong>情境：執行中說話</strong>
+              <span>工具執行中仍維持展示動作</span>
             </button>
           </div>
         </section>
 
         <section class="demo-card">
           <div class="demo-card-header">
-            <h2>Trace Timeline</h2>
+            <h2>追蹤時間線</h2>
             <code>actionIntent.trace</code>
           </div>
           <div class="demo-trace-list" id="demoTraceList"></div>
@@ -435,15 +435,15 @@
 
         <section class="demo-card">
           <div class="demo-card-header">
-            <h2>Log</h2>
-            <code>QA event stream</code>
+            <h2>事件紀錄</h2>
+            <code>QA 事件流</code>
           </div>
           <div class="demo-log" id="demoLog"></div>
         </section>
 
         <section class="demo-card">
           <div class="demo-help">
-            <strong>驗證重點：</strong>這頁不走 LLM、不走 `performIntent()`。按鈕只打 `mascot.act()`、`mascot.updateIntentTrace()`、`mascot.notifyTalkingState()`，用來人工確認 M6 bridge priority 與 transient 行為。
+            <strong>驗證重點：</strong>這頁不走 LLM、不走 `performIntent()`。按鈕只打 `mascot.act()`、`mascot.updateIntentTrace()`、`mascot.notifyTalkingState()`，用來人工確認 M6 演出橋接優先權與短暫狀態行為。
           </div>
         </section>
       </div>
@@ -496,6 +496,56 @@
     let activeIntent = createDemoIntent('none');
     let scenarioTimers = [];
 
+    const STATE_LABELS = {
+      none: '無',
+      idle: '待機',
+      thinking: '思考中',
+      speaking: '說話中',
+      pending: '等待中',
+      running: '執行中',
+      done: '完成',
+      success: '成功',
+      warning: '警告',
+      blocked: '已阻擋',
+      failed: '失敗',
+      error: '錯誤',
+      skipped: '已略過',
+      ok: '通過',
+      healed: '已修復',
+    };
+
+    const STEP_LABELS = {
+      normalize: '意圖正規化',
+      self_heal: '自我修復',
+      policy_check: '政策檢查',
+      execute_tool: '工具執行',
+    };
+
+    const REASON_LABELS = {
+      timeout: '逾時',
+      policy_blocked: '政策阻擋',
+      demo_policy_blocked: '測試政策阻擋',
+    };
+
+    const ACTION_LABELS = {
+      'act:success': '演出：成功',
+      'act:warning': '演出：警告',
+      'act:blocked': '演出：阻擋',
+      'act:failed': '演出：失敗',
+      'trace:pending': '追蹤：等待中',
+      'trace:running': '追蹤：執行中',
+      'trace:done': '追蹤：完成',
+      'trace:failed': '追蹤：失敗',
+      'trace:blocked': '追蹤：已阻擋',
+      'talking:thinking': '對話：思考中',
+      'talking:speaking': '對話：說話中',
+      'talking:idle': '對話：待機',
+      'scenario:tool_success': '情境：工具成功流程',
+      'scenario:tool_failed': '情境：工具失敗流程',
+      'scenario:speaking_while_running': '情境：執行中說話',
+      'scenario:tool_success complete': '情境：工具成功流程完成',
+    };
+
     window.m6ActingBridgeDemo = {
       mascot,
       applyTraceStatus,
@@ -528,7 +578,7 @@
           clearScenarioTimers();
           setCurrentAction(`act:${value}`);
           mascot.act(value, { source: 'm6_demo_button' });
-          appendLog(`act(${value})`);
+          appendLog(`直接演出：${formatState(value)}。`);
           updateBridgeSummary();
         }
         if (kind === 'trace') {
@@ -547,15 +597,15 @@
 
     mascot.load('models/mascot.vrm')
       .then(() => {
-        els.loadState.textContent = 'ready';
+        els.loadState.textContent = '已就緒';
         mascot.notifyTalkingState('idle', { source: 'm6_demo_loaded' });
-        appendLog('Alicia loaded. Demo harness ready.');
+        appendLog('Alicia 已載入，測試台已就緒。');
         renderTrace(activeIntent.trace);
         updateBridgeSummary();
       })
       .catch((err) => {
-        els.loadState.textContent = 'load failed';
-        appendLog(`load failed: ${err?.message || err}`);
+        els.loadState.textContent = '載入失敗';
+        appendLog(`載入失敗：${err?.message || err}`);
         console.error(err);
       });
 
@@ -591,14 +641,14 @@
           status: 'skipped',
           reason: 'policy_blocked',
         });
-        appendLog('trace policy_check=blocked, execute_tool=skipped');
+        appendLog('工具追蹤：政策檢查=已阻擋，工具執行=已略過。');
       } else {
         mascot.updateIntentTrace(activeIntent, 'policy_check', { status: 'ok' });
         mascot.updateIntentTrace(activeIntent, 'execute_tool', {
           status,
           reason: status === 'failed' ? 'timeout' : undefined,
         });
-        appendLog(`trace execute_tool=${status}`);
+        appendLog(`工具追蹤：工具執行=${formatState(status)}。`);
       }
 
       renderTrace(activeIntent.trace);
@@ -613,10 +663,10 @@
           emotion: 'joy',
           fromQueue: true,
         });
-        appendLog('dispatch(talking) -> StateMachine emits speaking');
+        appendLog('對話生命週期：dispatch(talking) 觸發 speaking。');
       } else {
         const result = mascot.notifyTalkingState(state, { source: 'm6_demo_button' });
-        appendLog(`notifyTalkingState(${state}) -> ${result?.state || 'none'}`);
+        appendLog(`對話生命週期：${formatState(state)} -> ${formatState(result?.state || 'none')}。`);
       }
       updateBridgeSummary();
     }
@@ -624,7 +674,7 @@
     function runScenario(name) {
       clearScenarioTimers();
       setCurrentAction(`scenario:${name}`);
-      appendLog(`scenario start: ${name}`);
+      appendLog(`情境開始：${formatAction(`scenario:${name}`)}。`);
 
       if (name === 'tool_success') {
         applyTraceStatus('pending');
@@ -633,7 +683,7 @@
         later(3300, () => {
           mascot.notifyTalkingState('idle', { source: 'm6_demo_scenario_done' });
           setCurrentAction('scenario:tool_success complete');
-          appendLog('scenario complete: done transient should return idle');
+          appendLog('情境完成：done 短暫演出後應回到待機。');
           updateBridgeSummary();
         });
       }
@@ -648,7 +698,7 @@
         applyTraceStatus('running');
         later(450, () => notifyTalking('speaking'));
         later(1300, () => {
-          appendLog(`priority check: bridge=${mascot.actingBridge.currentState}, trace=${mascot.actingBridge.traceState}, talking=${mascot.actingBridge.talkingState}`);
+          appendLog(`優先權檢查：橋接=${formatState(mascot.actingBridge.currentState)}，追蹤=${formatState(mascot.actingBridge.traceState)}，對話=${formatState(mascot.actingBridge.talkingState)}。`);
           updateBridgeSummary();
         });
         later(2300, () => applyTraceStatus('done'));
@@ -670,16 +720,16 @@
 
     function renderTrace(trace = []) {
       if (!Array.isArray(trace) || trace.length === 0) {
-        els.traceList.innerHTML = '<div class="demo-trace-item"><span>trace</span><span class="demo-trace-status">none</span></div>';
+        els.traceList.innerHTML = '<div class="demo-trace-item"><span>追蹤</span><span class="demo-trace-status">無</span></div>';
         return;
       }
       els.traceList.innerHTML = trace.map((item) => {
         const status = item?.status || 'none';
-        const reason = item?.reason ? ` / ${item.reason}` : '';
+        const reason = item?.reason ? ` / ${formatReason(item.reason)}` : '';
         return `
           <div class="demo-trace-item">
-            <span>${item.step || 'unknown'}</span>
-            <span class="demo-trace-status ${statusClass(status)}">${status}${reason}</span>
+            <span>${formatStep(item.step)}</span>
+            <span class="demo-trace-status ${statusClass(status)}">${formatState(status)}${reason}</span>
           </div>
         `;
       }).join('');
@@ -694,13 +744,13 @@
 
     function updateBridgeSummary() {
       const bridge = mascot.actingBridge;
-      els.bridgeState.textContent = bridge?.currentState || 'none';
-      els.traceState.textContent = bridge?.traceState || 'idle';
-      els.talkingState.textContent = bridge?.talkingState || 'idle';
+      els.bridgeState.textContent = formatState(bridge?.currentState || 'none');
+      els.traceState.textContent = formatState(bridge?.traceState || 'idle');
+      els.talkingState.textContent = formatState(bridge?.talkingState || 'idle');
     }
 
     function setCurrentAction(label) {
-      els.currentAction.textContent = label;
+      els.currentAction.textContent = formatAction(label);
     }
 
     function appendLog(message) {
@@ -709,6 +759,26 @@
       const mm = String(now.getMinutes()).padStart(2, '0');
       const ss = String(now.getSeconds()).padStart(2, '0');
       els.log.textContent = `[${hh}:${mm}:${ss}] ${message}\n${els.log.textContent}`.slice(0, 4000);
+    }
+
+    function formatState(value) {
+      const key = String(value || 'none').trim();
+      return STATE_LABELS[key] ? `${STATE_LABELS[key]} ${key}` : key;
+    }
+
+    function formatStep(value) {
+      const key = String(value || 'unknown').trim();
+      return STEP_LABELS[key] ? `${STEP_LABELS[key]} ${key}` : key;
+    }
+
+    function formatReason(value) {
+      const key = String(value || '').trim();
+      return REASON_LABELS[key] ? `${REASON_LABELS[key]} ${key}` : key;
+    }
+
+    function formatAction(value) {
+      const key = String(value || '').trim();
+      return ACTION_LABELS[key] || key || '無';
     }
   </script>
 </body>
