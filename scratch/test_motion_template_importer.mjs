@@ -98,17 +98,24 @@ function testMotionMiningLogHasThirtyReviewedSamples() {
   }
 
   for (const entry of log) {
-    assert.match(entry.id, /^(present|point|think|warning|success|reject)_\d{3}$/);
+    assert.match(entry.id, /^(present|point|think|warning|success|reject|candidate_future)_\d{3}$/);
     assert.equal(REQUIRED_EXAMPLE_VRMA.includes(entry.source), true);
     assert.equal(typeof entry.sampleTime, 'number');
     assert.ok(entry.sampleTime >= 0);
     assert.match(entry.createdAt, /^2026-06-13T\d{2}:\d{2}:\d{2}\+08:00$/);
     assert.equal(Array.isArray(entry.tags), true);
     assert.equal(entry.tags.length > 0, true);
+    assert.equal(typeof entry.sourceScore, 'number');
+    assert.equal(typeof entry.agentScore, 'number');
+    assert.ok(entry.sourceScore >= 1 && entry.sourceScore <= 5);
+    assert.ok(entry.agentScore >= 1 && entry.agentScore <= 5);
 
     if (entry.category === 'reject') {
       assert.equal(typeof entry.rejectReason, 'string');
       assert.equal(entry.exportedPoseFile, undefined);
+    } else if (entry.category === 'candidate_future') {
+      assert.equal(typeof entry.reason, 'string');
+      assert.equal(entry.exportedPoseFile, `${entry.id}.json`);
     } else {
       assert.equal(entry.exportedPoseFile, `${entry.id}.json`);
     }
@@ -186,6 +193,7 @@ async function testMotionMiningSchemaBuildsCandidateAndRejectEntries() {
     'think',
     'warning',
     'success',
+    'candidate_future',
     'reject',
   ]);
   assert.deepEqual(mod.MOTION_MINING_REJECT_REASONS, [
@@ -198,6 +206,10 @@ async function testMotionMiningSchemaBuildsCandidateAndRejectEntries() {
     'not_agentic',
     'costume_clip',
     'unclear_intent',
+    'requires_lower_body',
+    'requires_hips',
+    'requires_weight_shift',
+    'requires_locomotion',
   ]);
 
   const candidate = mod.buildMotionMiningEntry({
@@ -205,6 +217,8 @@ async function testMotionMiningSchemaBuildsCandidateAndRejectEntries() {
     sampleTime: 0.46234,
     category: 'present',
     score: 5,
+    sourceScore: 4,
+    agentScore: 5,
     note: '雙手自然打開，適合介紹',
     tags: 'upper_body, agent_friendly',
     sequence: 1,
@@ -217,6 +231,8 @@ async function testMotionMiningSchemaBuildsCandidateAndRejectEntries() {
     sampleTime: 0.4623,
     category: 'present',
     score: 5,
+    sourceScore: 4,
+    agentScore: 5,
     note: '雙手自然打開，適合介紹',
     tags: ['upper_body', 'agent_friendly'],
     exportedPoseFile: 'present_001.json',
@@ -228,6 +244,8 @@ async function testMotionMiningSchemaBuildsCandidateAndRejectEntries() {
     sampleTime: 1.2,
     category: 'reject',
     score: 2,
+    sourceScore: 3,
+    agentScore: 1,
     rejectReason: 'hands_cover_face',
     note: '手遮住臉，但手腕角度可參考',
     tags: 'negative_sample',
@@ -241,19 +259,59 @@ async function testMotionMiningSchemaBuildsCandidateAndRejectEntries() {
     sampleTime: 1.2,
     category: 'reject',
     score: 2,
+    sourceScore: 3,
+    agentScore: 1,
     rejectReason: 'hands_cover_face',
     note: '手遮住臉，但手腕角度可參考',
     tags: ['negative_sample'],
     createdAt: '2026-06-13T12:10:00+08:00',
+  });
+
+  const future = mod.buildMotionMiningEntry({
+    source: 'Jump.vrma',
+    sampleTime: 1.419,
+    category: 'candidate_future',
+    score: 4,
+    sourceScore: 5,
+    agentScore: 2,
+    reason: 'requires_weight_shift',
+    note: '原始重心很好，但 Agent Pose 鎖下半身後失衡。',
+    tags: 'future_candidate, locomotion',
+    sequence: 2,
+    createdAt: '2026-06-13T12:20:00+08:00',
+  });
+
+  assert.deepEqual(future, {
+    id: 'candidate_future_002',
+    source: 'Jump.vrma',
+    sampleTime: 1.419,
+    category: 'candidate_future',
+    score: 4,
+    sourceScore: 5,
+    agentScore: 2,
+    reason: 'requires_weight_shift',
+    note: '原始重心很好，但 Agent Pose 鎖下半身後失衡。',
+    tags: ['future_candidate', 'locomotion'],
+    exportedPoseFile: 'candidate_future_002.json',
+    createdAt: '2026-06-13T12:20:00+08:00',
   });
 }
 
 function testLabIncludesMotionMiningWorkbenchControls() {
   const html = read(LAB_PATH);
 
+  assert.match(html, /Preview Mode/);
+  assert.match(html, /id="previewModeOriginal"/);
+  assert.match(html, /id="previewModeAgent"/);
+  assert.match(html, /id="previewModeLabel"/);
+  assert.match(html, /function\s+applyPreviewMode\s*\(/);
+  assert.match(html, /function\s+refreshCurrentFrame\s*\(/);
   assert.match(html, /Motion Mining Workbench/);
   assert.match(html, /id="miningCategory"/);
   assert.match(html, /id="miningScore"/);
+  assert.match(html, /id="miningSourceScore"/);
+  assert.match(html, /id="miningAgentScore"/);
+  assert.match(html, /id="miningFutureReason"/);
   assert.match(html, /id="miningRejectReason"/);
   assert.match(html, /id="miningNote"/);
   assert.match(html, /id="miningTags"/);

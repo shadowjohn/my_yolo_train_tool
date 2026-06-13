@@ -197,6 +197,41 @@
       font-variant-numeric: tabular-nums;
     }
 
+    .lab-preview-control {
+      display: grid;
+      gap: 10px;
+      margin: 0 0 18px;
+      padding: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.64);
+    }
+
+    .lab-preview-control legend {
+      padding: 0 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .lab-preview-options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .lab-preview-options label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 38px;
+      padding: 8px 10px;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 6px;
+      background: #050a12;
+      color: var(--text);
+      cursor: pointer;
+    }
+
     .lab-summary {
       display: grid;
       gap: 8px;
@@ -354,7 +389,8 @@
 
       .lab-actions,
       .lab-summary div,
-      .lab-mining-grid {
+      .lab-mining-grid,
+      .lab-preview-options {
         grid-template-columns: 1fr;
       }
     }
@@ -407,6 +443,20 @@
         <button id="btnDownloadJson" type="button">下載 JSON</button>
       </div>
 
+      <fieldset class="lab-preview-control">
+        <legend>Preview Mode</legend>
+        <div class="lab-preview-options">
+          <label>
+            <input id="previewModeOriginal" type="radio" name="previewMode" value="original">
+            <span>原始 VRMA</span>
+          </label>
+          <label>
+            <input id="previewModeAgent" type="radio" name="previewMode" value="agent" checked>
+            <span>Agent Pose</span>
+          </label>
+        </div>
+      </fieldset>
+
       <label class="lab-slider">
         <span>取樣時間</span>
         <input id="sampleTime" type="range" min="0" max="0" step="0.033" value="0">
@@ -417,7 +467,7 @@
         <div><dt>來源檔案</dt><dd id="sourceFile">未載入</dd></div>
         <div><dt>動畫長度</dt><dd id="durationLabel">0.000s</dd></div>
         <div><dt>骨架範圍</dt><dd>Upper Body</dd></div>
-        <div><dt>預覽模式</dt><dd>鎖定下半身</dd></div>
+        <div><dt>預覽模式</dt><dd id="previewModeLabel">Agent Pose / 鎖定下半身</dd></div>
         <div><dt>匯出骨骼</dt><dd id="exportedBoneCount">0</dd></div>
       </dl>
 
@@ -443,9 +493,33 @@
               <option value="1">1 / 不可用</option>
             </select>
           </label>
+          <label class="lab-field">
+            <span>來源分數</span>
+            <select id="miningSourceScore">
+              <option value="5">5 / 原始很好</option>
+              <option value="4">4 / 原始可用</option>
+              <option value="3" selected>3 / 原始待觀察</option>
+              <option value="2">2 / 局部參考</option>
+              <option value="1">1 / 原始不可用</option>
+            </select>
+          </label>
+          <label class="lab-field">
+            <span>Agent 分數</span>
+            <select id="miningAgentScore">
+              <option value="5">5 / Agent 很好</option>
+              <option value="4">4 / Agent 可用</option>
+              <option value="3" selected>3 / Agent 待觀察</option>
+              <option value="2">2 / 需未來能力</option>
+              <option value="1">1 / Agent 不可用</option>
+            </select>
+          </label>
           <label class="lab-field lab-field-full">
             <span>淘汰原因</span>
             <select id="miningRejectReason"></select>
+          </label>
+          <label class="lab-field lab-field-full">
+            <span>Future 原因</span>
+            <select id="miningFutureReason"></select>
           </label>
           <label class="lab-field lab-field-full">
             <span>標籤</span>
@@ -521,6 +595,9 @@
       btnStopMotion: document.getElementById('btnStopMotion'),
       btnCopyJson: document.getElementById('btnCopyJson'),
       btnDownloadJson: document.getElementById('btnDownloadJson'),
+      previewModeOriginal: document.getElementById('previewModeOriginal'),
+      previewModeAgent: document.getElementById('previewModeAgent'),
+      previewModeLabel: document.getElementById('previewModeLabel'),
       sampleTime: document.getElementById('sampleTime'),
       sampleTimeLabel: document.getElementById('sampleTimeLabel'),
       sourceFile: document.getElementById('sourceFile'),
@@ -530,7 +607,10 @@
       json: document.getElementById('motion-template-json'),
       miningCategory: document.getElementById('miningCategory'),
       miningScore: document.getElementById('miningScore'),
+      miningSourceScore: document.getElementById('miningSourceScore'),
+      miningAgentScore: document.getElementById('miningAgentScore'),
       miningRejectReason: document.getElementById('miningRejectReason'),
+      miningFutureReason: document.getElementById('miningFutureReason'),
       miningNote: document.getElementById('miningNote'),
       miningTags: document.getElementById('miningTags'),
       btnAddMiningCandidate: document.getElementById('btnAddMiningCandidate'),
@@ -552,6 +632,7 @@
     let sourceFileName = '';
     let latestPreset = null;
     let isPlaying = false;
+    let previewMode = 'agent';
     let sourceWarnings = [];
     const miningEntries = [];
 
@@ -625,7 +706,7 @@
       scene.add(vrm.scene);
       const hips = getHumanoidBoneNode('hips');
       hipsBaseY = hips?.position?.y || 0;
-      applyLowerBodyPreviewLock();
+      applyPreviewMode();
     }
 
     async function loadVrmaFile(file) {
@@ -687,16 +768,7 @@
       const rotations = {};
 
       isPlaying = false;
-      // paused 會讓 Three.js 將 action 視為 timeScale 0，導致指定時間採樣失準。
-      action.enabled = true;
-      action.paused = false;
-      action.timeScale = 1;
-      action.time = sampleTime;
-      action.play();
-      mixer.setTime(sampleTime);
-      mixer.update(0);
-      applyLowerBodyPreviewLock();
-      vrm.update?.(0);
+      refreshCurrentFrame(sampleTime);
 
       for (const bone of UPPER_BODY_BONES) {
         const node = getHumanoidBoneNode(bone);
@@ -769,6 +841,45 @@
       }
     }
 
+    function applyPreviewMode() {
+      updatePreviewModeLabel();
+      if (previewMode === 'agent') {
+        applyLowerBodyPreviewLock();
+      }
+    }
+
+    function refreshCurrentFrame(value = Number(els.sampleTime.value || 0)) {
+      if (!mixer || !action || !clip) {
+        applyPreviewMode();
+        return 0;
+      }
+
+      const sampleTime = clampSampleTime(value, clip.duration || 0);
+      // paused 會讓 Three.js 將 action 視為 timeScale 0，導致指定時間採樣失準。
+      action.enabled = true;
+      action.paused = false;
+      action.timeScale = 1;
+      action.time = sampleTime;
+      action.play();
+      mixer.setTime(sampleTime);
+      mixer.update(0);
+      applyPreviewMode();
+      vrm.update?.(0);
+      return sampleTime;
+    }
+
+    function setPreviewMode(mode) {
+      previewMode = mode === 'original' ? 'original' : 'agent';
+      refreshCurrentFrame(Number(els.sampleTime.value || 0));
+      setStatus(previewMode === 'original' ? '預覽原始 VRMA' : '預覽 Agent Pose');
+    }
+
+    function updatePreviewModeLabel() {
+      els.previewModeLabel.textContent = previewMode === 'original'
+        ? 'Original VRMA / 完整動作'
+        : 'Agent Pose / 鎖定下半身';
+    }
+
     async function withSuppressedVrmaWarnings(fn, warnings) {
       const originalWarn = console.warn;
       console.warn = (...args) => {
@@ -825,7 +936,10 @@
         sampleTime: Number(els.sampleTime.value || 0),
         category,
         score: Number(els.miningScore.value || 3),
+        sourceScore: Number(els.miningSourceScore.value || 3),
+        agentScore: Number(els.miningAgentScore.value || 3),
         rejectReason: els.miningRejectReason.value,
+        reason: els.miningFutureReason.value,
         note: els.miningNote.value,
         tags: els.miningTags.value,
         sequence,
@@ -869,6 +983,15 @@
         return option;
       }));
 
+      els.miningFutureReason.replaceChildren(...MOTION_MINING_REJECT_REASONS
+        .filter((reason) => reason.startsWith('requires_'))
+        .map((reason) => {
+          const option = document.createElement('option');
+          option.value = reason;
+          option.textContent = reason;
+          return option;
+        }));
+
       updateRejectReasonState();
     }
 
@@ -883,10 +1006,11 @@
       els.miningCandidateList.replaceChildren(...miningEntries.map((entry) => {
         const li = document.createElement('li');
         const reason = entry.rejectReason ? ` / ${entry.rejectReason}` : '';
+        const futureReason = entry.reason ? ` / ${entry.reason}` : '';
         const file = entry.exportedPoseFile ? ` / ${entry.exportedPoseFile}` : '';
         const title = document.createElement('strong');
         title.textContent = entry.id;
-        const meta = document.createTextNode(` ${entry.source} @ ${formatSeconds(entry.sampleTime)}s / ${entry.category}${reason} / ${entry.score} 分${file}`);
+        const meta = document.createTextNode(` ${entry.source} @ ${formatSeconds(entry.sampleTime)}s / ${entry.category}${reason}${futureReason} / ${entry.score} 分 / source ${entry.sourceScore} / agent ${entry.agentScore}${file}`);
         const note = document.createElement('span');
         note.textContent = entry.note || '無備註';
         li.append(title, meta, document.createElement('br'), note);
@@ -895,14 +1019,22 @@
     }
 
     function updateRejectReasonState() {
-      const isReject = els.miningCategory.value === 'reject';
+      const category = els.miningCategory.value;
+      const isReject = category === 'reject';
+      const isFuture = category === 'candidate_future';
       els.miningRejectReason.disabled = !isReject;
+      els.miningFutureReason.disabled = !isFuture;
 
       const currentTags = els.miningTags.value.trim();
       if (isReject && (!currentTags || currentTags === 'upper_body, agent_friendly')) {
         els.miningTags.value = 'negative_sample';
+        return;
       }
-      if (!isReject && (!currentTags || currentTags === 'negative_sample')) {
+      if (isFuture && (!currentTags || currentTags === 'upper_body, agent_friendly' || currentTags === 'negative_sample')) {
+        els.miningTags.value = 'future_candidate, requires_lower_body';
+        return;
+      }
+      if (!isReject && !isFuture && (!currentTags || currentTags === 'negative_sample' || currentTags === 'future_candidate, requires_lower_body')) {
         els.miningTags.value = 'upper_body, agent_friendly';
       }
     }
@@ -914,6 +1046,7 @@
         think: '思考 think',
         warning: '警告 warning',
         success: '成功 success',
+        candidate_future: '未來候選 candidate_future',
         reject: '淘汰 reject',
       };
       return labels[category] || category;
@@ -938,7 +1071,7 @@
       action.time = startTime;
       action.play();
       mixer.setTime(startTime);
-      applyLowerBodyPreviewLock();
+      applyPreviewMode();
       isPlaying = true;
       updateTimeLabel(startTime);
       setStatus('播放中');
@@ -1007,6 +1140,8 @@
       els.btnSampleFirst.addEventListener('click', () => sampleAt(0));
       els.btnSampleTime.addEventListener('click', () => sampleAt(Number(els.sampleTime.value || 0)));
       els.sampleTime.addEventListener('input', () => updateTimeLabel(Number(els.sampleTime.value || 0)));
+      els.previewModeOriginal.addEventListener('change', () => setPreviewMode('original'));
+      els.previewModeAgent.addEventListener('change', () => setPreviewMode('agent'));
       els.btnPlayMotion.addEventListener('click', playMotion);
       els.btnPauseMotion.addEventListener('click', pauseMotion);
       els.btnStopMotion.addEventListener('click', () => stopPlayback());
@@ -1025,7 +1160,7 @@
       controls.update();
       if (isPlaying && mixer && action && clip) {
         mixer.update(dt);
-        applyLowerBodyPreviewLock();
+        applyPreviewMode();
         const currentTime = clampSampleTime(action.time || 0, clip.duration || 0);
         els.sampleTime.value = String(currentTime);
         updateTimeLabel(currentTime);

@@ -29,6 +29,7 @@ export const MOTION_MINING_CATEGORIES = Object.freeze([
   'think',
   'warning',
   'success',
+  'candidate_future',
   'reject',
 ]);
 
@@ -42,6 +43,10 @@ export const MOTION_MINING_REJECT_REASONS = Object.freeze([
   'not_agentic',
   'costume_clip',
   'unclear_intent',
+  'requires_lower_body',
+  'requires_hips',
+  'requires_weight_shift',
+  'requires_locomotion',
 ]);
 
 export const DEFAULT_EXPORT_PRECISION = 2;
@@ -129,7 +134,10 @@ export function buildMotionMiningEntry({
   sampleTime = 0,
   category = 'present',
   score = 3,
+  sourceScore,
+  agentScore,
   rejectReason = '',
+  reason = '',
   note = '',
   tags = [],
   sequence = 1,
@@ -144,6 +152,8 @@ export function buildMotionMiningEntry({
     sampleTime: roundDegrees(sampleTime, 4),
     category: normalizedCategory,
     score: clampScore(score),
+    sourceScore: clampScore(sourceScore ?? score),
+    agentScore: clampScore(agentScore ?? score),
     note: String(note || '').trim(),
     tags: normalizeTags(tags),
   };
@@ -152,6 +162,11 @@ export function buildMotionMiningEntry({
     entry.rejectReason = MOTION_MINING_REJECT_REASONS.includes(rejectReason)
       ? rejectReason
       : 'unclear_intent';
+  } else if (normalizedCategory === 'candidate_future') {
+    entry.reason = MOTION_MINING_REJECT_REASONS.includes(reason)
+      ? reason
+      : 'requires_lower_body';
+    entry.exportedPoseFile = `${id}.json`;
   } else {
     entry.exportedPoseFile = `${id}.json`;
   }

@@ -6,9 +6,15 @@
     "category": "warning",
     "score": 4,
     "note": "肩線前壓、手勢有提醒感，適合限制或警告前段。",
-    "tags": ["upper_body", "agent_friendly", "warning"],
+    "tags": [
+      "upper_body",
+      "agent_friendly",
+      "warning"
+    ],
     "exportedPoseFile": "warning_001.json",
-    "createdAt": "2026-06-13T16:00:00+08:00"
+    "createdAt": "2026-06-13T16:00:00+08:00",
+    "sourceScore": 4,
+    "agentScore": 4
   },
   {
     "id": "warning_002",
@@ -17,9 +23,15 @@
     "category": "warning",
     "score": 4,
     "note": "上身緊張度明顯，可作 blocked 或 policy 說明姿勢。",
-    "tags": ["upper_body", "agent_friendly", "blocked"],
+    "tags": [
+      "upper_body",
+      "agent_friendly",
+      "blocked"
+    ],
     "exportedPoseFile": "warning_002.json",
-    "createdAt": "2026-06-13T16:01:00+08:00"
+    "createdAt": "2026-06-13T16:01:00+08:00",
+    "sourceScore": 4,
+    "agentScore": 4
   },
   {
     "id": "reject_001",
@@ -29,8 +41,13 @@
     "score": 2,
     "rejectReason": "too_large_motion",
     "note": "情緒幅度偏大，不適合直接用於 Agent，但手肘外張角度可參考。",
-    "tags": ["negative_sample", "warning_reference"],
-    "createdAt": "2026-06-13T16:02:00+08:00"
+    "tags": [
+      "negative_sample",
+      "warning_reference"
+    ],
+    "createdAt": "2026-06-13T16:02:00+08:00",
+    "sourceScore": 3,
+    "agentScore": 2
   },
   {
     "id": "success_001",
@@ -39,9 +56,15 @@
     "category": "success",
     "score": 3,
     "note": "掌聲前置有完成感，適合做短成功動作的候選。",
-    "tags": ["upper_body", "success", "celebration"],
+    "tags": [
+      "upper_body",
+      "success",
+      "celebration"
+    ],
     "exportedPoseFile": "success_001.json",
-    "createdAt": "2026-06-13T16:03:00+08:00"
+    "createdAt": "2026-06-13T16:03:00+08:00",
+    "sourceScore": 3,
+    "agentScore": 3
   },
   {
     "id": "reject_002",
@@ -51,8 +74,13 @@
     "score": 1,
     "rejectReason": "hands_cover_face",
     "note": "雙手靠近臉部，容易遮擋表情，不適合 Agent 長時間狀態。",
-    "tags": ["negative_sample", "face_occlusion"],
-    "createdAt": "2026-06-13T16:04:00+08:00"
+    "tags": [
+      "negative_sample",
+      "face_occlusion"
+    ],
+    "createdAt": "2026-06-13T16:04:00+08:00",
+    "sourceScore": 2,
+    "agentScore": 1
   },
   {
     "id": "success_002",
@@ -61,9 +89,15 @@
     "category": "success",
     "score": 3,
     "note": "收尾有開心感，但語意偏鼓掌，適合 success clip 參考。",
-    "tags": ["upper_body", "success", "clip_reference"],
+    "tags": [
+      "upper_body",
+      "success",
+      "clip_reference"
+    ],
     "exportedPoseFile": "success_002.json",
-    "createdAt": "2026-06-13T16:05:00+08:00"
+    "createdAt": "2026-06-13T16:05:00+08:00",
+    "sourceScore": 3,
+    "agentScore": 3
   },
   {
     "id": "present_001",
@@ -72,9 +106,15 @@
     "category": "present",
     "score": 4,
     "note": "單手開展、輪廓清楚，適合介紹起手式。",
-    "tags": ["upper_body", "agent_friendly", "present"],
+    "tags": [
+      "upper_body",
+      "agent_friendly",
+      "present"
+    ],
     "exportedPoseFile": "present_001.json",
-    "createdAt": "2026-06-13T16:06:00+08:00"
+    "createdAt": "2026-06-13T16:06:00+08:00",
+    "sourceScore": 4,
+    "agentScore": 4
   },
   {
     "id": "success_003",
@@ -83,9 +123,15 @@
     "category": "success",
     "score": 4,
     "note": "揮手感明確，適合完成回應或告知已處理。",
-    "tags": ["upper_body", "agent_friendly", "wave"],
+    "tags": [
+      "upper_body",
+      "agent_friendly",
+      "wave"
+    ],
     "exportedPoseFile": "success_003.json",
-    "createdAt": "2026-06-13T16:07:00+08:00"
+    "createdAt": "2026-06-13T16:07:00+08:00",
+    "sourceScore": 4,
+    "agentScore": 4
   },
   {
     "id": "point_001",
@@ -94,42 +140,67 @@
     "category": "point",
     "score": 3,
     "note": "右側手臂方向性可參考，後續可拆成 point_right 變體。",
-    "tags": ["upper_body", "point", "right_side"],
+    "tags": [
+      "upper_body",
+      "point",
+      "right_side"
+    ],
     "exportedPoseFile": "point_001.json",
-    "createdAt": "2026-06-13T16:08:00+08:00"
+    "createdAt": "2026-06-13T16:08:00+08:00",
+    "sourceScore": 4,
+    "agentScore": 3
   },
   {
-    "id": "reject_003",
+    "id": "candidate_future_001",
     "source": "Jump.vrma",
     "sampleTime": 0.528,
-    "category": "reject",
-    "score": 1,
-    "rejectReason": "too_large_motion",
-    "note": "上身抬起幅度過大，不適合工作型 Agent 的常態回應。",
-    "tags": ["negative_sample", "too_large_motion"],
-    "createdAt": "2026-06-13T16:09:00+08:00"
+    "category": "candidate_future",
+    "score": 4,
+    "note": "原始跳躍動作有明確動能，但目前 Agent Pose 鎖下半身後不成立，留待 locomotion。",
+    "tags": [
+      "future_candidate",
+      "requires_locomotion"
+    ],
+    "createdAt": "2026-06-13T16:09:00+08:00",
+    "sourceScore": 4,
+    "agentScore": 1,
+    "reason": "requires_locomotion",
+    "exportedPoseFile": "candidate_future_001.json"
   },
   {
-    "id": "reject_004",
+    "id": "candidate_future_002",
     "source": "Jump.vrma",
     "sampleTime": 1.419,
-    "category": "reject",
-    "score": 1,
-    "rejectReason": "off_balance",
-    "note": "重心表演感太強，即使鎖定下半身仍顯得跳躍。",
-    "tags": ["negative_sample", "off_balance"],
-    "createdAt": "2026-06-13T16:10:00+08:00"
+    "category": "candidate_future",
+    "score": 4,
+    "note": "原始重心轉移可能自然，但 Agent Pose 鎖下半身後會失衡，留待 weight shift。",
+    "tags": [
+      "future_candidate",
+      "requires_weight_shift"
+    ],
+    "createdAt": "2026-06-13T16:10:00+08:00",
+    "sourceScore": 5,
+    "agentScore": 1,
+    "reason": "requires_weight_shift",
+    "exportedPoseFile": "candidate_future_002.json"
   },
   {
-    "id": "success_004",
+    "id": "candidate_future_003",
     "source": "Jump.vrma",
     "sampleTime": 2.805,
-    "category": "success",
-    "score": 2,
-    "note": "情緒正向但太舞台化，只留作高能成功動作參考。",
-    "tags": ["upper_body", "success", "too_energetic"],
-    "exportedPoseFile": "success_004.json",
-    "createdAt": "2026-06-13T16:11:00+08:00"
+    "category": "candidate_future",
+    "score": 3,
+    "note": "正向情緒明確，但目前 upper-body-only 太舞台化，未來加入下半身後再評估。",
+    "tags": [
+      "future_candidate",
+      "requires_lower_body",
+      "success_reference"
+    ],
+    "exportedPoseFile": "candidate_future_003.json",
+    "createdAt": "2026-06-13T16:11:00+08:00",
+    "sourceScore": 4,
+    "agentScore": 2,
+    "reason": "requires_lower_body"
   },
   {
     "id": "think_001",
@@ -138,9 +209,15 @@
     "category": "think",
     "score": 5,
     "note": "視線偏移與頭部探索感明確，適合分析中或查詢中。",
-    "tags": ["upper_body", "agent_friendly", "thinking"],
+    "tags": [
+      "upper_body",
+      "agent_friendly",
+      "thinking"
+    ],
     "exportedPoseFile": "think_001.json",
-    "createdAt": "2026-06-13T16:12:00+08:00"
+    "createdAt": "2026-06-13T16:12:00+08:00",
+    "sourceScore": 5,
+    "agentScore": 5
   },
   {
     "id": "point_002",
@@ -149,9 +226,15 @@
     "category": "point",
     "score": 4,
     "note": "身體朝側邊，有明確指向感，可作 point_left 或 point_right 原型。",
-    "tags": ["upper_body", "agent_friendly", "point"],
+    "tags": [
+      "upper_body",
+      "agent_friendly",
+      "point"
+    ],
     "exportedPoseFile": "point_002.json",
-    "createdAt": "2026-06-13T16:13:00+08:00"
+    "createdAt": "2026-06-13T16:13:00+08:00",
+    "sourceScore": 5,
+    "agentScore": 4
   },
   {
     "id": "think_002",
@@ -160,9 +243,15 @@
     "category": "think",
     "score": 4,
     "note": "停頓感明確，適合等待資料或定位目標時使用。",
-    "tags": ["upper_body", "agent_friendly", "waiting"],
+    "tags": [
+      "upper_body",
+      "agent_friendly",
+      "waiting"
+    ],
     "exportedPoseFile": "think_002.json",
-    "createdAt": "2026-06-13T16:14:00+08:00"
+    "createdAt": "2026-06-13T16:14:00+08:00",
+    "sourceScore": 4,
+    "agentScore": 4
   },
   {
     "id": "present_002",
@@ -171,9 +260,15 @@
     "category": "present",
     "score": 5,
     "note": "雙手自然打開，適合說明、展示或開場介紹。",
-    "tags": ["upper_body", "agent_friendly", "present"],
+    "tags": [
+      "upper_body",
+      "agent_friendly",
+      "present"
+    ],
     "exportedPoseFile": "present_002.json",
-    "createdAt": "2026-06-13T16:15:00+08:00"
+    "createdAt": "2026-06-13T16:15:00+08:00",
+    "sourceScore": 5,
+    "agentScore": 5
   },
   {
     "id": "present_003",
@@ -182,9 +277,15 @@
     "category": "present",
     "score": 4,
     "note": "開放式手勢穩定，適合說明背景或展示 GIS panel。",
-    "tags": ["upper_body", "agent_friendly", "panel_present"],
+    "tags": [
+      "upper_body",
+      "agent_friendly",
+      "panel_present"
+    ],
     "exportedPoseFile": "present_003.json",
-    "createdAt": "2026-06-13T16:16:00+08:00"
+    "createdAt": "2026-06-13T16:16:00+08:00",
+    "sourceScore": 4,
+    "agentScore": 4
   },
   {
     "id": "success_005",
@@ -193,9 +294,15 @@
     "category": "success",
     "score": 3,
     "note": "舒展收尾，適合低調完成狀態，不會過度表演。",
-    "tags": ["upper_body", "success", "subtle"],
+    "tags": [
+      "upper_body",
+      "success",
+      "subtle"
+    ],
     "exportedPoseFile": "success_005.json",
-    "createdAt": "2026-06-13T16:17:00+08:00"
+    "createdAt": "2026-06-13T16:17:00+08:00",
+    "sourceScore": 3,
+    "agentScore": 3
   },
   {
     "id": "warning_003",
@@ -204,9 +311,15 @@
     "category": "warning",
     "score": 3,
     "note": "上身內收，可作低風險提醒或資料不足提示。",
-    "tags": ["upper_body", "warning", "soft_warning"],
+    "tags": [
+      "upper_body",
+      "warning",
+      "soft_warning"
+    ],
     "exportedPoseFile": "warning_003.json",
-    "createdAt": "2026-06-13T16:18:00+08:00"
+    "createdAt": "2026-06-13T16:18:00+08:00",
+    "sourceScore": 3,
+    "agentScore": 3
   },
   {
     "id": "reject_005",
@@ -216,8 +329,13 @@
     "score": 2,
     "rejectReason": "not_agentic",
     "note": "情緒過低，不適合一般 Agent 狀態，但肩部收縮可參考。",
-    "tags": ["negative_sample", "emotion_too_low"],
-    "createdAt": "2026-06-13T16:19:00+08:00"
+    "tags": [
+      "negative_sample",
+      "emotion_too_low"
+    ],
+    "createdAt": "2026-06-13T16:19:00+08:00",
+    "sourceScore": 2,
+    "agentScore": 2
   },
   {
     "id": "warning_004",
@@ -226,9 +344,15 @@
     "category": "warning",
     "score": 3,
     "note": "低頭與收手語意可作錯誤後歉意或弱警告。",
-    "tags": ["upper_body", "warning", "apology"],
+    "tags": [
+      "upper_body",
+      "warning",
+      "apology"
+    ],
     "exportedPoseFile": "warning_004.json",
-    "createdAt": "2026-06-13T16:20:00+08:00"
+    "createdAt": "2026-06-13T16:20:00+08:00",
+    "sourceScore": 3,
+    "agentScore": 3
   },
   {
     "id": "think_003",
@@ -237,9 +361,15 @@
     "category": "think",
     "score": 4,
     "note": "慢速抬手可作沉思候選，動作語氣比較柔和。",
-    "tags": ["upper_body", "thinking", "slow"],
+    "tags": [
+      "upper_body",
+      "thinking",
+      "slow"
+    ],
     "exportedPoseFile": "think_003.json",
-    "createdAt": "2026-06-13T16:21:00+08:00"
+    "createdAt": "2026-06-13T16:21:00+08:00",
+    "sourceScore": 4,
+    "agentScore": 4
   },
   {
     "id": "reject_006",
@@ -249,8 +379,13 @@
     "score": 2,
     "rejectReason": "unclear_intent",
     "note": "睡意語意太強，不適合一般分析狀態，但可參考慢節奏。",
-    "tags": ["negative_sample", "sleepy"],
-    "createdAt": "2026-06-13T16:22:00+08:00"
+    "tags": [
+      "negative_sample",
+      "sleepy"
+    ],
+    "createdAt": "2026-06-13T16:22:00+08:00",
+    "sourceScore": 3,
+    "agentScore": 2
   },
   {
     "id": "think_004",
@@ -259,9 +394,15 @@
     "category": "think",
     "score": 3,
     "note": "收尾靜態可作 idle-thinking 參考，但要避免太疲倦。",
-    "tags": ["upper_body", "thinking", "idle_reference"],
+    "tags": [
+      "upper_body",
+      "thinking",
+      "idle_reference"
+    ],
     "exportedPoseFile": "think_004.json",
-    "createdAt": "2026-06-13T16:23:00+08:00"
+    "createdAt": "2026-06-13T16:23:00+08:00",
+    "sourceScore": 3,
+    "agentScore": 3
   },
   {
     "id": "warning_005",
@@ -270,9 +411,15 @@
     "category": "warning",
     "score": 4,
     "note": "手部靠近胸前，適合驚訝、異常提醒或風險提示。",
-    "tags": ["upper_body", "agent_friendly", "warning"],
+    "tags": [
+      "upper_body",
+      "agent_friendly",
+      "warning"
+    ],
     "exportedPoseFile": "warning_005.json",
-    "createdAt": "2026-06-13T16:24:00+08:00"
+    "createdAt": "2026-06-13T16:24:00+08:00",
+    "sourceScore": 4,
+    "agentScore": 4
   },
   {
     "id": "reject_007",
@@ -282,8 +429,13 @@
     "score": 2,
     "rejectReason": "hands_cover_face",
     "note": "手勢可能遮臉，不適合長時間姿勢，但驚訝語意可保留參考。",
-    "tags": ["negative_sample", "face_occlusion"],
-    "createdAt": "2026-06-13T16:25:00+08:00"
+    "tags": [
+      "negative_sample",
+      "face_occlusion"
+    ],
+    "createdAt": "2026-06-13T16:25:00+08:00",
+    "sourceScore": 3,
+    "agentScore": 2
   },
   {
     "id": "warning_006",
@@ -292,9 +444,15 @@
     "category": "warning",
     "score": 3,
     "note": "防禦性輪廓可作警告變體，需後續調低手部高度。",
-    "tags": ["upper_body", "warning", "defensive"],
+    "tags": [
+      "upper_body",
+      "warning",
+      "defensive"
+    ],
     "exportedPoseFile": "warning_006.json",
-    "createdAt": "2026-06-13T16:26:00+08:00"
+    "createdAt": "2026-06-13T16:26:00+08:00",
+    "sourceScore": 4,
+    "agentScore": 3
   },
   {
     "id": "think_005",
@@ -303,9 +461,15 @@
     "category": "think",
     "score": 5,
     "note": "思考語意明確，是查詢中與分析中的優先候選。",
-    "tags": ["upper_body", "agent_friendly", "thinking"],
+    "tags": [
+      "upper_body",
+      "agent_friendly",
+      "thinking"
+    ],
     "exportedPoseFile": "think_005.json",
-    "createdAt": "2026-06-13T16:27:00+08:00"
+    "createdAt": "2026-06-13T16:27:00+08:00",
+    "sourceScore": 5,
+    "agentScore": 5
   },
   {
     "id": "think_006",
@@ -314,9 +478,15 @@
     "category": "think",
     "score": 5,
     "note": "手靠臉與頭部偏移接近理想查詢中姿勢，值得優先固化。",
-    "tags": ["upper_body", "agent_friendly", "thinking"],
+    "tags": [
+      "upper_body",
+      "agent_friendly",
+      "thinking"
+    ],
     "exportedPoseFile": "think_006.json",
-    "createdAt": "2026-06-13T16:28:00+08:00"
+    "createdAt": "2026-06-13T16:28:00+08:00",
+    "sourceScore": 5,
+    "agentScore": 5
   },
   {
     "id": "think_007",
@@ -325,8 +495,14 @@
     "category": "think",
     "score": 4,
     "note": "收尾穩定，可作等待資料或分析 loop 的靜態姿勢。",
-    "tags": ["upper_body", "thinking", "loop_candidate"],
+    "tags": [
+      "upper_body",
+      "thinking",
+      "loop_candidate"
+    ],
     "exportedPoseFile": "think_007.json",
-    "createdAt": "2026-06-13T16:29:00+08:00"
+    "createdAt": "2026-06-13T16:29:00+08:00",
+    "sourceScore": 4,
+    "agentScore": 4
   }
 ]
