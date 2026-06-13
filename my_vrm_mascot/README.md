@@ -24,7 +24,8 @@ my_vrm_mascot/
     MotionController.js       # 動作控制器（natural pose / idle / semantic motions / clip playback）
     MotionClips.js            # 短動作 clip 定義（wave/victory/warning_nod/shake_head/dance_short/punch_short）
     ExpressionProfiles.js     # 語意表情 profile 定義（neutral/happy/thinking/surprised/sad/angry）
-    ActingPolicy.js           # 語意狀態到 expression / motion clip / gaze 的演出策略
+    ActingBridge.js           # Conversation / runtime event -> mascot.act(state) bridge
+    ActingPolicy.js           # Semantic acting state -> expression + clip + gaze 的演出策略
     ExpressionController.js   # 眨眼 + 表情控制
     MascotStateMachine.js     # 狀態機（dispatch / do / say / emote）
     LookAtController.js       # 滑鼠注視（EMA 平滑）
@@ -154,6 +155,8 @@ M3 Short Motion Clips 把短動作集中在 `MotionClips.js`：`wave`、`victory
 M4 Expression Layer 把語意表情集中在 `ExpressionProfiles.js`，目前提供 `neutral`、`happy`、`thinking`、`surprised`、`sad`、`angry`。Expression layer 只控制 VRM blendshape 權重與 blink 疊加，不寫骨架 rotation / position；因此可和 `MotionController.playClip('victory')` 這類短動作同時存在。
 
 M5 Attention & Acting Policy 把演出決策集中在 `ActingPolicy.js`：`success -> happy + victory + mouse`、`running -> thinking + presenting + point`、`blocked -> angry + warning_nod + mouse`。這層只產生 policy result，實際執行仍交給 Expression / Motion / LookAt controllers，且不進 `contextDigest`。
+
+M6 Conversation Acting Bridge 讓 `ActingBridge.js` 接收 tool trace 與 talking lifecycle 事件，依 priority 裁決目前 acting state，並只呼叫 `mascot.act(state)`；runtime 仍持續更新 trace，expression / clip / gaze / pose 的細節留在 `ActingPolicy.js`、`PoseDirector.js` 與底層 controllers。
 
 Base pose preset 會依模型載入：
 
