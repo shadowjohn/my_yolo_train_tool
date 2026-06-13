@@ -11,6 +11,18 @@ export const UPPER_BODY_BONES = Object.freeze([
   'rightHand',
 ]);
 
+export const LOWER_BODY_PREVIEW_LOCK_BONES = Object.freeze([
+  'hips',
+  'leftUpperLeg',
+  'rightUpperLeg',
+  'leftLowerLeg',
+  'rightLowerLeg',
+  'leftFoot',
+  'rightFoot',
+  'leftToes',
+  'rightToes',
+]);
+
 export const DEFAULT_EXPORT_PRECISION = 2;
 export const SAMPLE_TIME_EPSILON = 0.001;
 

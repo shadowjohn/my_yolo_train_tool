@@ -338,6 +338,7 @@
         <div><dt>來源檔案</dt><dd id="sourceFile">未載入</dd></div>
         <div><dt>動畫長度</dt><dd id="durationLabel">0.000s</dd></div>
         <div><dt>骨架範圍</dt><dd>Upper Body</dd></div>
+        <div><dt>預覽模式</dt><dd>鎖定下半身</dd></div>
         <div><dt>匯出骨骼</dt><dd id="exportedBoneCount">0</dd></div>
       </dl>
 
@@ -377,6 +378,7 @@
       VRMLookAtQuaternionProxy,
     } from '@pixiv/three-vrm-animation';
     import {
+      LOWER_BODY_PREVIEW_LOCK_BONES,
       UPPER_BODY_BONES,
       buildNaturalPosePreset,
       clampSampleTime,
@@ -384,6 +386,7 @@
     } from './js/MotionTemplateImporter.js';
 
     const EXAMPLE_VRMA_BASE = 'examples/m6_7_vrma_samples/';
+    const DEG = Math.PI / 180;
 
     const els = {
       viewport: document.getElementById('labViewport'),
@@ -417,6 +420,7 @@
     let action;
     let clip;
     let basePreset;
+    let hipsBaseY = 0;
     let sourceFileName = '';
     let latestPreset = null;
     let isPlaying = false;
@@ -488,6 +492,9 @@
       }
 
       scene.add(vrm.scene);
+      const hips = getHumanoidBoneNode('hips');
+      hipsBaseY = hips?.position?.y || 0;
+      applyLowerBodyPreviewLock();
     }
 
     async function loadVrmaFile(file) {
@@ -557,6 +564,7 @@
       action.play();
       mixer.setTime(sampleTime);
       mixer.update(0);
+      applyLowerBodyPreviewLock();
       vrm.update?.(0);
 
       for (const bone of UPPER_BODY_BONES) {
@@ -600,6 +608,34 @@
       return vrm?.humanoid?.getNormalizedBoneNode?.(bone)
         || vrm?.humanoid?.getRawBoneNode?.(bone)
         || null;
+    }
+
+    function applyLowerBodyPreviewLock() {
+      if (!vrm || !basePreset) return;
+
+      const basePose = basePreset.basePose || {};
+      const rotations = basePose.rotation || {};
+      const positions = basePose.position || {};
+
+      for (const boneName of LOWER_BODY_PREVIEW_LOCK_BONES) {
+        const bone = getHumanoidBoneNode(boneName);
+        if (!bone) continue;
+
+        const pose = rotations[boneName] || { x: 0, y: 0, z: 0 };
+        bone.rotation.set(
+          (pose.x || 0) * DEG,
+          (pose.y || 0) * DEG,
+          (pose.z || 0) * DEG,
+        );
+      }
+
+      const hips = getHumanoidBoneNode('hips');
+      const hipsPose = positions.hips;
+      if (hips && hipsPose) {
+        hips.position.x = hipsPose.x || 0;
+        hips.position.y = hipsBaseY + (hipsPose.y || 0);
+        hips.position.z = hipsPose.z || 0;
+      }
     }
 
     async function withSuppressedVrmaWarnings(fn, warnings) {
@@ -664,6 +700,7 @@
       action.time = startTime;
       action.play();
       mixer.setTime(startTime);
+      applyLowerBodyPreviewLock();
       isPlaying = true;
       updateTimeLabel(startTime);
       setStatus('播放中');
@@ -747,6 +784,7 @@
       controls.update();
       if (isPlaying && mixer && action && clip) {
         mixer.update(dt);
+        applyLowerBodyPreviewLock();
         const currentTime = clampSampleTime(action.time || 0, clip.duration || 0);
         els.sampleTime.value = String(currentTime);
         updateTimeLabel(currentTime);

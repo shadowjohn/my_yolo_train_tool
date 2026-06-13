@@ -44,6 +44,7 @@ function testLabHtmlContractExists() {
   assert.match(html, /下載 JSON/);
   assert.match(html, /匯出 NaturalPosePreset/);
   assert.match(html, /Upper Body/);
+  assert.match(html, /鎖定下半身/);
   assert.match(html, /motion-template-json/);
 }
 
@@ -69,8 +70,10 @@ function testLabIncludesExampleAndPlaybackControls() {
   assert.match(html, /function\s+playMotion\s*\(/);
   assert.match(html, /function\s+pauseMotion\s*\(/);
   assert.match(html, /function\s+stopPlayback\s*\(/);
+  assert.match(html, /function\s+applyLowerBodyPreviewLock\s*\(/);
   assert.match(html, /isPlaying\s*&&\s*mixer/);
   assert.match(html, /mixer\.update\(dt\)/);
+  assert.match(html, /applyLowerBodyPreviewLock\(\)/);
   assert.match(html, /startTime\s*>=\s*duration\s*-\s*0\.034/);
 }
 
@@ -114,6 +117,26 @@ async function testUpperBodyWhitelistIsExplicitAndStable() {
   assert.equal(mod.UPPER_BODY_BONES.includes('head'), false);
   assert.equal(mod.UPPER_BODY_BONES.includes('hips'), false);
   assert.equal(mod.UPPER_BODY_BONES.includes('leftUpperLeg'), false);
+}
+
+async function testLowerBodyPreviewLockIsExplicitAndSeparateFromExportScope() {
+  const mod = await importImporterModule();
+
+  assert.deepEqual(mod.LOWER_BODY_PREVIEW_LOCK_BONES, [
+    'hips',
+    'leftUpperLeg',
+    'rightUpperLeg',
+    'leftLowerLeg',
+    'rightLowerLeg',
+    'leftFoot',
+    'rightFoot',
+    'leftToes',
+    'rightToes',
+  ]);
+
+  for (const bone of mod.LOWER_BODY_PREVIEW_LOCK_BONES) {
+    assert.equal(mod.UPPER_BODY_BONES.includes(bone), false, `${bone} must not be exported as upper body`);
+  }
 }
 
 async function testBuildNaturalPosePresetMergesUpperBodyOnly() {
@@ -245,6 +268,7 @@ async function run() {
     testLabReferencesVrmaCapabilityOnlyInLab,
     testLabDoesNotImportAgentRuntime,
     testUpperBodyWhitelistIsExplicitAndStable,
+    testLowerBodyPreviewLockIsExplicitAndSeparateFromExportScope,
     testBuildNaturalPosePresetMergesUpperBodyOnly,
     testStableExportIsDeterministic,
     testClampSampleTime,
