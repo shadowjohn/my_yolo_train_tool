@@ -1,7 +1,7 @@
 /**
  * MotionController — 程序式動作系統
  *
- * 管理 idle / wave / dance_short / think 等動作。
+ * 管理 idle / wave / dance_short / think / presenting / warning / shake_head 等動作。
  * 所有動作都是程序式產生（不依賴外部動畫檔），
  * Phase 2 再加入 Mixamo FBX / VRMA 支援。
  *
@@ -18,6 +18,7 @@ function getBoneNames() {
     Spine: 'spine', Chest: 'chest', Hips: 'hips',
     LeftUpperArm: 'leftUpperArm', LeftLowerArm: 'leftLowerArm',
     RightUpperArm: 'rightUpperArm', RightLowerArm: 'rightLowerArm',
+    LeftHand: 'leftHand', RightHand: 'rightHand',
     LeftUpperLeg: 'leftUpperLeg', LeftLowerLeg: 'leftLowerLeg',
     RightUpperLeg: 'rightUpperLeg', RightLowerLeg: 'rightLowerLeg',
     LeftShoulder: 'leftShoulder', RightShoulder: 'rightShoulder',
@@ -25,6 +26,87 @@ function getBoneNames() {
 }
 
 const DEG = Math.PI / 180;
+
+export const POSE_CALIBRATION_BONES = [
+  'hips',
+  'spine',
+  'chest',
+  'leftUpperArm',
+  'rightUpperArm',
+  'leftLowerArm',
+  'rightLowerArm',
+  'leftHand',
+  'rightHand',
+];
+
+export const DEFAULT_POSE_PRESET = {
+  model: 'default',
+  basePose: {
+    rotation: {
+      spine:          { x: 2, y: 0, z: -2 },
+      chest:          { x: -1, y: -2, z: -1 },
+      leftShoulder:   { x: 0, y: 0, z: 4 },
+      rightShoulder:  { x: 0, y: 0, z: -4 },
+      leftUpperArm:   { x: 7, y: 0, z: 42 },
+      rightUpperArm:  { x: 7, y: 0, z: -42 },
+      leftLowerArm:   { x: 0, y: -9, z: 0 },
+      rightLowerArm:  { x: 0, y: 9, z: 0 },
+      leftHand:       { x: 0, y: 0, z: 0 },
+      rightHand:      { x: 0, y: 0, z: 0 },
+      leftUpperLeg:   { x: 1, y: 0, z: 2 },
+      rightUpperLeg:  { x: -1, y: 0, z: -2 },
+    },
+    position: {
+      hips:           { x: -0.008, y: 0, z: 0 },
+    },
+  },
+};
+
+const AXES = ['x', 'y', 'z'];
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function finiteNumber(value, fallback = 0) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+}
+
+function normalizeAxes(input = {}, fallback = {}) {
+  return {
+    x: finiteNumber(input.x, finiteNumber(fallback.x, 0)),
+    y: finiteNumber(input.y, finiteNumber(fallback.y, 0)),
+    z: finiteNumber(input.z, finiteNumber(fallback.z, 0)),
+  };
+}
+
+function normalizePosePreset(preset = {}) {
+  const normalized = cloneJson(DEFAULT_POSE_PRESET);
+  normalized.model = preset.model || normalized.model;
+
+  const presetBasePose = preset.basePose || {};
+  const presetRotation = presetBasePose.rotation || {};
+  const presetPosition = presetBasePose.position || {};
+
+  for (const bone of Object.keys(presetRotation)) {
+    const fallback = normalized.basePose.rotation[bone] || { x: 0, y: 0, z: 0 };
+    normalized.basePose.rotation[bone] = normalizeAxes(presetRotation[bone], fallback);
+  }
+
+  for (const bone of Object.keys(presetPosition)) {
+    const fallback = normalized.basePose.position[bone] || { x: 0, y: 0, z: 0 };
+    normalized.basePose.position[bone] = normalizeAxes(presetPosition[bone], fallback);
+  }
+
+  return normalized;
+}
+
+function assertAxis(axis) {
+  if (!AXES.includes(axis)) {
+    throw new Error(`Invalid pose axis: ${axis}`);
+  }
+}
 
 /** 平滑插值 */
 function lerp(a, b, t) {
@@ -47,6 +129,7 @@ export class MotionController {
   #customOptions = {};
   #tempQ1 = null;
   #tempQ2 = null;
+  #posePreset = normalizePosePreset(DEFAULT_POSE_PRESET);
 
   /**
    * 綁定 VRM 模型
@@ -57,6 +140,7 @@ export class MotionController {
     this.#cacheBones();
     this.#currentAction = 'idle';
     this.#elapsed = 0;
+    this.resetToNaturalPose(0);
   }
 
   /** 快取骨骼節點 */
@@ -71,6 +155,8 @@ export class MotionController {
       leftLowerArm:   h.getBoneNode(bn.LeftLowerArm),
       rightUpperArm:  h.getBoneNode(bn.RightUpperArm),
       rightLowerArm:  h.getBoneNode(bn.RightLowerArm),
+      leftHand:       h.getBoneNode(bn.LeftHand || 'leftHand'),
+      rightHand:      h.getBoneNode(bn.RightHand || 'rightHand'),
       leftUpperLeg:   h.getBoneNode(bn.LeftUpperLeg),
       rightUpperLeg:  h.getBoneNode(bn.RightUpperLeg),
       leftShoulder:   h.getBoneNode(bn.LeftShoulder),
@@ -84,16 +170,15 @@ export class MotionController {
 
   /**
    * 播放動作
-   * @param {string} name - 動作名 (idle|wave|dance_short|think|happy)
+   * @param {string} name - 動作名 (idle|wave|dance_short|think|happy|presenting|warning|shake_head)
    */
   play(name) {
     if (this.#currentAction !== name) {
-      this.#resetBones();
+      this.resetToNaturalPose(0);
     }
     this.#currentAction = name;
     this.#elapsed = 0;
-    this.#customAnimData = null;
-    this.#customOptions = {};
+    this.#clearMotionOverlay();
   }
 
   /**
@@ -104,11 +189,96 @@ export class MotionController {
    * @param {function} [options.onComplete]
    */
   playCustom(animData, options = {}) {
-    this.#resetBones();
+    this.resetToNaturalPose(0);
     this.#currentAction = 'custom';
     this.#elapsed = 0;
     this.#customAnimData = animData;
     this.#customOptions = options;
+  }
+
+  /**
+   * 回到自然基準姿勢，不回到 VRM bind/rest pose。
+   * @param {number} [t=0]
+   */
+  resetToNaturalPose(t = 0) {
+    if (!this.#vrm) return;
+    this.#applyNaturalPose(t);
+  }
+
+  /**
+   * 載入基準姿勢校準資料。rotation 使用度數，position 使用 VRM 場景單位。
+   * @param {object} preset
+   */
+  loadPosePreset(preset = {}) {
+    this.#posePreset = normalizePosePreset(preset);
+    this.resetToNaturalPose(0);
+    return this.getPosePreset();
+  }
+
+  /** @returns {object} 目前基準姿勢 preset（rotation 保持 degree） */
+  getPosePreset() {
+    return cloneJson(this.#posePreset);
+  }
+
+  /**
+   * 更新單一骨骼 rotation 軸向（degree）。
+   * @param {string} bone
+   * @param {'x'|'y'|'z'} axis
+   * @param {number} degrees
+   */
+  setBasePoseRotation(bone, axis, degrees) {
+    assertAxis(axis);
+    if (!this.#posePreset.basePose.rotation[bone]) {
+      this.#posePreset.basePose.rotation[bone] = { x: 0, y: 0, z: 0 };
+    }
+    this.#posePreset.basePose.rotation[bone][axis] = finiteNumber(degrees, 0);
+    this.resetToNaturalPose(0);
+    return this.getPosePreset();
+  }
+
+  /**
+   * 更新單一骨骼 position 軸向（目前主要給 hips 重心校準）。
+   * @param {string} bone
+   * @param {'x'|'y'|'z'} axis
+   * @param {number} value
+   */
+  setBasePosePosition(bone, axis, value) {
+    assertAxis(axis);
+    if (!this.#posePreset.basePose.position[bone]) {
+      this.#posePreset.basePose.position[bone] = { x: 0, y: 0, z: 0 };
+    }
+    this.#posePreset.basePose.position[bone][axis] = finiteNumber(value, 0);
+    this.resetToNaturalPose(0);
+    return this.getPosePreset();
+  }
+
+  /**
+   * 重設單一骨骼校準值到預設基準。
+   * @param {string} bone
+   */
+  resetBasePoseBone(bone) {
+    const defaults = DEFAULT_POSE_PRESET.basePose;
+    if (defaults.rotation[bone]) {
+      this.#posePreset.basePose.rotation[bone] = cloneJson(defaults.rotation[bone]);
+    } else {
+      delete this.#posePreset.basePose.rotation[bone];
+    }
+
+    if (defaults.position[bone]) {
+      this.#posePreset.basePose.position[bone] = cloneJson(defaults.position[bone]);
+    } else {
+      delete this.#posePreset.basePose.position[bone];
+    }
+
+    this.resetToNaturalPose(0);
+    return this.getPosePreset();
+  }
+
+  /** 重設全部基準姿勢校準值。 */
+  resetBasePoseAll() {
+    this.#posePreset = normalizePosePreset(DEFAULT_POSE_PRESET);
+    this.resetToNaturalPose(0);
+    return this.getPosePreset();
   }
 
   /** 回到 idle */
@@ -135,6 +305,9 @@ export class MotionController {
       case 'dance_short': this.#doDance(); break;
       case 'think':       this.#doThink(); break;
       case 'happy':       this.#doHappy(); break;
+      case 'presenting':  this.#doPresenting(); break;
+      case 'warning':     this.#doWarning(); break;
+      case 'shake_head':  this.#doShakeHead(); break;
       case 'custom':      this.#doCustom(); break;
       default:            this.#doIdle(); break;
     }
@@ -144,24 +317,15 @@ export class MotionController {
 
   #doIdle() {
     const t = this.#elapsed;
+    this.#applyNaturalPose(t);
+    this.#applyBreathingOverlay(t, 1);
 
-    // 脊椎微微前傾呼吸
-    if (this.#bones.spine) {
-      this.#bones.spine.rotation.x = Math.sin(t * 1.4) * 0.008;
-      this.#bones.spine.rotation.z = Math.sin(t * 0.7) * 0.003;
-    }
-
-    // 臀部微幅上下（呼吸感）
-    if (this.#bones.hips) {
-      this.#bones.hips.position.y = this.#hipsBaseY + Math.sin(t * 1.4) * 0.002;
-    }
-
-    // 手臂自然微垂
+    // 手臂在自然垂放上加一點微動，避免站樁。
     if (this.#bones.leftUpperArm) {
-      this.#bones.leftUpperArm.rotation.z = Math.sin(t * 0.9) * 0.01;
+      this.#bones.leftUpperArm.rotation.z += Math.sin(t * 0.9) * 0.008;
     }
     if (this.#bones.rightUpperArm) {
-      this.#bones.rightUpperArm.rotation.z = Math.sin(t * 0.9 + 0.5) * 0.01;
+      this.#bones.rightUpperArm.rotation.z += Math.sin(t * 0.9 + 0.5) * 0.008;
     }
   }
 
@@ -171,15 +335,13 @@ export class MotionController {
     const t = this.#elapsed;
     const totalDuration = 2.8; // 秒
 
-    // 同時做呼吸
-    this.#doIdleSubtle();
-
     if (t >= totalDuration) {
-      this.#currentAction = 'idle';
-      this.#elapsed = 0;
-      this.#resetBones();
+      this.#finishTimedAction();
       return;
     }
+
+    this.#applyNaturalPose(t);
+    this.#applyBreathingOverlay(t, 0.45);
 
     const riseEnd = 0.35;
     const waveStart = riseEnd;
@@ -200,8 +362,8 @@ export class MotionController {
         const p = easeInOut((t - waveEnd) / (fallEnd - waveEnd));
         zAngle = (-70 * DEG) * (1 - p);
       }
-      this.#bones.rightUpperArm.rotation.z = zAngle;
-      this.#bones.rightUpperArm.rotation.x = t < waveEnd ? 15 * DEG : 15 * DEG * (1 - easeInOut((t - waveEnd) / (fallEnd - waveEnd)));
+      this.#bones.rightUpperArm.rotation.z += zAngle;
+      this.#bones.rightUpperArm.rotation.x += t < waveEnd ? 15 * DEG : 15 * DEG * (1 - easeInOut((t - waveEnd) / (fallEnd - waveEnd)));
     }
 
     // 右下臂（肘彎曲）
@@ -215,7 +377,7 @@ export class MotionController {
         const p = easeInOut((t - waveEnd) / (fallEnd - waveEnd));
         yAngle = (50 * DEG) * (1 - p);
       }
-      this.#bones.rightLowerArm.rotation.y = yAngle;
+      this.#bones.rightLowerArm.rotation.y += yAngle;
     }
   }
 
@@ -226,39 +388,38 @@ export class MotionController {
     const totalDuration = 4.0;
 
     if (t >= totalDuration) {
-      this.#currentAction = 'idle';
-      this.#elapsed = 0;
-      this.#resetBones();
+      this.#finishTimedAction();
       return;
     }
 
+    this.#applyNaturalPose(t);
     const beat = t * 2.5; // ~150 BPM feel
 
     // 身體左右搖
     if (this.#bones.spine) {
-      this.#bones.spine.rotation.z = Math.sin(beat * Math.PI) * (8 * DEG);
-      this.#bones.spine.rotation.x = Math.sin(beat * Math.PI * 2) * 0.015 + 0.01;
+      this.#bones.spine.rotation.z += Math.sin(beat * Math.PI) * (8 * DEG);
+      this.#bones.spine.rotation.x += Math.sin(beat * Math.PI * 2) * 0.015 + 0.01;
     }
 
     // 臀部上下彈跳
     if (this.#bones.hips) {
-      this.#bones.hips.position.y = this.#hipsBaseY + Math.abs(Math.sin(beat * Math.PI)) * 0.015;
+      this.#bones.hips.position.y += Math.abs(Math.sin(beat * Math.PI)) * 0.015;
     }
 
     // 雙手交替舉起
     if (this.#bones.leftUpperArm) {
-      this.#bones.leftUpperArm.rotation.z = Math.sin(beat * Math.PI) * (25 * DEG) + 5 * DEG;
+      this.#bones.leftUpperArm.rotation.z += Math.sin(beat * Math.PI) * (25 * DEG) + 5 * DEG;
     }
     if (this.#bones.rightUpperArm) {
-      this.#bones.rightUpperArm.rotation.z = Math.sin(beat * Math.PI + Math.PI) * (25 * DEG) - 5 * DEG;
+      this.#bones.rightUpperArm.rotation.z += Math.sin(beat * Math.PI + Math.PI) * (25 * DEG) - 5 * DEG;
     }
 
     // 肘部配合
     if (this.#bones.leftLowerArm) {
-      this.#bones.leftLowerArm.rotation.y = Math.sin(beat * Math.PI * 2) * (15 * DEG);
+      this.#bones.leftLowerArm.rotation.y += Math.sin(beat * Math.PI * 2) * (15 * DEG);
     }
     if (this.#bones.rightLowerArm) {
-      this.#bones.rightLowerArm.rotation.y = Math.sin(beat * Math.PI * 2 + Math.PI) * (-15 * DEG);
+      this.#bones.rightLowerArm.rotation.y += Math.sin(beat * Math.PI * 2 + Math.PI) * (-15 * DEG);
     }
   }
 
@@ -268,14 +429,13 @@ export class MotionController {
     const t = this.#elapsed;
     const totalDuration = 3.0;
 
-    this.#doIdleSubtle();
-
     if (t >= totalDuration) {
-      this.#currentAction = 'idle';
-      this.#elapsed = 0;
-      this.#resetBones();
+      this.#finishTimedAction();
       return;
     }
+
+    this.#applyNaturalPose(t);
+    this.#applyBreathingOverlay(t, 0.35);
 
     const fadeIn = Math.min(1, t / 0.4);
     const fadeOut = t > 2.4 ? 1 - (t - 2.4) / 0.6 : 1;
@@ -283,11 +443,15 @@ export class MotionController {
 
     // 右手抬到下巴
     if (this.#bones.rightUpperArm) {
-      this.#bones.rightUpperArm.rotation.z = -40 * DEG * intensity;
-      this.#bones.rightUpperArm.rotation.x = 30 * DEG * intensity;
+      this.#bones.rightUpperArm.rotation.z += -50 * DEG * intensity;
+      this.#bones.rightUpperArm.rotation.x += 34 * DEG * intensity;
+      this.#bones.rightUpperArm.rotation.y += -8 * DEG * intensity;
     }
     if (this.#bones.rightLowerArm) {
-      this.#bones.rightLowerArm.rotation.y = 90 * DEG * intensity;
+      this.#bones.rightLowerArm.rotation.y += 82 * DEG * intensity;
+    }
+    if (this.#bones.spine) {
+      this.#bones.spine.rotation.x += 4 * DEG * intensity;
     }
   }
 
@@ -298,11 +462,11 @@ export class MotionController {
     const totalDuration = 2.0;
 
     if (t >= totalDuration) {
-      this.#currentAction = 'idle';
-      this.#elapsed = 0;
-      this.#resetBones();
+      this.#finishTimedAction();
       return;
     }
+
+    this.#applyNaturalPose(t);
 
     // 雙手舉高
     const riseEnd = 0.3;
@@ -317,47 +481,187 @@ export class MotionController {
     }
 
     if (this.#bones.leftUpperArm) {
-      this.#bones.leftUpperArm.rotation.z = 60 * DEG * armIntensity;
-      this.#bones.leftUpperArm.rotation.x = 10 * DEG * armIntensity;
+      this.#bones.leftUpperArm.rotation.z += 60 * DEG * armIntensity;
+      this.#bones.leftUpperArm.rotation.x += 10 * DEG * armIntensity;
     }
     if (this.#bones.rightUpperArm) {
-      this.#bones.rightUpperArm.rotation.z = -60 * DEG * armIntensity;
-      this.#bones.rightUpperArm.rotation.x = 10 * DEG * armIntensity;
+      this.#bones.rightUpperArm.rotation.z += -60 * DEG * armIntensity;
+      this.#bones.rightUpperArm.rotation.x += 10 * DEG * armIntensity;
     }
 
     // 小跳躍
     if (this.#bones.hips && t < holdEnd) {
       const jumpPhase = Math.sin((t - riseEnd) * 6);
-      this.#bones.hips.position.y = this.#hipsBaseY + Math.max(0, jumpPhase) * 0.03 * armIntensity;
+      this.#bones.hips.position.y += Math.max(0, jumpPhase) * 0.03 * armIntensity;
     }
 
     // 身體微微後仰
     if (this.#bones.spine) {
-      this.#bones.spine.rotation.x = -5 * DEG * armIntensity;
+      this.#bones.spine.rotation.x += -5 * DEG * armIntensity;
+    }
+  }
+
+  // ── Presenting：看向面板並伸手介紹 ───────
+
+  #doPresenting() {
+    const t = this.#elapsed;
+    const totalDuration = 3.2;
+
+    if (t >= totalDuration) {
+      this.#finishTimedAction();
+      return;
+    }
+
+    this.#applyNaturalPose(t);
+    this.#applyBreathingOverlay(t, 0.45);
+
+    const fadeIn = Math.min(1, t / 0.35);
+    const fadeOut = t > 2.6 ? 1 - (t - 2.6) / 0.6 : 1;
+    const intensity = easeInOut(fadeIn) * Math.max(0, fadeOut);
+    const accent = Math.sin(t * 4.5) * 2 * DEG * intensity;
+
+    if (this.#bones.spine) {
+      this.#bones.spine.rotation.z += 3 * DEG * intensity;
+      this.#bones.spine.rotation.x += -2 * DEG * intensity;
+    }
+    if (this.#bones.chest) {
+      this.#bones.chest.rotation.y += -10 * DEG * intensity;
+    }
+    if (this.#bones.rightUpperArm) {
+      this.#bones.rightUpperArm.rotation.z += 30 * DEG * intensity + accent;
+      this.#bones.rightUpperArm.rotation.x += -6 * DEG * intensity;
+      this.#bones.rightUpperArm.rotation.y += -12 * DEG * intensity;
+    }
+    if (this.#bones.rightLowerArm) {
+      this.#bones.rightLowerArm.rotation.y += 24 * DEG * intensity;
+    }
+  }
+
+  // ── Warning：短促警示姿勢 ───────────────
+
+  #doWarning() {
+    const t = this.#elapsed;
+    const totalDuration = 2.4;
+
+    if (t >= totalDuration) {
+      this.#finishTimedAction();
+      return;
+    }
+
+    this.#applyNaturalPose(t);
+    this.#applyBreathingOverlay(t, 0.25);
+
+    const fadeIn = Math.min(1, t / 0.25);
+    const fadeOut = t > 1.8 ? 1 - (t - 1.8) / 0.6 : 1;
+    const intensity = easeInOut(fadeIn) * Math.max(0, fadeOut);
+    const pulse = (Math.sin(t * 16) * 1.5 * DEG) * intensity;
+
+    if (this.#bones.spine) {
+      this.#bones.spine.rotation.x += 5 * DEG * intensity;
+      this.#bones.spine.rotation.z += pulse;
+    }
+    if (this.#bones.chest) {
+      this.#bones.chest.rotation.x += 3 * DEG * intensity;
+    }
+    if (this.#bones.leftUpperArm) {
+      this.#bones.leftUpperArm.rotation.z += 24 * DEG * intensity;
+      this.#bones.leftUpperArm.rotation.x += 16 * DEG * intensity;
+    }
+    if (this.#bones.rightUpperArm) {
+      this.#bones.rightUpperArm.rotation.z += -24 * DEG * intensity;
+      this.#bones.rightUpperArm.rotation.x += 16 * DEG * intensity;
+    }
+    if (this.#bones.leftLowerArm) {
+      this.#bones.leftLowerArm.rotation.y += -45 * DEG * intensity;
+    }
+    if (this.#bones.rightLowerArm) {
+      this.#bones.rightLowerArm.rotation.y += 45 * DEG * intensity;
+    }
+  }
+
+  // ── Shake Head：否定式上身搖動 ───────────
+
+  #doShakeHead() {
+    const t = this.#elapsed;
+    const totalDuration = 1.6;
+
+    if (t >= totalDuration) {
+      this.#finishTimedAction();
+      return;
+    }
+
+    this.#applyNaturalPose(t);
+    this.#applyBreathingOverlay(t, 0.2);
+
+    const fadeIn = Math.min(1, t / 0.18);
+    const fadeOut = t > 1.2 ? 1 - (t - 1.2) / 0.4 : 1;
+    const intensity = easeInOut(fadeIn) * Math.max(0, fadeOut);
+    const sway = Math.sin(t * 18) * 7 * DEG * intensity;
+
+    if (this.#bones.spine) {
+      this.#bones.spine.rotation.z += sway * 0.45;
+      this.#bones.spine.rotation.x += 3 * DEG * intensity;
+    }
+    if (this.#bones.chest) {
+      this.#bones.chest.rotation.y += sway;
+    }
+    if (this.#bones.leftUpperArm) {
+      this.#bones.leftUpperArm.rotation.z += 10 * DEG * intensity;
+    }
+    if (this.#bones.rightUpperArm) {
+      this.#bones.rightUpperArm.rotation.z += -10 * DEG * intensity;
     }
   }
 
   // ── Utilities ──────────────────────────
 
-  /** 低強度呼吸（供其他動作疊加） */
-  #doIdleSubtle() {
-    const t = this.#elapsed;
-    if (this.#bones.spine) {
-      this.#bones.spine.rotation.x = (this.#bones.spine.rotation.x || 0) + Math.sin(t * 1.4) * 0.004;
+  #clearMotionOverlay() {
+    this.#customAnimData = null;
+    this.#customOptions = {};
+  }
+
+  #finishTimedAction() {
+    this.#currentAction = 'idle';
+    this.#elapsed = 0;
+    this.resetToNaturalPose(0);
+  }
+
+  #applyNaturalPose(_t = 0) {
+    const basePose = this.#posePreset.basePose || {};
+    const positions = basePose.position || {};
+    const rotations = basePose.rotation || {};
+
+    for (const [key, pose] of Object.entries(positions)) {
+      const bone = this.#bones[key];
+      if (!bone) continue;
+      bone.position.x = pose.x || 0;
+      bone.position.y = this.#hipsBaseY + (pose.y || 0);
+      bone.position.z = pose.z || 0;
     }
-    if (this.#bones.hips) {
-      this.#bones.hips.position.y = this.#hipsBaseY + Math.sin(t * 1.4) * 0.001;
+
+    for (const [key, pose] of Object.entries(rotations)) {
+      const bone = this.#bones[key];
+      if (!bone) continue;
+      bone.rotation.set(
+        (pose.x || 0) * DEG,
+        (pose.y || 0) * DEG,
+        (pose.z || 0) * DEG
+      );
     }
   }
 
-  /** 重設所有骨骼到初始姿勢 */
-  #resetBones() {
-    for (const [key, bone] of Object.entries(this.#bones)) {
-      if (!bone) continue;
-      bone.rotation.set(0, 0, 0);
-      if (key === 'hips') {
-        bone.position.y = this.#hipsBaseY;
-      }
+  /** 低強度呼吸（供其他動作疊加） */
+  #applyBreathingOverlay(t, scale = 1) {
+    if (this.#bones.spine) {
+      this.#bones.spine.rotation.x += Math.sin(t * 1.4) * 0.008 * scale;
+      this.#bones.spine.rotation.z += Math.sin(t * 0.7) * 0.003 * scale;
+    }
+    if (this.#bones.chest) {
+      this.#bones.chest.rotation.x += Math.sin(t * 1.2 + 0.4) * 0.003 * scale;
+    }
+    if (this.#bones.hips) {
+      this.#bones.hips.position.x += Math.sin(t * 0.65) * 0.001 * scale;
+      this.#bones.hips.position.y += Math.sin(t * 1.4) * 0.002 * scale;
     }
   }
 
@@ -371,6 +675,7 @@ export class MotionController {
   /** 播放自訂 JSON 動作軌跡（插值邏輯） */
   #doCustom() {
     if (!this.#customAnimData) return;
+    this.#applyNaturalPose(this.#elapsed);
     const durationMs = this.#customAnimData.duration_ms || 1000;
     const loop = this.#customOptions.loop ?? false;
     let timeMs = this.#elapsed * 1000;
@@ -380,9 +685,7 @@ export class MotionController {
         timeMs = timeMs % durationMs;
       } else {
         // 結束動作
-        this.#currentAction = 'idle';
-        this.#elapsed = 0;
-        this.#resetBones();
+        this.#finishTimedAction();
         const cb = this.#customOptions.onComplete;
         this.#customAnimData = null;
         this.#customOptions = {};

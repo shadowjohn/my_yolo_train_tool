@@ -19,7 +19,7 @@ def llm_proxy():
             "intent": "error",
             "text": "請先輸入訊息。",
             "emotion": "sorrow",
-            "motion": "think"
+            "motion": "shake_head"
         })
 
     # 優先解析 Context Digest (Phase 12.5)
@@ -102,7 +102,7 @@ def llm_proxy():
                 "intent": "warning",
                 "text": "維護地址欄位是必填的喔，請先在地址欄位輸入地址。",
                 "emotion": "angry",
-                "motion": "think"
+                "motion": "warning"
             })
         elif email_state and not email_state.get("valid", True):
             if not email_val:
@@ -110,21 +110,21 @@ def llm_proxy():
                     "intent": "warning",
                     "text": "聯絡信箱欄位是必填的喔，請輸入電子信箱。",
                     "emotion": "angry",
-                    "motion": "think"
+                    "motion": "warning"
                 })
             else:
                 return jsonify({
                     "intent": "warning",
                     "text": f"聯絡信箱格式不對，您填的是 '{email_val}'，請補上完整網域（例如 abc@example.com）。",
                     "emotion": "angry",
-                    "motion": "think"
+                    "motion": "warning"
                 })
         else:
             return jsonify({
                 "intent": "success",
                 "text": "目前回報單的欄位看起來都是正確填寫的喔！如果有遇到其他問題，請告訴我。",
                 "emotion": "joy",
-                "motion": "happy"
+                "motion": "wave"
             })
             
     # B. 下載報告與 UI 指引
@@ -143,7 +143,7 @@ def llm_proxy():
                 "intent": "warning",
                 "text": "目前沒有選取地圖物件，請先在左側點選要下載的管線或監視器。",
                 "emotion": "sorrow",
-                "motion": "think"
+                "motion": "warning"
             })
     elif any(k in message_lower for k in ["成果在哪", "下載按鈕"]):
         return jsonify({
@@ -160,21 +160,21 @@ def llm_proxy():
                 "intent": "success",
                 "text": "可以，目前選取的是管線物件 PIPE-008（sewer 圖層），右側的「資料匯出面板」已就緒，您可以直接點選「匯出物件」按鈕進行匯出。",
                 "emotion": "joy",
-                "motion": "happy"
+                "motion": "wave"
             })
         elif selected_feature == "CCTV-042":
             return jsonify({
                 "intent": "success",
                 "text": "可以，目前選取的是監視器設備 CCTV-042（monitoring 圖層），右側的「資料匯出面板」已就緒，您可以點選「匯出物件」按鈕以 CSV 或 GeoJSON 匯出。",
                 "emotion": "joy",
-                "motion": "happy"
+                "motion": "wave"
             })
         else:
             return jsonify({
                 "intent": "warning",
                 "text": "目前沒有選取地圖上的任何物件喔。請先點選地圖上的管線或監視器，然後使用右側的「資料匯出面板」進行匯出。",
                 "emotion": "sorrow",
-                "motion": "think"
+                "motion": "warning"
             })
 
     # 1. 空間臨近查詢優先
@@ -185,7 +185,7 @@ def llm_proxy():
                 "intent": "searching",
                 "text": f"好的，我以目前地圖中心坐標 [{lng}, {lat}] 為您搜尋附近的管線...",
                 "emotion": "fun",
-                "motion": "dance_short",
+                "motion": "presenting",
                 "tool": "query_pipe",
                 "args": { "x": x, "y": y },
                 "afterText": "已經搜尋中心座標附近的管線，{summary}"
@@ -195,7 +195,7 @@ def llm_proxy():
                 "intent": "searching",
                 "text": f"好的，我以目前地圖中心坐標 [{lng}, {lat}] 讀取附近的監視器影像...",
                 "emotion": "fun",
-                "motion": "dance_short",
+                "motion": "presenting",
                 "tool": "query_cctv",
                 "args": { "x": x, "y": y },
                 "afterText": "已經載入中心座標附近的監視器，{summary}"
@@ -211,7 +211,7 @@ def llm_proxy():
                 "intent": "success",
                 "text": f"這條管線的深度為 {depth} 公尺。",
                 "emotion": "joy",
-                "motion": "happy"
+                "motion": "wave"
             })
         # 空間選取物件 Fallback
         elif selected_feature == "PIPE-008":
@@ -219,7 +219,7 @@ def llm_proxy():
                 "intent": "success",
                 "text": "根據地圖目前的選取項目，管線 PIPE-008 的深度為 1.8 公尺。",
                 "emotion": "joy",
-                "motion": "happy"
+                "motion": "wave"
             })
             
     # b. 詢問監視器狀態
@@ -231,7 +231,7 @@ def llm_proxy():
                 "intent": "success",
                 "text": f"這台監視器的連線狀態是 {status}。",
                 "emotion": "joy",
-                "motion": "happy"
+                "motion": "wave"
             })
         # 空間選取物件 Fallback
         elif selected_feature == "CCTV-042":
@@ -239,7 +239,7 @@ def llm_proxy():
                 "intent": "success",
                 "text": "目前地圖選取的監視器 CCTV-042 連線狀態為 online。",
                 "emotion": "joy",
-                "motion": "happy"
+                "motion": "wave"
             })
 
     # 判斷是否觸發 GIS 管線查詢 (Phase 6 & 7)
@@ -248,7 +248,7 @@ def llm_proxy():
             "intent": "searching",
             "text": "我幫您查詢附近管線...",
             "emotion": "fun",
-            "motion": "dance_short",
+            "motion": "presenting",
             "tool": "query_pipe",
             "args": {
                 "x": 65,
@@ -263,7 +263,7 @@ def llm_proxy():
             "intent": "searching",
             "text": "正在讀取附近監視器即時影像...",
             "emotion": "fun",
-            "motion": "dance_short",
+            "motion": "presenting",
             "tool": "query_cctv",
             "args": {
                 "x": 30,
@@ -277,7 +277,7 @@ def llm_proxy():
         "intent": "success",
         "text": "羽山哥，LLM Connector 已成功接上！",
         "emotion": "joy",
-        "motion": "happy"
+        "motion": "wave"
     }
     return jsonify(response_data)
 

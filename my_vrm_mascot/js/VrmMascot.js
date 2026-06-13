@@ -30,6 +30,10 @@ import { ConversationMemory }   from './ConversationMemory.js';
 import { SpatialContext }       from './SpatialContext.js';
 import { DomContext }           from './DomContext.js';
 import { PolicyGate }           from './PolicyGate.js';
+import {
+  PoseDirector,
+  resolvePoseDirectiveForTrace,
+} from './PoseDirector.js';
 
 /**
  * 意圖對照 Preset表，定義各種高階意圖所對應的底層指令序列與預設值
@@ -48,7 +52,7 @@ const INTENT_PRESETS = {
   success: {
     text: '太棒了！任務順利完成了！🚀',
     emotion: 'joy',
-    motion: 'happy',
+    motion: 'wave',
     actions: (text, emotion, motion) => [
       { type: 'lookAt', target: 'mouse' },
       { type: 'say', text, emotion, motion, timeout: 7000 }
@@ -57,7 +61,7 @@ const INTENT_PRESETS = {
   error: {
     text: '抱歉... 執行過程中發生了一些錯誤。😢',
     emotion: 'sorrow',
-    motion: 'think',
+    motion: 'shake_head',
     actions: (text, emotion, motion) => [
       { type: 'lookAt', target: 'mouse' },
       { type: 'say', text, emotion, motion, timeout: 7000 }
@@ -76,7 +80,7 @@ const INTENT_PRESETS = {
   warning: {
     text: '請注意！檢測到潛在的風險，請小心操作。⚠️',
     emotion: 'angry',
-    motion: 'think',
+    motion: 'warning',
     actions: (text, emotion, motion) => [
       { type: 'lookAt', target: 'mouse' },
       { type: 'say', text, emotion, motion, timeout: 7000 }
@@ -292,6 +296,7 @@ export class VrmMascot {
   #context = null;
   #domContext = null;
   #policyGate = null;
+  #poseDirector = null;
 
   // 狀態監控
   #isUserInteracting = false;
@@ -342,6 +347,11 @@ export class VrmMascot {
     this.#context = new SpatialContext(this);
     this.#domContext = new DomContext(this);
     this.#policyGate = new PolicyGate(this);
+    this.#poseDirector = new PoseDirector({
+      motion: this.#motion,
+      expression: this.#expression,
+      lookAt: this.#lookAtCtrl,
+    });
 
     // 監聽佇列變空
     this.#actionQueue.onQueueEmpty = () => {
@@ -388,6 +398,9 @@ export class VrmMascot {
 
   /** @returns {PolicyGate} */
   get policyGate() { return this.#policyGate; }
+
+  /** @returns {PoseDirector} */
+  get poseDirector() { return this.#poseDirector; }
 
   /** @returns {object} */
   get intent() { return this.#actionIntent; }
@@ -456,6 +469,26 @@ export class VrmMascot {
    */
   say(text) {
     this.dispatch('talking', { text });
+  }
+
+  /**
+   * 依語意狀態播放姿勢，不暴露骨架細節給 Agent Runtime。
+   * @param {string} state
+   * @param {object} [meta]
+   * @returns {object|null}
+   */
+  poseForState(state, meta = {}) {
+    return this.#poseDirector?.poseForState(state, meta) || null;
+  }
+
+  /**
+   * 依 intent 執行結果播放姿勢。
+   * @param {string} status
+   * @param {object} [intentObj]
+   * @returns {object|null}
+   */
+  poseForIntentResult(status, intentObj = {}) {
+    return this.#poseDirector?.poseForIntentResult(status, intentObj) || null;
   }
 
   /**
@@ -530,23 +563,22 @@ export class VrmMascot {
       const policyCheck = this.policyGate.check(toolName, normalizedIntent.parameters);
       if (!policyCheck.ok) {
         normalizedIntent.status = 'blocked';
-        updateTraceStep(normalizedIntent, 'policy_check', {
+        this.updateIntentTrace(normalizedIntent, 'policy_check', {
           status: 'blocked',
           reason: policyCheck.reason
         });
-        updateTraceStep(normalizedIntent, 'execute_tool', {
+        this.updateIntentTrace(normalizedIntent, 'execute_tool', {
           status: 'skipped',
           reason: 'policy_blocked'
         });
-        this.#emitIntentUpdate();
         this.dispatch('warning', { text: policyCheck.error });
         return { ok: false, error: 'blocked' };
       }
-      updateTraceStep(normalizedIntent, 'policy_check', { status: 'ok' });
-      updateTraceStep(normalizedIntent, 'execute_tool', { status: 'pending' });
+      this.updateIntentTrace(normalizedIntent, 'policy_check', { status: 'ok' });
+      this.updateIntentTrace(normalizedIntent, 'execute_tool', { status: 'pending' });
     } else {
-      updateTraceStep(normalizedIntent, 'policy_check', { status: 'none' });
-      updateTraceStep(normalizedIntent, 'execute_tool', { status: 'none' });
+      this.updateIntentTrace(normalizedIntent, 'policy_check', { status: 'none' });
+      this.updateIntentTrace(normalizedIntent, 'execute_tool', { status: 'none' });
     }
 
     let intentName = normalizedIntent.action.toLowerCase();
@@ -850,6 +882,10 @@ export class VrmMascot {
   updateIntentTrace(intentObj, step, patch = {}) {
     updateTraceStep(intentObj, step, patch);
     this.#actionIntent = intentObj;
+    const directive = resolvePoseDirectiveForTrace(step, patch, intentObj);
+    if (directive) {
+      this.#poseDirector?.applyDirective(directive);
+    }
     this.#emitIntentUpdate();
   }
 

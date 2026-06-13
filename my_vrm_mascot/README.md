@@ -21,7 +21,7 @@ my_vrm_mascot/
   index.html                  # MVP 展示頁
   js/
     VrmMascot.js              # 主控制器（Three.js + VRM）
-    MotionController.js       # 程序式動作（idle/wave/dance/think/happy）
+    MotionController.js       # 程序式動作（idle/wave/dance/think/presenting/warning）
     ExpressionController.js   # 眨眼 + 表情控制
     MascotStateMachine.js     # 狀態機（dispatch / do / say / emote）
     LookAtController.js       # 滑鼠注視（EMA 平滑）
@@ -126,6 +126,20 @@ mascot.lookAt.setTarget('none');     // LookAtController
 mascot.resetCamera();                // 重置 3D 視角
 ```
 
+### 語意姿勢綁定 — PoseDirector (Phase M1)
+
+Agent Runtime 不直接碰骨架，改透過語意姿勢 API 交給 VRM 表現層：
+
+```javascript
+mascot.poseForState('running');              // presenting
+mascot.poseForIntentResult('done', intent);  // wave
+```
+
+`updateIntentTrace()` 會自動把 tool trace 狀態轉成姿勢：
+`pending -> think`、`running -> presenting`、`done -> wave`、`blocked -> warning`、`failed/timeout -> shake_head`。
+
+MotionController 會在 VRM 載入後立即套用 Natural Pose；所有內建程序式動作都建立在這個自然站姿上，再疊加呼吸、展示、警告或揮手動作，避免回到模型 bind/rest pose 的 T-Pose。
+
 ## 可用動作
 
 | 名稱 | 說明 | 持續時間 |
@@ -135,6 +149,9 @@ mascot.resetCamera();                // 重置 3D 視角
 | `dance_short` | 左右搖擺跳舞 | 4.0s |
 | `think` | 托下巴沉思（已修正方向） | 3.0s |
 | `happy` | 雙手舉高跳躍（已修正方向） | 2.0s |
+| `presenting` | 伸手介紹面板 | 3.2s |
+| `warning` | 警示姿勢 | 2.4s |
+| `shake_head` | 否定式上身搖動 | 1.6s |
 | `custom_animation` / `custom` | 播放自訂 JSON 動作 | 視動畫檔而定 |
 
 ## 可用表情

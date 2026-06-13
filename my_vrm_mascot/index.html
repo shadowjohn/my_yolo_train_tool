@@ -285,6 +285,45 @@
             <!-- Dynamically populated trace steps -->
           </div>
         </div>
+        <div class="character-inspector-container" id="characterInspectorPanel">
+          <div class="character-inspector-stage-note">
+            <span>角色檢查器</span>
+            <span>VRM Developer Mode</span>
+          </div>
+
+          <section class="character-inspector-deck" aria-label="角色檢查器">
+            <div class="character-inspector-header">
+              <div>
+                <div class="character-inspector-title">角色檢查器</div>
+                <div class="character-inspector-subtitle">Character Inspector</div>
+              </div>
+              <span class="character-inspector-mode">開發者模式</span>
+            </div>
+
+            <div class="character-inspector-tabs" id="characterInspectorTabs"></div>
+            <div class="character-inspector-groups" id="characterInspectorGroups"></div>
+
+            <div class="character-inspector-toolbar">
+              <select id="characterInspectorBoneSelect" class="model-select character-inspector-bone-select"></select>
+              <label class="character-inspector-mirror">
+                <input id="characterInspectorMirrorMode" type="checkbox" checked>
+                <span>鏡像調整</span>
+              </label>
+            </div>
+
+            <div class="character-inspector-slider-list" id="characterInspectorSliderList"></div>
+
+            <pre class="character-inspector-json" id="characterInspectorJsonPreview">{}</pre>
+
+            <div class="character-inspector-actions">
+              <button class="btn btn--blue" id="btnInspectorCopyJson" type="button">複製 JSON</button>
+              <button class="btn btn--accent" id="btnInspectorSaveLocal" type="button">儲存本機</button>
+              <button class="btn btn--upload" id="btnInspectorResetBone" type="button">重設骨骼</button>
+              <button class="btn btn--upload" id="btnInspectorResetAll" type="button">全部重設</button>
+              <span class="character-inspector-status" id="characterInspectorStatus">預設姿勢</span>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   </div>
@@ -307,6 +346,7 @@
             Head: "head", Neck: "neck", Spine: "spine", Chest: "chest", Hips: "hips",
             LeftUpperArm: "leftUpperArm", LeftLowerArm: "leftLowerArm",
             RightUpperArm: "rightUpperArm", RightLowerArm: "rightLowerArm",
+            LeftHand: "leftHand", RightHand: "rightHand",
             LeftUpperLeg: "leftUpperLeg", RightUpperLeg: "rightUpperLeg",
             LeftShoulder: "leftShoulder", RightShoulder: "rightShoulder",
           };
@@ -320,6 +360,13 @@
   <!-- ══ App Entry (ES Module) ══════════════════ -->
   <script type="module">
     import { VrmMascot } from './js/VrmMascot.js';
+    import { POSE_CALIBRATION_BONES } from './js/MotionController.js';
+    import {
+      CHARACTER_INSPECTOR_SECTIONS,
+      CHARACTER_INSPECTOR_BONE_GROUPS,
+      getInspectorBoneLabel,
+      getInspectorBonesForGroup,
+    } from './js/CharacterInspectorLabels.js';
 
     // ── 初始化 ──────────────────────────────
     const viewport   = document.getElementById('viewport');
@@ -360,8 +407,32 @@
       actionStatus: document.getElementById('dbgActionStatus'),
       suggestedPanel: document.getElementById('suggestedActionsPanel'),
       suggestedList: document.getElementById('suggestedActionsList'),
+      inspectorTabs: document.getElementById('characterInspectorTabs'),
+      inspectorGroups: document.getElementById('characterInspectorGroups'),
+      inspectorBoneSelect: document.getElementById('characterInspectorBoneSelect'),
+      inspectorMirrorMode: document.getElementById('characterInspectorMirrorMode'),
+      inspectorSliderList: document.getElementById('characterInspectorSliderList'),
+      inspectorResetBone: document.getElementById('btnInspectorResetBone'),
+      inspectorResetAll: document.getElementById('btnInspectorResetAll'),
+      inspectorCopyJson: document.getElementById('btnInspectorCopyJson'),
+      inspectorSaveLocal: document.getElementById('btnInspectorSaveLocal'),
+      inspectorStatus: document.getElementById('characterInspectorStatus'),
+      inspectorJsonPreview: document.getElementById('characterInspectorJsonPreview'),
     };
     let currentSuggestedActions = [];
+
+    const INSPECTOR_STORAGE_PREFIX = 'vrmMascot.posePreset.';
+    const INSPECTOR_POSITION_BONES = new Set(['hips']);
+    const INSPECTOR_MIRROR_PAIRS = {
+      leftUpperArm: 'rightUpperArm',
+      rightUpperArm: 'leftUpperArm',
+      leftLowerArm: 'rightLowerArm',
+      rightLowerArm: 'leftLowerArm',
+      leftHand: 'rightHand',
+      rightHand: 'leftHand',
+    };
+    const INSPECTOR_MIRROR_INVERT_AXES = new Set(['y', 'z']);
+    let currentInspectorGroup = 'arms';
 
     mascot.onFpsUpdate = (fps) => {
       dbg.fps.textContent = fps;
@@ -480,6 +551,245 @@
       `).join('');
     }
 
+    function inspectorStorageKey() {
+      const selectedModel = document.getElementById('modelSelector')?.value || 'default';
+      return `${INSPECTOR_STORAGE_PREFIX}${selectedModel}`;
+    }
+
+    function getInspectorMode(bone) {
+      return INSPECTOR_POSITION_BONES.has(bone) ? 'position' : 'rotation';
+    }
+
+    function getInspectorAxisConfig(bone) {
+      if (getInspectorMode(bone) === 'position') {
+        return { min: -0.08, max: 0.08, step: 0.001 };
+      }
+      return { min: -120, max: 120, step: 1 };
+    }
+
+    function formatInspectorValue(value, mode) {
+      const number = Number(value) || 0;
+      return mode === 'position' ? number.toFixed(3) : `${Math.round(number)}°`;
+    }
+
+    function setInspectorStatus(message) {
+      if (dbg.inspectorStatus) dbg.inspectorStatus.textContent = message;
+    }
+
+    function renderInspectorTabs() {
+      if (!dbg.inspectorTabs) return;
+      dbg.inspectorTabs.innerHTML = CHARACTER_INSPECTOR_SECTIONS.map(section => `
+        <button
+          class="character-inspector-tab${section.id === 'pose' ? ' active' : ''}${section.enabled ? '' : ' disabled'}"
+          type="button"
+          data-inspector-section="${escapeHtml(section.id)}"
+          ${section.enabled ? '' : 'disabled'}
+          title="${escapeHtml(section.subtitle)}"
+        >
+          ${escapeHtml(section.label)}
+        </button>
+      `).join('');
+    }
+
+    function renderInspectorGroups() {
+      if (!dbg.inspectorGroups) return;
+      dbg.inspectorGroups.innerHTML = Object.entries(CHARACTER_INSPECTOR_BONE_GROUPS).map(([groupId, group]) => `
+        <button
+          class="character-inspector-group${groupId === currentInspectorGroup ? ' active' : ''}"
+          type="button"
+          data-inspector-group="${escapeHtml(groupId)}"
+        >
+          ${escapeHtml(group.label)}
+        </button>
+      `).join('');
+    }
+
+    function ensureInspectorBoneOptions() {
+      if (!dbg.inspectorBoneSelect) return;
+      const groupBones = getInspectorBonesForGroup(currentInspectorGroup);
+      const bones = groupBones.length > 0 ? groupBones : POSE_CALIBRATION_BONES;
+      const currentValue = dbg.inspectorBoneSelect.value;
+
+      dbg.inspectorBoneSelect.innerHTML = bones.map(bone => (
+        `<option value="${escapeHtml(bone)}">${escapeHtml(getInspectorBoneLabel(bone))}</option>`
+      )).join('');
+
+      if (bones.includes(currentValue)) {
+        dbg.inspectorBoneSelect.value = currentValue;
+      }
+    }
+
+    function readInspectorValue(preset, bone, axis) {
+      const mode = getInspectorMode(bone);
+      const source = mode === 'position'
+        ? preset.basePose?.position?.[bone]
+        : preset.basePose?.rotation?.[bone];
+      return Number(source?.[axis] ?? 0);
+    }
+
+    function renderCharacterInspectorPreview() {
+      if (!dbg.inspectorJsonPreview) return;
+      dbg.inspectorJsonPreview.textContent = JSON.stringify(mascot.motion.getPosePreset(), null, 2);
+    }
+
+    function renderCharacterInspector() {
+      if (!dbg.inspectorBoneSelect || !dbg.inspectorSliderList) return;
+      renderInspectorTabs();
+      renderInspectorGroups();
+      ensureInspectorBoneOptions();
+
+      const preset = mascot.motion.getPosePreset();
+      const selectedBone = dbg.inspectorBoneSelect.value || getInspectorBonesForGroup(currentInspectorGroup)[0] || POSE_CALIBRATION_BONES[0];
+      const mode = getInspectorMode(selectedBone);
+      const config = getInspectorAxisConfig(selectedBone);
+
+      dbg.inspectorSliderList.innerHTML = ['x', 'y', 'z'].map(axis => {
+        const value = readInspectorValue(preset, selectedBone, axis);
+        return `
+          <label class="character-inspector-slider-row">
+            <span class="character-inspector-axis">${axis}</span>
+            <input
+              class="character-inspector-slider"
+              type="range"
+              min="${config.min}"
+              max="${config.max}"
+              step="${config.step}"
+              value="${value}"
+              data-inspector-axis="${axis}"
+            >
+            <span class="character-inspector-value" data-inspector-value="${axis}">${formatInspectorValue(value, mode)}</span>
+          </label>
+        `;
+      }).join('');
+
+      renderCharacterInspectorPreview();
+    }
+
+    function applyInspectorMirror(bone, axis, value) {
+      if (!dbg.inspectorMirrorMode?.checked || getInspectorMode(bone) === 'position') return;
+      const mirrorBone = INSPECTOR_MIRROR_PAIRS[bone];
+      if (!mirrorBone) return;
+
+      const mirroredValue = INSPECTOR_MIRROR_INVERT_AXES.has(axis) ? -value : value;
+      mascot.motion.setBasePoseRotation(mirrorBone, axis, mirroredValue);
+    }
+
+    function handleInspectorSliderInput(e) {
+      const input = e.target.closest('[data-inspector-axis]');
+      if (!input || !dbg.inspectorBoneSelect) return;
+
+      const bone = dbg.inspectorBoneSelect.value;
+      const axis = input.dataset.inspectorAxis;
+      const value = Number(input.value);
+      const mode = getInspectorMode(bone);
+
+      if (mode === 'position') {
+        mascot.motion.setBasePosePosition(bone, axis, value);
+      } else {
+        mascot.motion.setBasePoseRotation(bone, axis, value);
+        applyInspectorMirror(bone, axis, value);
+      }
+
+      const valueEl = dbg.inspectorSliderList.querySelector(`[data-inspector-value="${axis}"]`);
+      if (valueEl) valueEl.textContent = formatInspectorValue(value, mode);
+      renderCharacterInspectorPreview();
+      setInspectorStatus('編輯中');
+    }
+
+    function loadInspectorPresetFromLocal() {
+      try {
+        const raw = localStorage.getItem(inspectorStorageKey());
+        if (raw) {
+          mascot.motion.loadPosePreset(JSON.parse(raw));
+          setInspectorStatus('已載入本機設定');
+        } else {
+          mascot.motion.loadPosePreset({ model: document.getElementById('modelSelector')?.value || 'default' });
+          setInspectorStatus('預設姿勢');
+        }
+      } catch (err) {
+        console.warn('Failed to load local pose preset:', err);
+        localStorage.removeItem(inspectorStorageKey());
+        mascot.motion.resetBasePoseAll();
+        setInspectorStatus('本機設定無效');
+      }
+      renderCharacterInspector();
+    }
+
+    async function copyInspectorJson() {
+      const text = JSON.stringify(mascot.motion.getPosePreset(), null, 2);
+      try {
+        let copied = false;
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+          copied = true;
+        } else if (dbg.inspectorJsonPreview) {
+          const range = document.createRange();
+          range.selectNodeContents(dbg.inspectorJsonPreview);
+          const selection = window.getSelection();
+          if (selection) {
+            selection.removeAllRanges();
+            selection.addRange(range);
+            copied = document.execCommand('copy');
+            selection.removeAllRanges();
+          }
+        }
+
+        if (!copied) {
+          throw new Error('No clipboard path available');
+        }
+        setInspectorStatus('已複製 JSON');
+      } catch (err) {
+        console.warn('Failed to copy pose preset:', err);
+        setInspectorStatus('複製失敗');
+      }
+    }
+
+    function saveInspectorPresetLocal() {
+      try {
+        localStorage.setItem(inspectorStorageKey(), JSON.stringify(mascot.motion.getPosePreset(), null, 2));
+        setInspectorStatus('已儲存本機');
+      } catch (err) {
+        console.warn('Failed to save pose preset:', err);
+        setInspectorStatus('儲存失敗');
+      }
+    }
+
+    if (dbg.inspectorGroups) {
+      dbg.inspectorGroups.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-inspector-group]');
+        if (!btn) return;
+        currentInspectorGroup = btn.dataset.inspectorGroup;
+        renderCharacterInspector();
+      });
+    }
+
+    if (dbg.inspectorBoneSelect) {
+      dbg.inspectorBoneSelect.addEventListener('change', renderCharacterInspector);
+    }
+    if (dbg.inspectorSliderList) {
+      dbg.inspectorSliderList.addEventListener('input', handleInspectorSliderInput);
+    }
+    if (dbg.inspectorResetBone) {
+      dbg.inspectorResetBone.addEventListener('click', () => {
+        mascot.motion.resetBasePoseBone(dbg.inspectorBoneSelect.value);
+        renderCharacterInspector();
+        setInspectorStatus('已重設骨骼');
+      });
+    }
+    if (dbg.inspectorResetAll) {
+      dbg.inspectorResetAll.addEventListener('click', () => {
+        mascot.motion.resetBasePoseAll();
+        renderCharacterInspector();
+        setInspectorStatus('已全部重設');
+      });
+    }
+    if (dbg.inspectorCopyJson) {
+      dbg.inspectorCopyJson.addEventListener('click', copyInspectorJson);
+    }
+    if (dbg.inspectorSaveLocal) {
+      dbg.inspectorSaveLocal.addEventListener('click', saveInspectorPresetLocal);
+    }
+
     // ── 載入 ────────────────────────────────
     mascot.onLoadProgress = (pct) => {
       loadingTxt.textContent = `正在載入 VRM 模型... ${pct}%`;
@@ -496,12 +806,14 @@
     };
 
     const selector = document.getElementById('modelSelector');
+    loadInspectorPresetFromLocal();
     mascot.load(selector.value);
 
     selector.addEventListener('change', () => {
       overlay.style.display = '';
       overlay.classList.remove('hidden');
       loadingTxt.textContent = '正在載入 VRM 模型...';
+      loadInspectorPresetFromLocal();
       mascot.load(selector.value);
     });
 
