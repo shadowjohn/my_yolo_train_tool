@@ -353,6 +353,39 @@ function testLabIncludesMotionMiningWorkbenchControls() {
   assert.doesNotMatch(html, /innerHTML/);
 }
 
+function testLabIncludesQuickReviewModeControls() {
+  const html = read(LAB_PATH);
+
+  assert.match(html, /Quick Review Mode/);
+  assert.match(html, /快速標註/);
+  assert.match(html, /id="quickReviewPanel"/);
+  assert.match(html, /id="quickReviewPresent"/);
+  assert.match(html, /id="quickReviewPoint"/);
+  assert.match(html, /id="quickReviewThink"/);
+  assert.match(html, /id="quickReviewWarning"/);
+  assert.match(html, /id="quickReviewSuccess"/);
+  assert.match(html, /id="quickReviewFuture"/);
+  assert.match(html, /id="quickReviewReject"/);
+  assert.match(html, /data-quick-key="Q"/);
+  assert.match(html, /data-quick-key="W"/);
+  assert.match(html, /data-quick-key="E"/);
+  assert.match(html, /data-quick-key="R"/);
+  assert.match(html, /data-quick-key="T"/);
+  assert.match(html, /data-quick-key="C"/);
+  assert.match(html, /data-quick-key="X"/);
+  assert.match(html, /id="advancedMiningDetails"/);
+  assert.match(html, /function\s+addQuickReviewCandidate\s*\(/);
+  assert.match(html, /function\s+getQuickReviewPreset\s*\(/);
+  assert.match(html, /function\s+handleQuickReviewKeydown\s*\(/);
+  assert.match(html, /function\s+isQuickReviewEditableTarget\s*\(/);
+  assert.match(html, /event\.repeat/);
+  assert.match(html, /event\.ctrlKey/);
+  assert.match(html, /event\.metaKey/);
+  assert.match(html, /event\.altKey/);
+  assert.match(html, /category:\s*'candidate_future'[\s\S]*reason:\s*'requires_weight_shift'/);
+  assert.match(html, /category:\s*'reject'[\s\S]*rejectReason:\s*'unclear_intent'/);
+}
+
 async function testBuildNaturalPosePresetMergesUpperBodyOnly() {
   const {
     buildNaturalPosePreset,
@@ -485,6 +518,7 @@ async function run() {
     testLowerBodyPreviewLockIsExplicitAndSeparateFromExportScope,
     testMotionMiningSchemaBuildsCandidateAndRejectEntries,
     testLabIncludesMotionMiningWorkbenchControls,
+    testLabIncludesQuickReviewModeControls,
     testMotionMiningLogHasSprintReviewedSamples,
     testMotionMiningReportMatchesLog,
     testBuildNaturalPosePresetMergesUpperBodyOnly,

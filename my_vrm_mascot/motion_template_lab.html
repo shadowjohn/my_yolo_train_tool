@@ -271,6 +271,95 @@
       background: rgba(15, 23, 42, 0.64);
     }
 
+    .lab-quick-panel {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .lab-quick-panel p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .lab-quick-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .lab-quick-button {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+      min-height: 58px;
+      text-align: left;
+      border-color: rgba(45, 212, 191, 0.36);
+    }
+
+    .lab-quick-button kbd {
+      display: inline-grid;
+      place-items: center;
+      min-width: 28px;
+      min-height: 28px;
+      border: 1px solid rgba(103, 232, 249, 0.48);
+      border-radius: 6px;
+      background: rgba(5, 10, 18, 0.78);
+      color: var(--accent-strong);
+      font: 700 12px/1 Consolas, "Cascadia Mono", monospace;
+    }
+
+    .lab-quick-button span {
+      display: block;
+      overflow-wrap: anywhere;
+      color: var(--text);
+      font-weight: 650;
+      line-height: 1.2;
+    }
+
+    .lab-quick-button small {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .lab-quick-button[data-quick-category="candidate_future"] {
+      border-color: rgba(251, 191, 36, 0.48);
+    }
+
+    .lab-quick-button[data-quick-category="reject"] {
+      border-color: rgba(252, 165, 165, 0.48);
+    }
+
+    .lab-advanced-mining {
+      margin: 0 0 12px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 8px;
+      background: rgba(5, 10, 18, 0.24);
+    }
+
+    .lab-advanced-mining summary {
+      min-height: 42px;
+      padding: 11px 12px;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .lab-advanced-mining[open] summary {
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+      color: var(--text);
+    }
+
+    .lab-advanced-mining-body {
+      padding: 12px;
+    }
+
     .lab-mining-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -390,6 +479,7 @@
       .lab-actions,
       .lab-summary div,
       .lab-mining-grid,
+      .lab-quick-grid,
       .lab-preview-options {
         grid-template-columns: 1fr;
       }
@@ -478,62 +568,94 @@
 
       <section class="lab-mining-panel">
         <h2>動作採礦紀錄 / Motion Mining Workbench</h2>
-        <div class="lab-mining-grid">
-          <label class="lab-field">
-            <span>分類</span>
-            <select id="miningCategory"></select>
-          </label>
-          <label class="lab-field">
-            <span>分數</span>
-            <select id="miningScore">
-              <option value="5">5 / 高價值</option>
-              <option value="4">4 / 可用</option>
-              <option value="3" selected>3 / 待觀察</option>
-              <option value="2">2 / 局部可參考</option>
-              <option value="1">1 / 不可用</option>
-            </select>
-          </label>
-          <label class="lab-field">
-            <span>來源分數</span>
-            <select id="miningSourceScore">
-              <option value="5">5 / 原始很好</option>
-              <option value="4">4 / 原始可用</option>
-              <option value="3" selected>3 / 原始待觀察</option>
-              <option value="2">2 / 局部參考</option>
-              <option value="1">1 / 原始不可用</option>
-            </select>
-          </label>
-          <label class="lab-field">
-            <span>Agent 分數</span>
-            <select id="miningAgentScore">
-              <option value="5">5 / Agent 很好</option>
-              <option value="4">4 / Agent 可用</option>
-              <option value="3" selected>3 / Agent 待觀察</option>
-              <option value="2">2 / 需未來能力</option>
-              <option value="1">1 / Agent 不可用</option>
-            </select>
-          </label>
-          <label class="lab-field lab-field-full">
-            <span>淘汰原因</span>
-            <select id="miningRejectReason"></select>
-          </label>
-          <label class="lab-field lab-field-full">
-            <span>Future 原因</span>
-            <select id="miningFutureReason"></select>
-          </label>
-          <label class="lab-field lab-field-full">
-            <span>標籤</span>
-            <input id="miningTags" type="text" value="upper_body, agent_friendly">
-          </label>
-          <label class="lab-field lab-field-full">
-            <span>備註</span>
-            <textarea id="miningNote" placeholder="例如：雙手自然打開，適合介紹"></textarea>
-          </label>
-        </div>
-        <div class="lab-actions lab-mining-actions">
-          <button id="btnAddMiningCandidate" type="button">加入候選</button>
-          <button id="btnExportMiningLog" type="button">匯出 mining_log.json</button>
-        </div>
+        <section id="quickReviewPanel" class="lab-quick-panel" aria-label="快速標註 Quick Review Mode">
+          <h2>快速標註 / Quick Review Mode</h2>
+          <p>看完姿勢直接按分類或鍵盤快捷鍵；系統會用預設分數與標籤加入候選。</p>
+          <div class="lab-quick-grid">
+            <button id="quickReviewPresent" class="lab-quick-button" type="button" data-quick-category="present" data-quick-key="Q">
+              <kbd>Q</kbd><span>Present<small>介紹 / 5-4-5</small></span>
+            </button>
+            <button id="quickReviewPoint" class="lab-quick-button" type="button" data-quick-category="point" data-quick-key="W">
+              <kbd>W</kbd><span>Point<small>指向 / 5-4-5</small></span>
+            </button>
+            <button id="quickReviewThink" class="lab-quick-button" type="button" data-quick-category="think" data-quick-key="E">
+              <kbd>E</kbd><span>Think<small>思考 / 5-4-5</small></span>
+            </button>
+            <button id="quickReviewWarning" class="lab-quick-button" type="button" data-quick-category="warning" data-quick-key="R">
+              <kbd>R</kbd><span>Warning<small>警告 / 4-4-4</small></span>
+            </button>
+            <button id="quickReviewSuccess" class="lab-quick-button" type="button" data-quick-category="success" data-quick-key="T">
+              <kbd>T</kbd><span>Success<small>成功 / 4-4-4</small></span>
+            </button>
+            <button id="quickReviewFuture" class="lab-quick-button" type="button" data-quick-category="candidate_future" data-quick-key="C">
+              <kbd>C</kbd><span>Future<small>未來候選 / source 5 agent 2</small></span>
+            </button>
+            <button id="quickReviewReject" class="lab-quick-button" type="button" data-quick-category="reject" data-quick-key="X">
+              <kbd>X</kbd><span>Reject<small>淘汰 / source 2 agent 1</small></span>
+            </button>
+          </div>
+        </section>
+        <details id="advancedMiningDetails" class="lab-advanced-mining">
+          <summary>Advanced / 編輯詳細欄位</summary>
+          <div class="lab-advanced-mining-body">
+            <div class="lab-mining-grid">
+              <label class="lab-field">
+                <span>分類</span>
+                <select id="miningCategory"></select>
+              </label>
+              <label class="lab-field">
+                <span>分數</span>
+                <select id="miningScore">
+                  <option value="5">5 / 高價值</option>
+                  <option value="4">4 / 可用</option>
+                  <option value="3" selected>3 / 待觀察</option>
+                  <option value="2">2 / 局部可參考</option>
+                  <option value="1">1 / 不可用</option>
+                </select>
+              </label>
+              <label class="lab-field">
+                <span>來源分數</span>
+                <select id="miningSourceScore">
+                  <option value="5">5 / 原始很好</option>
+                  <option value="4">4 / 原始可用</option>
+                  <option value="3" selected>3 / 原始待觀察</option>
+                  <option value="2">2 / 局部參考</option>
+                  <option value="1">1 / 原始不可用</option>
+                </select>
+              </label>
+              <label class="lab-field">
+                <span>Agent 分數</span>
+                <select id="miningAgentScore">
+                  <option value="5">5 / Agent 很好</option>
+                  <option value="4">4 / Agent 可用</option>
+                  <option value="3" selected>3 / Agent 待觀察</option>
+                  <option value="2">2 / 需未來能力</option>
+                  <option value="1">1 / Agent 不可用</option>
+                </select>
+              </label>
+              <label class="lab-field lab-field-full">
+                <span>淘汰原因</span>
+                <select id="miningRejectReason"></select>
+              </label>
+              <label class="lab-field lab-field-full">
+                <span>Future 原因</span>
+                <select id="miningFutureReason"></select>
+              </label>
+              <label class="lab-field lab-field-full">
+                <span>標籤</span>
+                <input id="miningTags" type="text" value="upper_body, agent_friendly">
+              </label>
+              <label class="lab-field lab-field-full">
+                <span>備註</span>
+                <textarea id="miningNote" placeholder="例如：雙手自然打開，適合介紹"></textarea>
+              </label>
+            </div>
+            <div class="lab-actions lab-mining-actions">
+              <button id="btnAddMiningCandidate" type="button">加入候選</button>
+              <button id="btnExportMiningLog" type="button">匯出 mining_log.json</button>
+            </div>
+          </div>
+        </details>
         <ol id="miningCandidateList" class="lab-mining-list"></ol>
       </section>
 
@@ -605,6 +727,7 @@
       exportedBoneCount: document.getElementById('exportedBoneCount'),
       warningList: document.getElementById('warningList'),
       json: document.getElementById('motion-template-json'),
+      quickReviewButtons: Array.from(document.querySelectorAll('.lab-quick-button[data-quick-category]')),
       miningCategory: document.getElementById('miningCategory'),
       miningScore: document.getElementById('miningScore'),
       miningSourceScore: document.getElementById('miningSourceScore'),
@@ -923,6 +1046,117 @@
       setStatus('匯出完成');
     }
 
+    function getQuickReviewPreset(category) {
+      const presets = {
+        present: {
+          category: 'present',
+          score: 5,
+          sourceScore: 4,
+          agentScore: 5,
+          note: '快速標註：自然介紹姿勢。',
+          tags: 'upper_body, agent_friendly, quick_review',
+        },
+        point: {
+          category: 'point',
+          score: 5,
+          sourceScore: 4,
+          agentScore: 5,
+          note: '快速標註：方向性清楚的指向姿勢。',
+          tags: 'upper_body, agent_friendly, quick_review',
+        },
+        think: {
+          category: 'think',
+          score: 5,
+          sourceScore: 4,
+          agentScore: 5,
+          note: '快速標註：適合查詢中或分析中的思考姿勢。',
+          tags: 'upper_body, agent_friendly, quick_review',
+        },
+        warning: {
+          category: 'warning',
+          score: 4,
+          sourceScore: 4,
+          agentScore: 4,
+          note: '快速標註：適合提醒、限制或異常狀態。',
+          tags: 'upper_body, agent_friendly, quick_review',
+        },
+        success: {
+          category: 'success',
+          score: 4,
+          sourceScore: 4,
+          agentScore: 4,
+          note: '快速標註：適合完成、成功或正向回饋。',
+          tags: 'upper_body, agent_friendly, quick_review',
+        },
+        candidate_future: {
+          category: 'candidate_future',
+          score: 4,
+          sourceScore: 5,
+          agentScore: 2,
+          reason: 'requires_weight_shift',
+          note: '快速標註：原始動作有價值，但目前 Agent Pose 需要重心或下半身能力。',
+          tags: 'future_candidate, requires_lower_body, quick_review',
+        },
+        reject: {
+          category: 'reject',
+          score: 1,
+          sourceScore: 2,
+          agentScore: 1,
+          rejectReason: 'unclear_intent',
+          note: '快速標註：不適合目前 Agent 姿勢庫。',
+          tags: 'negative_sample, quick_review',
+        },
+      };
+
+      return presets[category] || null;
+    }
+
+    function addQuickReviewCandidate(category) {
+      const preset = getQuickReviewPreset(category);
+      if (!preset) return;
+
+      if (mixer && action && clip) {
+        sampleAt(Number(els.sampleTime.value || 0));
+      }
+
+      if (!latestPreset || !sourceFileName) {
+        setWarnings(['請先載入 VRMA 並取樣後再使用快速標註']);
+        return;
+      }
+
+      const sequence = miningEntries.filter((entry) => entry.category === preset.category).length + 1;
+      const entry = buildMotionMiningEntry({
+        source: sourceFileName,
+        sampleTime: Number(els.sampleTime.value || 0),
+        ...preset,
+        sequence,
+      });
+
+      miningEntries.push(entry);
+      renderMiningList();
+      setStatus(`快速標註 ${entry.id}`);
+    }
+
+    function handleQuickReviewKeydown(event) {
+      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (isQuickReviewEditableTarget(event.target)) return;
+
+      const key = String(event.key || '').toUpperCase();
+      const button = els.quickReviewButtons.find((item) => item.dataset.quickKey === key);
+      if (!button) return;
+
+      event.preventDefault();
+      addQuickReviewCandidate(button.dataset.quickCategory);
+    }
+
+    function isQuickReviewEditableTarget(target) {
+      if (!target) return false;
+      if (target.isContentEditable) return true;
+
+      const tagName = String(target.tagName || '').toLowerCase();
+      return tagName === 'input' || tagName === 'select' || tagName === 'textarea';
+    }
+
     function addMiningCandidate() {
       if (!latestPreset || !sourceFileName) {
         setWarnings(['請先載入 VRMA 並取樣後再加入候選']);
@@ -1145,6 +1379,10 @@
       els.btnPlayMotion.addEventListener('click', playMotion);
       els.btnPauseMotion.addEventListener('click', pauseMotion);
       els.btnStopMotion.addEventListener('click', () => stopPlayback());
+      for (const button of els.quickReviewButtons) {
+        button.addEventListener('click', () => addQuickReviewCandidate(button.dataset.quickCategory));
+      }
+      document.addEventListener('keydown', handleQuickReviewKeydown);
       els.miningCategory.addEventListener('change', updateRejectReasonState);
       els.btnAddMiningCandidate.addEventListener('click', addMiningCandidate);
       els.btnExportMiningLog.addEventListener('click', downloadMiningLog);
