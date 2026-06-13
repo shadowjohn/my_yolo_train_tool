@@ -278,12 +278,12 @@ class TalkingState extends MascotState {
 
     ctx.showBubble(this.#text);
 
-    // M6：保留舊的顯式 emotion/motion，但以 ActingBridge 的裁決避免覆蓋高優先權 trace pose。
-    const talkingResult = ctx.notifyTalkingState(params?.actingState || 'speaking', {
+    // M6：TalkingState 只回報對話生命週期；語意演出狀態由 ActingBridge / trace 裁決。
+    const talkingResult = ctx.notifyTalkingState('speaking', {
       source: 'talking_state',
       text: this.#text,
     });
-    const canApplyLegacyPose = !params?.actingState && (!talkingResult || talkingResult.state === 'speaking');
+    const canApplyLegacyPose = !talkingResult || talkingResult.state === 'speaking';
 
     if (canApplyLegacyPose && params?.emotion) {
       ctx.expression.set(params.emotion, 0.8, 0.3);

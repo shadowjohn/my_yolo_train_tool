@@ -180,7 +180,7 @@ function createFakeMascotForStateMachine(options = {}) {
   return { calls, mascot };
 }
 
-function testTalkingStateUsesActingStatePolicyWhenPresent() {
+function testTalkingStateIgnoresArbitraryActingStateAndNotifiesSpeaking() {
   const { calls, mascot } = createFakeMascotForStateMachine();
   const machine = new MascotStateMachine(mascot);
 
@@ -194,9 +194,11 @@ function testTalkingStateUsesActingStatePolicyWhenPresent() {
   assert.deepEqual(calls, [
     {
       type: 'talkingState',
-      state: 'success',
+      state: 'speaking',
       meta: { source: 'talking_state', text: '完成' },
     },
+    { type: 'expression', name: 'joy', weight: 0.8, fadeSec: 0.3 },
+    { type: 'motion', name: 'wave' },
   ]);
 }
 
@@ -269,7 +271,7 @@ function testPlainTalkingDoesNotOverrideActiveTracePose() {
   ]);
 }
 
-function testActionQueueForwardsActingStateToTalkingDispatch() {
+function testActionQueueDoesNotForwardActingStateToTalkingDispatch() {
   let dispatched = null;
   const mascot = {
     dispatch(name, params) {
@@ -292,7 +294,63 @@ function testActionQueueForwardsActingStateToTalkingDispatch() {
   queue.clear('test_done');
 
   assert.equal(dispatched.name, 'talking');
-  assert.equal(dispatched.params.actingState, 'success');
+  assert.equal(dispatched.params.text, '完成');
+  assert.equal(dispatched.params.emotion, 'joy');
+  assert.equal(dispatched.params.motion, 'wave');
+  assert.equal(dispatched.params.actingState, undefined);
+}
+
+async function testActionQueueDoesNotInjectActingStateIntoToolSuccessSay() {
+  const dispatched = [];
+  const traceUpdates = [];
+  const mascot = {
+    dispatch(name, params) {
+      dispatched.push({ name, params });
+      params.onComplete?.();
+    },
+    state: {
+      cancelCurrentState() {},
+    },
+    tools: {
+      execute() {
+        return { ok: true, summary: '工具完成' };
+      },
+    },
+    updateIntentTrace(intentObj, step, patch) {
+      traceUpdates.push({ intentObj, step, patch });
+    },
+  };
+  const queue = new ActionQueue(mascot);
+  const intentObj = { trace: [] };
+  const queueEmpty = new Promise((resolve) => {
+    queue.onQueueEmpty = resolve;
+  });
+
+  queue.enqueue({
+    type: 'tool',
+    name: 'demo_tool',
+    args: {},
+    intentObj,
+    timeout: 1000,
+    afterText: '結果',
+    afterEmotion: 'joy',
+    afterMotion: 'wave',
+  });
+  await queueEmpty;
+
+  assert.equal(dispatched.length, 1);
+  assert.equal(dispatched[0].name, 'talking');
+  assert.equal(dispatched[0].params.text, '結果，工具完成');
+  assert.equal(dispatched[0].params.emotion, 'joy');
+  assert.equal(dispatched[0].params.motion, 'wave');
+  assert.equal(dispatched[0].params.actingState, undefined);
+  assert.deepEqual(
+    traceUpdates.map((entry) => [entry.step, entry.patch.status]),
+    [
+      ['execute_tool', 'running'],
+      ['execute_tool', 'done'],
+    ]
+  );
 }
 
 function testVrmMascotExposesActApiWithoutContextDigestPollution() {
@@ -315,15 +373,16 @@ const tests = [
   testTracePolicyMappingUsesRuntimeStatus,
   testPolicyReferencesOnlyExistingExpressionClipAndGazeModes,
   testPoseDirectorAppliesActingPolicyToControllers,
-  testTalkingStateUsesActingStatePolicyWhenPresent,
+  testTalkingStateIgnoresArbitraryActingStateAndNotifiesSpeaking,
   testPlainTalkingKeepsLegacyEmotionMotionAndNotifiesSpeaking,
   testIdleDoesNotOverrideActiveTracePose,
   testPlainTalkingDoesNotOverrideActiveTracePose,
-  testActionQueueForwardsActingStateToTalkingDispatch,
+  testActionQueueDoesNotForwardActingStateToTalkingDispatch,
+  testActionQueueDoesNotInjectActingStateIntoToolSuccessSay,
   testVrmMascotExposesActApiWithoutContextDigestPollution,
 ];
 
 for (const test of tests) {
-  test();
+  await test();
   console.log(`PASS ${test.name}`);
 }

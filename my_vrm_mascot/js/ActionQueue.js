@@ -140,7 +140,6 @@ export class ActionQueue {
           text: action.text,
           emotion: action.emotion,
           motion: action.motion,
-          actingState: action.actingState,
           onComplete,
           onCancel,
           fromQueue: true,
@@ -246,7 +245,6 @@ export class ActionQueue {
                 text: compiledText,
                 emotion: action.afterEmotion || 'joy',
                 motion: action.afterMotion || 'wave',
-                actingState: 'done',
                 fromQueue: true
               });
 

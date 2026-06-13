@@ -108,8 +108,6 @@ const INTENT_PRESETS = {
   }
 };
 
-const ACTING_INTENT_NAMES = new Set(['success', 'error', 'thinking', 'warning']);
-
 /**
  * 建立固定四步驟 trace，讓 Debug Panel 有穩定的顯示順序。
  * @param {object} [options]
@@ -672,13 +670,6 @@ export class VrmMascot {
 
     // 5. 轉譯為行為序列
     const sequence = preset.actions(text, emotion, motion);
-    if (!hasExplicitActingOverride && ACTING_INTENT_NAMES.has(intentName)) {
-      for (const action of sequence) {
-        if (action.type === 'say' && !action.actingState) {
-          action.actingState = intentName;
-        }
-      }
-    }
 
     if (toolName) {
       return new Promise((resolve) => {

@@ -459,7 +459,7 @@ function testStateMachineEmitsTalkingEventsToBridge() {
   assert.match(source, /ctx\.notifyTalkingState\s*\(\s*['"]idle['"]\s*,\s*\{\s*source:\s*['"]idle_state['"]/);
   assert.match(source, /ctx\.notifyTalkingState\s*\(\s*['"]thinking['"]/);
   assert.match(source, /ctx\.notifyTalkingState\s*\(\s*['"]idle['"]\s*,\s*\{\s*source:\s*['"]thinking_exit['"]/);
-  assert.match(source, /ctx\.notifyTalkingState\s*\(\s*params\s*\?\.\s*actingState\s*\|\|\s*['"]speaking['"]/);
+  assert.match(source, /ctx\.notifyTalkingState\s*\(\s*['"]speaking['"]/);
   assert.match(source, /ctx\.notifyTalkingState\s*\(\s*['"]idle['"]\s*,\s*\{\s*source:\s*['"]talking_exit['"]/);
 }
 
