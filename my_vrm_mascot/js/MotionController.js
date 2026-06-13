@@ -1,7 +1,9 @@
+import { getMotionClip } from './MotionClips.js';
+
 /**
  * MotionController — 程序式動作系統
  *
- * 管理 idle / wave / dance_short / think / presenting / warning / shake_head 等動作。
+ * 管理 idle / think / presenting / warning 與短動作 clip。
  * 所有動作都是程序式產生（不依賴外部動畫檔），
  * Phase 2 再加入 Mixamo FBX / VRMA 支援。
  *
@@ -164,6 +166,7 @@ export class MotionController {
   #tempQ1 = null;
   #tempQ2 = null;
   #posePreset = normalizePosePreset(DEFAULT_POSE_PRESET);
+  #activeClip = null;
 
   /**
    * 綁定 VRM 模型
@@ -174,6 +177,7 @@ export class MotionController {
     this.#cacheBones();
     this.#currentAction = 'idle';
     this.#elapsed = 0;
+    this.#activeClip = null;
     this.resetToNaturalPose(0);
   }
 
@@ -204,15 +208,38 @@ export class MotionController {
 
   /**
    * 播放動作
-   * @param {string} name - 動作名 (idle|wave|dance_short|think|happy|presenting|warning|shake_head)
+   * @param {string} name - 動作名 (idle|think|happy|presenting|warning 或 MotionClips clip name)
    */
   play(name) {
+    if (getMotionClip(name)) {
+      return this.playClip(name);
+    }
+
     if (this.#currentAction !== name) {
       this.resetToNaturalPose(0);
     }
+    this.#activeClip = null;
     this.#currentAction = name;
     this.#elapsed = 0;
     this.#clearMotionOverlay();
+    return true;
+  }
+
+  /**
+   * 播放短動作 clip；clip 結束後會回到 idle 並重套自然基準姿勢。
+   * @param {string} name
+   * @returns {boolean} 是否成功播放
+   */
+  playClip(name) {
+    const clip = getMotionClip(name);
+    if (!clip) return false;
+
+    this.resetToNaturalPose(0);
+    this.#activeClip = clip;
+    this.#currentAction = name;
+    this.#elapsed = 0;
+    this.#clearMotionOverlay();
+    return true;
   }
 
   /**
@@ -224,6 +251,7 @@ export class MotionController {
    */
   playCustom(animData, options = {}) {
     this.resetToNaturalPose(0);
+    this.#activeClip = null;
     this.#currentAction = 'custom';
     this.#elapsed = 0;
     this.#customAnimData = animData;
@@ -333,15 +361,17 @@ export class MotionController {
     if (!this.#vrm) return;
     this.#elapsed += dt;
 
+    if (this.#activeClip) {
+      this.#updateClip(this.#activeClip);
+      return;
+    }
+
     switch (this.#currentAction) {
       case 'idle':        this.#doIdle(); break;
-      case 'wave':        this.#doWave(); break;
-      case 'dance_short': this.#doDance(); break;
       case 'think':       this.#doThink(); break;
       case 'happy':       this.#doHappy(); break;
       case 'presenting':  this.#doPresenting(); break;
       case 'warning':     this.#doWarning(); break;
-      case 'shake_head':  this.#doShakeHead(); break;
       case 'custom':      this.#doCustom(); break;
       default:            this.#doIdle(); break;
     }
@@ -353,100 +383,6 @@ export class MotionController {
     const t = this.#elapsed;
     this.#applyNaturalPose(t);
     this.#applyIdleMicroMotion(t);
-  }
-
-  // ── Wave：右手揮手 ──────────────────────
-
-  #doWave() {
-    const t = this.#elapsed;
-    const totalDuration = 2.8; // 秒
-
-    if (t >= totalDuration) {
-      this.#finishTimedAction();
-      return;
-    }
-
-    this.#applyNaturalPose(t);
-    this.#applyBreathingOverlay(t, 0.45);
-
-    const riseEnd = 0.35;
-    const waveStart = riseEnd;
-    const waveEnd = 2.2;
-    const fallEnd = totalDuration;
-
-    // 右上臂
-    if (this.#bones.rightUpperArm) {
-      let zAngle;
-      if (t < riseEnd) {
-        // 舉手
-        zAngle = easeInOut(t / riseEnd) * (-70 * DEG);
-      } else if (t < waveEnd) {
-        // 揮動
-        zAngle = -70 * DEG + Math.sin((t - waveStart) * 7) * (12 * DEG);
-      } else {
-        // 放下
-        const p = easeInOut((t - waveEnd) / (fallEnd - waveEnd));
-        zAngle = (-70 * DEG) * (1 - p);
-      }
-      this.#bones.rightUpperArm.rotation.z += zAngle;
-      this.#bones.rightUpperArm.rotation.x += t < waveEnd ? 15 * DEG : 15 * DEG * (1 - easeInOut((t - waveEnd) / (fallEnd - waveEnd)));
-    }
-
-    // 右下臂（肘彎曲）
-    if (this.#bones.rightLowerArm) {
-      let yAngle;
-      if (t < riseEnd) {
-        yAngle = easeInOut(t / riseEnd) * (50 * DEG);
-      } else if (t < waveEnd) {
-        yAngle = 50 * DEG + Math.sin((t - waveStart) * 7 + 0.8) * (10 * DEG);
-      } else {
-        const p = easeInOut((t - waveEnd) / (fallEnd - waveEnd));
-        yAngle = (50 * DEG) * (1 - p);
-      }
-      this.#bones.rightLowerArm.rotation.y += yAngle;
-    }
-  }
-
-  // ── Dance Short：左右搖擺 ──────────────
-
-  #doDance() {
-    const t = this.#elapsed;
-    const totalDuration = 4.0;
-
-    if (t >= totalDuration) {
-      this.#finishTimedAction();
-      return;
-    }
-
-    this.#applyNaturalPose(t);
-    const beat = t * 2.5; // ~150 BPM feel
-
-    // 身體左右搖
-    if (this.#bones.spine) {
-      this.#bones.spine.rotation.z += Math.sin(beat * Math.PI) * (8 * DEG);
-      this.#bones.spine.rotation.x += Math.sin(beat * Math.PI * 2) * 0.015 + 0.01;
-    }
-
-    // 臀部上下彈跳
-    if (this.#bones.hips) {
-      this.#bones.hips.position.y += Math.abs(Math.sin(beat * Math.PI)) * 0.015;
-    }
-
-    // 雙手交替舉起
-    if (this.#bones.leftUpperArm) {
-      this.#bones.leftUpperArm.rotation.z += Math.sin(beat * Math.PI) * (25 * DEG) + 5 * DEG;
-    }
-    if (this.#bones.rightUpperArm) {
-      this.#bones.rightUpperArm.rotation.z += Math.sin(beat * Math.PI + Math.PI) * (25 * DEG) - 5 * DEG;
-    }
-
-    // 肘部配合
-    if (this.#bones.leftLowerArm) {
-      this.#bones.leftLowerArm.rotation.y += Math.sin(beat * Math.PI * 2) * (15 * DEG);
-    }
-    if (this.#bones.rightLowerArm) {
-      this.#bones.rightLowerArm.rotation.y += Math.sin(beat * Math.PI * 2 + Math.PI) * (-15 * DEG);
-    }
   }
 
   // ── Think：歪頭沉思 ────────────────────
@@ -605,40 +541,6 @@ export class MotionController {
     }
   }
 
-  // ── Shake Head：否定式上身搖動 ───────────
-
-  #doShakeHead() {
-    const t = this.#elapsed;
-    const totalDuration = 1.6;
-
-    if (t >= totalDuration) {
-      this.#finishTimedAction();
-      return;
-    }
-
-    this.#applyNaturalPose(t);
-    this.#applyBreathingOverlay(t, 0.2);
-
-    const fadeIn = Math.min(1, t / 0.18);
-    const fadeOut = t > 1.2 ? 1 - (t - 1.2) / 0.4 : 1;
-    const intensity = easeInOut(fadeIn) * Math.max(0, fadeOut);
-    const sway = Math.sin(t * 18) * 7 * DEG * intensity;
-
-    if (this.#bones.spine) {
-      this.#bones.spine.rotation.z += sway * 0.45;
-      this.#bones.spine.rotation.x += 3 * DEG * intensity;
-    }
-    if (this.#bones.chest) {
-      this.#bones.chest.rotation.y += sway;
-    }
-    if (this.#bones.leftUpperArm) {
-      this.#bones.leftUpperArm.rotation.z += 10 * DEG * intensity;
-    }
-    if (this.#bones.rightUpperArm) {
-      this.#bones.rightUpperArm.rotation.z += -10 * DEG * intensity;
-    }
-  }
-
   // ── Utilities ──────────────────────────
 
   #clearMotionOverlay() {
@@ -647,9 +549,49 @@ export class MotionController {
   }
 
   #finishTimedAction() {
+    this.#activeClip = null;
     this.#currentAction = 'idle';
     this.#elapsed = 0;
     this.resetToNaturalPose(0);
+  }
+
+  #updateClip(clip) {
+    const durationSec = Math.max(0.001, clip.duration / 1000);
+
+    if (this.#elapsed >= durationSec) {
+      this.#finishTimedAction();
+      return;
+    }
+
+    this.#applyNaturalPose(this.#elapsed);
+    this.#applyClipOverlay(clip, this.#elapsed / durationSec);
+  }
+
+  #applyClipOverlay(clip, progress) {
+    const ctx = {
+      rotate: (boneName, axes = {}) => {
+        const bone = this.#bones[boneName];
+        if (!bone) return;
+        for (const axis of AXES) {
+          const value = axes[axis];
+          if (Number.isFinite(value)) {
+            bone.rotation[axis] += value;
+          }
+        }
+      },
+      move: (boneName, axes = {}) => {
+        const bone = this.#bones[boneName];
+        if (!bone) return;
+        for (const axis of AXES) {
+          const value = axes[axis];
+          if (Number.isFinite(value)) {
+            bone.position[axis] += value;
+          }
+        }
+      },
+    };
+
+    clip.apply(ctx, Math.max(0, Math.min(1, progress)));
   }
 
   #applyNaturalPose(_t = 0) {
@@ -857,5 +799,6 @@ export class MotionController {
     this.#bones = {};
     this.#customAnimData = null;
     this.#customOptions = {};
+    this.#activeClip = null;
   }
 }

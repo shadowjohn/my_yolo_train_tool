@@ -9,6 +9,10 @@ import {
   MotionController,
 } from '../my_vrm_mascot/js/MotionController.js';
 import { LookAtController } from '../my_vrm_mascot/js/LookAtController.js';
+import {
+  MotionClips,
+  MOTION_CLIP_NAMES,
+} from '../my_vrm_mascot/js/MotionClips.js';
 
 function createFakeControllers() {
   const calls = [];
@@ -419,6 +423,115 @@ function testLookAtPointDoesNotUseIdleDriftMode() {
   assert.equal(bones.head.rotation.z, 0);
 }
 
+function testMotionClipRegistryHasBoundedDurations() {
+  assert.deepEqual(MOTION_CLIP_NAMES, [
+    'wave',
+    'victory',
+    'warning_nod',
+    'shake_head',
+    'dance_short',
+    'punch_short',
+  ]);
+
+  for (const name of MOTION_CLIP_NAMES) {
+    const clip = MotionClips[name];
+    assert.equal(typeof clip.apply, 'function', `${name} should expose apply()`);
+    assert.ok(clip.duration > 0, `${name} duration should be positive`);
+    assert.ok(clip.duration <= 1600, `${name} duration should stay short`);
+  }
+}
+
+function snapshotCriticalBones(bones) {
+  return {
+    hipsX: bones.hips.position.x,
+    hipsY: bones.hips.position.y,
+    spineX: bones.spine.rotation.x,
+    spineZ: bones.spine.rotation.z,
+    chestX: bones.chest.rotation.x,
+    chestY: bones.chest.rotation.y,
+    leftUpperArmZ: bones.leftUpperArm.rotation.z,
+    rightUpperArmZ: bones.rightUpperArm.rotation.z,
+    leftLowerArmY: bones.leftLowerArm.rotation.y,
+    rightLowerArmY: bones.rightLowerArm.rotation.y,
+    leftHandZ: bones.leftHand.rotation.z,
+    rightHandZ: bones.rightHand.rotation.z,
+  };
+}
+
+function assertSnapshotClose(actual, expected, epsilon = 1e-9) {
+  for (const key of Object.keys(expected)) {
+    assert.ok(
+      Math.abs(actual[key] - expected[key]) <= epsilon,
+      `${key} expected ${expected[key]}, got ${actual[key]}`
+    );
+  }
+}
+
+function testPlayClipEndsBackToIdleWithoutResidualPose() {
+  const motion = new MotionController();
+  const { vrm, bones } = createFakeVrm();
+
+  motion.setVrm(vrm);
+  motion.loadPosePreset(JSON.parse(readFileSync('my_vrm_mascot/motions/poses/alicia_solid.json', 'utf8')));
+  const baseline = snapshotCriticalBones(bones);
+
+  motion.playClip('wave');
+  motion.update(0.6);
+
+  assert.equal(motion.currentAction, 'wave');
+  assert.ok(Math.abs(bones.rightUpperArm.rotation.z - baseline.rightUpperArmZ) > radians(12));
+
+  motion.update(1.2);
+
+  assert.equal(motion.currentAction, 'idle');
+  assertSnapshotClose(snapshotCriticalBones(bones), baseline);
+}
+
+function testClipDoesNotMutateIdleMicroMotionState() {
+  const motion = new MotionController();
+  const { vrm, bones } = createFakeVrm();
+
+  motion.setVrm(vrm);
+  motion.loadPosePreset(JSON.parse(readFileSync('my_vrm_mascot/motions/poses/alicia_solid.json', 'utf8')));
+  motion.playClip('punch_short');
+  motion.update(0.35);
+  motion.update(0.5);
+
+  const afterClipBaseline = snapshotCriticalBones(bones);
+  motion.update(0.35);
+
+  assert.equal(motion.currentAction, 'idle');
+  assert.notDeepEqual(snapshotCriticalBones(bones), afterClipBaseline, 'idle micro motion should resume after clip finish');
+}
+
+function testShortClipsDoNotProduceTPose() {
+  for (const name of MOTION_CLIP_NAMES) {
+    const motion = new MotionController();
+    const { vrm, bones } = createFakeVrm();
+
+    motion.setVrm(vrm);
+    motion.loadPosePreset(JSON.parse(readFileSync('my_vrm_mascot/motions/poses/alicia_solid.json', 'utf8')));
+    motion.playClip(name);
+    motion.update((MotionClips[name].duration / 1000) * 0.5);
+
+    assert.ok(Math.abs(bones.leftUpperArm.rotation.z) > radians(16), `${name} should not flatten left arm`);
+    assert.ok(Math.abs(bones.rightUpperArm.rotation.z) > radians(16), `${name} should not flatten right arm`);
+  }
+}
+
+function testLegacyPlayRoutesClipNamesDeterministically() {
+  const motion = new MotionController();
+  const { vrm, bones } = createFakeVrm();
+
+  motion.setVrm(vrm);
+  motion.loadPosePreset(JSON.parse(readFileSync('my_vrm_mascot/motions/poses/alicia_solid.json', 'utf8')));
+  motion.play('warning_nod');
+  motion.update(0.45);
+
+  assert.equal(motion.currentAction, 'warning_nod');
+  assert.ok(Math.abs(bones.spine.rotation.x - radians(2)) > radians(1));
+}
+
 const tests = [
   testRunningTraceResolvesPresentingPose,
   testDoneTraceResolvesWavePose,
@@ -442,6 +555,11 @@ const tests = [
   testVrmMascotLoadsModelSpecificPosePresetWithFileLoader,
   testLookAtNoneAddsBoundedIdleHeadDrift,
   testLookAtPointDoesNotUseIdleDriftMode,
+  testMotionClipRegistryHasBoundedDurations,
+  testPlayClipEndsBackToIdleWithoutResidualPose,
+  testClipDoesNotMutateIdleMicroMotionState,
+  testShortClipsDoNotProduceTPose,
+  testLegacyPlayRoutesClipNamesDeterministically,
 ];
 
 for (const test of tests) {

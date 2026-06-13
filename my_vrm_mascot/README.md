@@ -21,7 +21,8 @@ my_vrm_mascot/
   index.html                  # MVP 展示頁
   js/
     VrmMascot.js              # 主控制器（Three.js + VRM）
-    MotionController.js       # 程序式動作（idle/wave/dance/think/presenting/warning）
+    MotionController.js       # 動作控制器（natural pose / idle / semantic motions / clip playback）
+    MotionClips.js            # 短動作 clip 定義（wave/victory/warning_nod/shake_head/dance_short/punch_short）
     ExpressionController.js   # 眨眼 + 表情控制
     MascotStateMachine.js     # 狀態機（dispatch / do / say / emote）
     LookAtController.js       # 滑鼠注視（EMA 平滑）
@@ -120,6 +121,7 @@ mascot.state.reset();
 
 ```javascript
 mascot.motion.play('dance_short');   // MotionController
+mascot.motion.playClip('victory');    // Short Motion Clips
 mascot.motion.playCustom(animData, { loop: true }); // 播放自訂 JSON 動畫
 mascot.expression.set('joy', 0.8);  // ExpressionController
 mascot.lookAt.setTarget('none');     // LookAtController
@@ -142,6 +144,8 @@ MotionController 會在 VRM 載入後立即套用 Natural Pose；所有內建程
 
 M2 Idle Micro Motion 只強化待機層：idle 會疊加胸口/脊椎/重心分層呼吸、肩膀放鬆、前臂與手腕微擺；LookAt `none` 時會加小幅頭部 drift，目標注視時不啟用這個漂移。
 
+M3 Short Motion Clips 把短動作集中在 `MotionClips.js`：`wave`、`victory`、`warning_nod`、`shake_head`、`dance_short`、`punch_short` 都是短、可預期、可恢復的 clip。`MotionController.play(name)` 會自動路由 clip name，`playClip(name)` 可直接播放；clip 結束後會回到 idle 並重套 Natural Pose，避免殘留骨骼偏移。
+
 Base pose preset 會依模型載入：
 
 - `models/mascot.vrm` -> `motions/poses/alicia_solid.json`
@@ -153,13 +157,16 @@ Base pose preset 會依模型載入：
 | 名稱 | 說明 | 持續時間 |
 |------|------|---------|
 | `idle` | 呼吸微動（預設） | 持續 |
-| `wave` | 右手揮手（已修正方向） | 2.8s |
-| `dance_short` | 左右搖擺跳舞 | 4.0s |
+| `wave` | 右手短揮手 clip | 1.2s |
+| `victory` | 短勝利 YA clip | 1.0s |
+| `warning_nod` | 警示點頭 clip | 0.9s |
+| `shake_head` | 否定式上身搖動 clip | 0.8s |
+| `dance_short` | 短舞彩蛋 clip | 1.6s |
+| `punch_short` | 輕吐槽短拳 clip | 0.7s |
 | `think` | 托下巴沉思（已修正方向） | 3.0s |
 | `happy` | 雙手舉高跳躍（已修正方向） | 2.0s |
 | `presenting` | 伸手介紹面板 | 3.2s |
 | `warning` | 警示姿勢 | 2.4s |
-| `shake_head` | 否定式上身搖動 | 1.6s |
 | `custom_animation` / `custom` | 播放自訂 JSON 動作 | 視動畫檔而定 |
 
 ## 可用表情
