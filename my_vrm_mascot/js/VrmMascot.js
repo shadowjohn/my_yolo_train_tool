@@ -34,10 +34,8 @@ import { ConversationMemory }   from './ConversationMemory.js';
 import { SpatialContext }       from './SpatialContext.js';
 import { DomContext }           from './DomContext.js';
 import { PolicyGate }           from './PolicyGate.js';
-import {
-  PoseDirector,
-  resolvePoseDirectiveForTrace,
-} from './PoseDirector.js';
+import { PoseDirector }         from './PoseDirector.js';
+import { ActingBridge }         from './ActingBridge.js';
 
 /**
  * 意圖對照 Preset表，定義各種高階意圖所對應的底層指令序列與預設值
@@ -302,6 +300,7 @@ export class VrmMascot {
   #domContext = null;
   #policyGate = null;
   #poseDirector = null;
+  #actingBridge = null;
 
   // 狀態監控
   #isUserInteracting = false;
@@ -357,10 +356,12 @@ export class VrmMascot {
       expression: this.#expression,
       lookAt: this.#lookAtCtrl,
     });
+    this.#actingBridge = new ActingBridge(this);
 
     // 監聽佇列變空
     this.#actionQueue.onQueueEmpty = () => {
       this.#currentIntent = 'idle';
+      this.#actingBridge?.onTalkingState('idle', { source: 'queue_empty' });
       this.#emitIntentUpdate();
     };
 
@@ -406,6 +407,9 @@ export class VrmMascot {
 
   /** @returns {PoseDirector} */
   get poseDirector() { return this.#poseDirector; }
+
+  /** @returns {ActingBridge} */
+  get actingBridge() { return this.#actingBridge; }
 
   /** @returns {object} */
   get intent() { return this.#actionIntent; }
@@ -513,6 +517,16 @@ export class VrmMascot {
    */
   actForIntentResult(status, intentObj = {}) {
     return this.#poseDirector?.actForIntentResult(status, intentObj) || null;
+  }
+
+  /**
+   * 將 talking lifecycle 事件交給 ActingBridge；不在 StateMachine 內直接決定表情或動作。
+   * @param {string} state
+   * @param {object} [meta]
+   * @returns {object|null}
+   */
+  notifyTalkingState(state, meta = {}) {
+    return this.#actingBridge?.onTalkingState(state, meta) || null;
   }
 
   /**
@@ -934,10 +948,7 @@ export class VrmMascot {
   updateIntentTrace(intentObj, step, patch = {}) {
     updateTraceStep(intentObj, step, patch);
     this.#actionIntent = intentObj;
-    const directive = resolvePoseDirectiveForTrace(step, patch, intentObj);
-    if (directive) {
-      this.#poseDirector?.applyDirective(directive);
-    }
+    this.#actingBridge?.onTraceUpdate(intentObj);
     this.#emitIntentUpdate();
   }
 
@@ -1338,6 +1349,7 @@ export class VrmMascot {
 
   dispose() {
     cancelAnimationFrame(this.#rafId);
+    this.#actingBridge?.dispose?.();
     this.#motion.dispose();
     this.#expression.dispose();
     this.#lookAtCtrl.dispose();
