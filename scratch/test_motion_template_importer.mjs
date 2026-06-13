@@ -6,6 +6,14 @@ const SPEC_PATH = 'docs/superpowers/specs/2026-06-13-m6-7-motion-template-import
 const LAB_PATH = 'my_vrm_mascot/motion_template_lab.html';
 const MODULE_PATH = 'my_vrm_mascot/js/MotionTemplateImporter.js';
 const INDEX_PATH = 'my_vrm_mascot/index.html';
+const EXAMPLE_DIR = 'my_vrm_mascot/examples/m6_7_vrma_samples';
+const REQUIRED_EXAMPLE_VRMA = [
+  'Relax.vrma',
+  'Thinking.vrma',
+  'Goodbye.vrma',
+  'Clapping.vrma',
+  'Surprised.vrma',
+];
 
 function read(path) {
   return readFileSync(path, 'utf8');
@@ -37,6 +45,33 @@ function testLabHtmlContractExists() {
   assert.match(html, /匯出 NaturalPosePreset/);
   assert.match(html, /Upper Body/);
   assert.match(html, /motion-template-json/);
+}
+
+function testExampleVrmaSamplesExist() {
+  for (const fileName of REQUIRED_EXAMPLE_VRMA) {
+    const path = `${EXAMPLE_DIR}/${fileName}`;
+    assert.equal(existsSync(path), true, `${path} should exist`);
+
+    const header = readFileSync(path).subarray(0, 4).toString('ascii');
+    assert.equal(header, 'glTF', `${path} should be a binary glTF/VRMA file`);
+  }
+}
+
+function testLabIncludesExampleAndPlaybackControls() {
+  const html = read(LAB_PATH);
+
+  assert.match(html, /範例動作/);
+  assert.match(html, /載入範例/);
+  assert.match(html, /播放動作/);
+  assert.match(html, /暫停/);
+  assert.match(html, /停止/);
+  assert.match(html, /examples\/m6_7_vrma_samples\//);
+  assert.match(html, /function\s+playMotion\s*\(/);
+  assert.match(html, /function\s+pauseMotion\s*\(/);
+  assert.match(html, /function\s+stopPlayback\s*\(/);
+  assert.match(html, /isPlaying\s*&&\s*mixer/);
+  assert.match(html, /mixer\.update\(dt\)/);
+  assert.match(html, /startTime\s*>=\s*duration\s*-\s*0\.034/);
 }
 
 function testLabReferencesVrmaCapabilityOnlyInLab() {
@@ -205,6 +240,8 @@ async function run() {
   const tests = [
     testSpecRequiresDeterministicExport,
     testLabHtmlContractExists,
+    testExampleVrmaSamplesExist,
+    testLabIncludesExampleAndPlaybackControls,
     testLabReferencesVrmaCapabilityOnlyInLab,
     testLabDoesNotImportAgentRuntime,
     testUpperBodyWhitelistIsExplicitAndStable,

@@ -125,7 +125,8 @@
     }
 
     button,
-    .lab-file {
+    .lab-file,
+    .lab-example {
       border: 1px solid rgba(45, 212, 191, 0.45);
       background: rgba(15, 23, 42, 0.88);
       color: var(--text);
@@ -140,7 +141,8 @@
     }
 
     button:hover,
-    .lab-file:hover {
+    .lab-file:hover,
+    .lab-example:hover {
       border-color: rgba(103, 232, 249, 0.76);
       background: rgba(22, 32, 51, 0.95);
     }
@@ -149,15 +151,26 @@
       transform: translateY(1px);
     }
 
-    .lab-file {
+    .lab-file,
+    .lab-example {
       display: grid;
       gap: 10px;
       margin-bottom: 14px;
     }
 
-    .lab-file input {
+    .lab-file input,
+    .lab-example select {
       width: 100%;
       color: var(--muted);
+    }
+
+    .lab-example select {
+      min-height: 38px;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 6px;
+      background: #050a12;
+      color: var(--text);
+      padding: 8px 10px;
     }
 
     .lab-actions {
@@ -293,9 +306,24 @@
         <input id="vrmaFileInput" type="file" accept=".vrma,model/gltf-binary">
       </label>
 
+      <label class="lab-example">
+        <span>範例動作</span>
+        <select id="exampleVrmaSelect">
+          <option value="Relax.vrma">Relax.vrma</option>
+          <option value="Thinking.vrma">Thinking.vrma</option>
+          <option value="Goodbye.vrma">Goodbye.vrma</option>
+          <option value="Clapping.vrma">Clapping.vrma</option>
+          <option value="Surprised.vrma">Surprised.vrma</option>
+        </select>
+        <button id="btnLoadExample" type="button">載入範例</button>
+      </label>
+
       <div class="lab-actions">
         <button id="btnSampleFirst" type="button">取第一幀</button>
         <button id="btnSampleTime" type="button">取指定時間</button>
+        <button id="btnPlayMotion" type="button">播放動作</button>
+        <button id="btnPauseMotion" type="button">暫停</button>
+        <button id="btnStopMotion" type="button">停止</button>
         <button id="btnCopyJson" type="button">複製 JSON</button>
         <button id="btnDownloadJson" type="button">下載 JSON</button>
       </div>
@@ -355,12 +383,19 @@
       stableStringifyPreset,
     } from './js/MotionTemplateImporter.js';
 
+    const EXAMPLE_VRMA_BASE = 'examples/m6_7_vrma_samples/';
+
     const els = {
       viewport: document.getElementById('labViewport'),
       loadState: document.getElementById('labLoadState'),
       fileInput: document.getElementById('vrmaFileInput'),
+      exampleSelect: document.getElementById('exampleVrmaSelect'),
+      btnLoadExample: document.getElementById('btnLoadExample'),
       btnSampleFirst: document.getElementById('btnSampleFirst'),
       btnSampleTime: document.getElementById('btnSampleTime'),
+      btnPlayMotion: document.getElementById('btnPlayMotion'),
+      btnPauseMotion: document.getElementById('btnPauseMotion'),
+      btnStopMotion: document.getElementById('btnStopMotion'),
       btnCopyJson: document.getElementById('btnCopyJson'),
       btnDownloadJson: document.getElementById('btnDownloadJson'),
       sampleTime: document.getElementById('sampleTime'),
@@ -384,6 +419,8 @@
     let basePreset;
     let sourceFileName = '';
     let latestPreset = null;
+    let isPlaying = false;
+    let sourceWarnings = [];
 
     init().catch((err) => {
       setStatus('載入失敗');
@@ -460,28 +497,44 @@
 
       const url = URL.createObjectURL(file);
       try {
-        const loader = new GLTFLoader();
-        loader.register((parser) => new VRMAnimationLoaderPlugin(parser));
-        const gltf = await loader.loadAsync(url);
-        const vrmAnimation = gltf.userData.vrmAnimations?.[0];
-        if (!vrmAnimation) throw new Error('找不到 VRM Animation');
-
-        clip = createVRMAnimationClip(vrmAnimation, vrm);
-        mixer = new THREE.AnimationMixer(vrm.scene);
-        action = mixer.clipAction(clip);
-        action.play();
-
-        sourceFileName = file.name;
-        els.sourceFile.textContent = file.name;
-        els.sampleTime.max = String(clip.duration || 0);
-        els.sampleTime.value = '0';
-        els.durationLabel.textContent = `${formatSeconds(clip.duration || 0)}s`;
-        updateTimeLabel(0);
-        setStatus('已載入 VRMA');
-        sampleAt(0);
+        await loadVrmaFromUrl(url, file.name);
       } finally {
         URL.revokeObjectURL(url);
       }
+    }
+
+    async function loadExampleVrma() {
+      const fileName = els.exampleSelect.value || 'Relax.vrma';
+      await loadVrmaFromUrl(`${EXAMPLE_VRMA_BASE}${encodeURIComponent(fileName)}`, fileName);
+    }
+
+    async function loadVrmaFromUrl(url, fileName) {
+      stopPlayback({ resetPose: false, silent: true });
+
+      const loader = new GLTFLoader();
+      loader.register((parser) => new VRMAnimationLoaderPlugin(parser));
+      const loaderWarnings = [];
+      const gltf = await withSuppressedVrmaWarnings(() => loader.loadAsync(url), loaderWarnings);
+      const vrmAnimation = gltf.userData.vrmAnimations?.[0];
+      if (!vrmAnimation) throw new Error('找不到 VRM Animation');
+
+      clip = createVRMAnimationClip(vrmAnimation, vrm);
+      mixer = new THREE.AnimationMixer(vrm.scene);
+      action = mixer.clipAction(clip);
+      action.setLoop(THREE.LoopOnce, 1);
+      action.clampWhenFinished = true;
+      action.play();
+      mixer.addEventListener('finished', handlePlaybackFinished);
+
+      sourceFileName = fileName;
+      sourceWarnings = loaderWarnings;
+      els.sourceFile.textContent = fileName;
+      els.sampleTime.max = String(clip.duration || 0);
+      els.sampleTime.value = '0';
+      els.durationLabel.textContent = `${formatSeconds(clip.duration || 0)}s`;
+      updateTimeLabel(0);
+      setStatus('已載入 VRMA');
+      sampleAt(0);
     }
 
     function sampleAt(value) {
@@ -492,14 +545,16 @@
 
       const duration = clip.duration || 0;
       const sampleTime = clampSampleTime(value, duration);
-      const warnings = [];
+      const warnings = [...sourceWarnings];
       const rotations = {};
 
+      isPlaying = false;
       // paused 會讓 Three.js 將 action 視為 timeScale 0，導致指定時間採樣失準。
       action.enabled = true;
       action.paused = false;
       action.timeScale = 1;
       action.time = sampleTime;
+      action.play();
       mixer.setTime(sampleTime);
       mixer.update(0);
       vrm.update?.(0);
@@ -547,6 +602,24 @@
         || null;
     }
 
+    async function withSuppressedVrmaWarnings(fn, warnings) {
+      const originalWarn = console.warn;
+      console.warn = (...args) => {
+        const message = args.map((arg) => String(arg)).join(' ');
+        if (message.includes('VRMAnimationLoaderPlugin: specVersion of the VRMA is not defined')) {
+          warnings.push('VRMA 缺少 specVersion，已按 1.0 載入。');
+          return;
+        }
+        originalWarn(...args);
+      };
+
+      try {
+        return await fn();
+      } finally {
+        console.warn = originalWarn;
+      }
+    }
+
     function renderJson(preset) {
       latestPreset = preset;
       els.json.textContent = stableStringifyPreset(preset || {});
@@ -572,6 +645,71 @@
       setStatus('匯出完成');
     }
 
+    function playMotion() {
+      if (!mixer || !action || !clip) {
+        setWarnings(['請先載入 VRMA']);
+        return;
+      }
+
+      const duration = clip.duration || 0;
+      let startTime = clampSampleTime(Number(els.sampleTime.value || 0), duration);
+      if (duration > 0 && startTime >= duration - 0.034) {
+        startTime = 0;
+      }
+      action.enabled = true;
+      action.paused = false;
+      action.timeScale = 1;
+      action.setLoop(THREE.LoopOnce, 1);
+      action.clampWhenFinished = true;
+      action.time = startTime;
+      action.play();
+      mixer.setTime(startTime);
+      isPlaying = true;
+      updateTimeLabel(startTime);
+      setStatus('播放中');
+    }
+
+    function pauseMotion() {
+      if (!action || !clip) {
+        setWarnings(['請先載入 VRMA']);
+        return;
+      }
+
+      isPlaying = false;
+      action.paused = true;
+      const pausedTime = clampSampleTime(action.time || Number(els.sampleTime.value || 0), clip.duration || 0);
+      els.sampleTime.value = String(pausedTime);
+      updateTimeLabel(pausedTime);
+      setStatus('已暫停');
+    }
+
+    function stopPlayback({ resetPose = true, silent = false } = {}) {
+      isPlaying = false;
+      if (!action) return;
+
+      action.paused = false;
+      action.enabled = true;
+      action.stop();
+
+      if (resetPose && clip) {
+        sampleAt(0);
+      }
+
+      if (!silent) {
+        setStatus('已停止');
+      }
+    }
+
+    function handlePlaybackFinished() {
+      isPlaying = false;
+      if (!clip || !action) return;
+
+      const finishedTime = clampSampleTime(action.time || clip.duration || 0, clip.duration || 0);
+      els.sampleTime.value = String(finishedTime);
+      updateTimeLabel(finishedTime);
+      setStatus('播放完成');
+    }
+
     function bindEvents() {
       els.fileInput.addEventListener('change', async () => {
         try {
@@ -584,9 +722,19 @@
         }
       });
 
+      els.btnLoadExample.addEventListener('click', () => {
+        loadExampleVrma().catch((err) => {
+          setStatus('無法讀取範例');
+          setWarnings([err?.message || String(err)]);
+          console.error(err);
+        });
+      });
       els.btnSampleFirst.addEventListener('click', () => sampleAt(0));
       els.btnSampleTime.addEventListener('click', () => sampleAt(Number(els.sampleTime.value || 0)));
       els.sampleTime.addEventListener('input', () => updateTimeLabel(Number(els.sampleTime.value || 0)));
+      els.btnPlayMotion.addEventListener('click', playMotion);
+      els.btnPauseMotion.addEventListener('click', pauseMotion);
+      els.btnStopMotion.addEventListener('click', () => stopPlayback());
       els.btnCopyJson.addEventListener('click', () => copyJson().catch((err) => {
         setWarnings([`複製失敗：${err?.message || err}`]);
         console.error(err);
@@ -597,6 +745,12 @@
     function render() {
       const dt = clock.getDelta();
       controls.update();
+      if (isPlaying && mixer && action && clip) {
+        mixer.update(dt);
+        const currentTime = clampSampleTime(action.time || 0, clip.duration || 0);
+        els.sampleTime.value = String(currentTime);
+        updateTimeLabel(currentTime);
+      }
       vrm?.update?.(dt);
       renderer.render(scene, camera);
     }
