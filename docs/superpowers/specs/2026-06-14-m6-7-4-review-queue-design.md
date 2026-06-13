@@ -29,6 +29,7 @@ This phase does not create the Pose Library. It creates the reviewed mining data
 - Export `mining_log.json` with `status: "pending" | "classified"`.
 - Keep `candidate_future` as a first-class category, not a reject bucket.
 - Support a fixed categories config that can become editable in a later phase.
+- Keep the interface Chinese-first. Buttons, status text, filters, hints, and exported user-facing content default to Traditional Chinese. English may appear only as secondary labels or developer-facing notes, not as the primary workflow language.
 
 ## Non-Goals
 
@@ -248,6 +249,8 @@ Undo:
 
 Keep the current right-side control panel. Add one compact Review Queue section below Quick Review and above Advanced Mining.
 
+Interface language is Chinese-first. All buttons, state labels, filters, helper text, warning messages, and export-facing labels should default to Traditional Chinese. English can be kept as a small secondary label where it helps debugging or developer recognition, but no core workflow should depend on English-only labels.
+
 Chinese-first labels:
 
 ```text
@@ -328,6 +331,8 @@ The exported classified entries must retain:
 - `candidate_future` is not treated as reject.
 - Undo restores a classified pending item back to pending.
 - Exported `mining_log.json` contains classified queue entries with `status: "classified"`.
+- UI labels are Chinese-first.
+- No core workflow requires English-only labels.
 - Existing standalone importer tests continue to pass.
 - Browser smoke confirms selecting, classifying, reclassifying, undoing, and exporting.
 
