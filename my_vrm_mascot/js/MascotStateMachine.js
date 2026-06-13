@@ -214,12 +214,15 @@ class GreetingState extends MascotState {
 // ── 思考 ────────────────────────────────
 
 class ThinkingState extends MascotState {
+  #elapsed = 0;
+  #duration = 1.6;
+
   get name() { return 'thinking'; }
 
   onEnter(ctx, params) {
     super.onEnter(ctx, params);
-    ctx.motion.play('think');
-    ctx.expression.set('sorrow', 0.3, 0.4);
+    this.#elapsed = 0;
+    ctx.mascot.act('thinking');
   }
 
   onExit(ctx) {
@@ -228,7 +231,8 @@ class ThinkingState extends MascotState {
   }
 
   update(ctx, dt) {
-    if (ctx.motion.currentAction === 'idle') {
+    this.#elapsed += dt;
+    if (this.#elapsed >= this.#duration) {
       this.finish(ctx);
     }
   }
@@ -261,11 +265,16 @@ class TalkingState extends MascotState {
 
     ctx.showBubble(this.#text);
 
-    // 同步播放表情與動作
-    if (params?.emotion) {
+    // M5：若有 actingState，優先由 ActingPolicy 決定 expression / clip / gaze。
+    if (params?.actingState) {
+      ctx.mascot.act(params.actingState, {
+        source: 'talking',
+        text: this.#text,
+      });
+    } else if (params?.emotion) {
       ctx.expression.set(params.emotion, 0.8, 0.3);
     }
-    if (params?.motion) {
+    if (!params?.actingState && params?.motion) {
       ctx.motion.play(params.motion);
     }
   }

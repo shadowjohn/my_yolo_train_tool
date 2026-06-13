@@ -22,8 +22,14 @@ function createFakeControllers() {
       play(name) {
         calls.push({ type: 'motion', name });
       },
+      playClip(name) {
+        calls.push({ type: 'clip', name });
+      },
     },
     expression: {
+      setProfile(name, options) {
+        calls.push({ type: 'expressionProfile', name, options });
+      },
       set(name, weight, fadeSec) {
         calls.push({ type: 'expression', name, weight, fadeSec });
       },
@@ -96,18 +102,18 @@ function radians(deg) {
 function testRunningTraceResolvesPresentingPose() {
   const directive = resolvePoseDirectiveForTrace('execute_tool', { status: 'running' });
 
-  assert.equal(directive.pose, 'presenting');
-  assert.equal(directive.motion, 'presenting');
-  assert.equal(directive.expression, 'fun');
-  assert.equal(directive.lookAt.target, 'point');
+  assert.equal(directive.state, 'running');
+  assert.equal(directive.motion.name, 'presenting');
+  assert.equal(directive.expression.name, 'thinking');
+  assert.equal(directive.gaze.mode, 'point');
 }
 
 function testDoneTraceResolvesWavePose() {
   const directive = resolvePoseDirectiveForTrace('execute_tool', { status: 'done' });
 
-  assert.equal(directive.pose, 'wave');
-  assert.equal(directive.motion, 'wave');
-  assert.equal(directive.expression, 'joy');
+  assert.equal(directive.state, 'done');
+  assert.equal(directive.clip.name, 'wave');
+  assert.equal(directive.expression.name, 'happy');
 }
 
 function testPolicyBlockedTraceResolvesWarningPose() {
@@ -116,9 +122,9 @@ function testPolicyBlockedTraceResolvesWarningPose() {
     reason: 'target_prefix_not_allowed',
   });
 
-  assert.equal(directive.pose, 'warning');
-  assert.equal(directive.motion, 'warning');
-  assert.equal(directive.expression, 'angry');
+  assert.equal(directive.state, 'blocked');
+  assert.equal(directive.clip.name, 'warning_nod');
+  assert.equal(directive.expression.name, 'angry');
 }
 
 function testTimeoutFailureResolvesShakeHeadPose() {
@@ -127,9 +133,9 @@ function testTimeoutFailureResolvesShakeHeadPose() {
     reason: 'timeout',
   });
 
-  assert.equal(directive.pose, 'shake_head');
-  assert.equal(directive.motion, 'shake_head');
-  assert.equal(directive.expression, 'sorrow');
+  assert.equal(directive.state, 'failed');
+  assert.equal(directive.clip.name, 'shake_head');
+  assert.equal(directive.expression.name, 'sad');
 }
 
 function testPoseDirectorAppliesSemanticDirectiveToControllers() {
@@ -138,10 +144,14 @@ function testPoseDirectorAppliesSemanticDirectiveToControllers() {
 
   const applied = director.poseForIntentResult('running');
 
-  assert.equal(applied.pose, 'presenting');
+  assert.equal(applied.state, 'running');
   assert.deepEqual(calls, [
+    {
+      type: 'expressionProfile',
+      name: 'thinking',
+      options: { intensity: 0.68, duration: 1400, fadeSec: 0.18 },
+    },
     { type: 'motion', name: 'presenting' },
-    { type: 'expression', name: 'fun', weight: 0.45, fadeSec: 0.2 },
     { type: 'lookAt', target: 'point', data: { x: -0.45, y: 0.05 } },
   ]);
 }

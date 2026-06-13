@@ -1,0 +1,244 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import {
+  ACTING_POLICY_STATES,
+  ALLOWED_GAZE_MODES,
+  ALLOWED_MOTION_NAMES,
+  resolveActingPolicyForState,
+  resolveActingPolicyForTrace,
+  validateActingPolicy,
+} from '../my_vrm_mascot/js/ActingPolicy.js';
+import { ExpressionProfiles } from '../my_vrm_mascot/js/ExpressionProfiles.js';
+import { MotionClips } from '../my_vrm_mascot/js/MotionClips.js';
+import { ActionQueue } from '../my_vrm_mascot/js/ActionQueue.js';
+import { MascotStateMachine } from '../my_vrm_mascot/js/MascotStateMachine.js';
+import { PoseDirector } from '../my_vrm_mascot/js/PoseDirector.js';
+
+function createFakeControllers() {
+  const calls = [];
+  return {
+    calls,
+    motion: {
+      play(name) {
+        calls.push({ type: 'motion', name });
+      },
+      playClip(name) {
+        calls.push({ type: 'clip', name });
+      },
+    },
+    expression: {
+      setProfile(name, options) {
+        calls.push({ type: 'expressionProfile', name, options });
+      },
+      set(name, weight, fadeSec) {
+        calls.push({ type: 'expression', name, weight, fadeSec });
+      },
+    },
+    lookAt: {
+      setTarget(mode, data) {
+        calls.push({ type: 'gaze', mode, data });
+      },
+    },
+  };
+}
+
+function testSuccessPolicyUsesHappyVictoryMouse() {
+  const policy = resolveActingPolicyForState('success');
+
+  assert.equal(policy.expression.name, 'happy');
+  assert.equal(policy.expression.intensity, 0.85);
+  assert.equal(policy.expression.duration, 1200);
+  assert.equal(policy.clip.name, 'victory');
+  assert.equal(policy.motion, undefined);
+  assert.equal(policy.gaze.mode, 'mouse');
+}
+
+function testRunningPolicyUsesPresentingAndPointGaze() {
+  const policy = resolveActingPolicyForState('running');
+
+  assert.equal(policy.expression.name, 'thinking');
+  assert.equal(policy.motion.name, 'presenting');
+  assert.equal(policy.clip, undefined);
+  assert.deepEqual(policy.gaze, { mode: 'point', data: { x: -0.45, y: 0.05 } });
+}
+
+function testBlockedPolicyUsesWarningNodNotLongWarningPose() {
+  const policy = resolveActingPolicyForState('blocked');
+
+  assert.equal(policy.expression.name, 'angry');
+  assert.equal(policy.clip.name, 'warning_nod');
+  assert.equal(policy.motion, undefined);
+  assert.equal(policy.gaze.mode, 'mouse');
+}
+
+function testThinkingPolicyDoesNotReferenceFakeClip() {
+  const policy = resolveActingPolicyForState('thinking');
+
+  assert.equal(policy.expression.name, 'thinking');
+  assert.equal(policy.clip, undefined);
+  assert.equal(policy.motion.name, 'idle');
+  assert.equal(policy.gaze.mode, 'mouse');
+}
+
+function testUnknownPolicyFallsBackToNeutralIdle() {
+  const policy = resolveActingPolicyForState('not_real');
+
+  assert.equal(policy.expression.name, 'neutral');
+  assert.equal(policy.motion.name, 'idle');
+  assert.equal(policy.clip, undefined);
+  assert.equal(policy.gaze.mode, 'none');
+}
+
+function testTracePolicyMappingUsesRuntimeStatus() {
+  assert.equal(
+    resolveActingPolicyForTrace('execute_tool', { status: 'running' }).motion.name,
+    'presenting'
+  );
+  assert.equal(
+    resolveActingPolicyForTrace('execute_tool', { status: 'done' }).clip.name,
+    'wave'
+  );
+  assert.equal(
+    resolveActingPolicyForTrace('policy_check', { status: 'blocked' }).clip.name,
+    'warning_nod'
+  );
+  assert.equal(
+    resolveActingPolicyForTrace('execute_tool', { status: 'failed', reason: 'timeout' }).clip.name,
+    'shake_head'
+  );
+  assert.equal(resolveActingPolicyForTrace('normalize', { status: 'ok' }), null);
+}
+
+function testPolicyReferencesOnlyExistingExpressionClipAndGazeModes() {
+  for (const state of ACTING_POLICY_STATES) {
+    const policy = resolveActingPolicyForState(state);
+    assert.deepEqual(validateActingPolicy(policy), [], `${state} should be valid`);
+
+    if (policy.expression) {
+      assert.ok(ExpressionProfiles[policy.expression.name], `${state} expression exists`);
+    }
+    if (policy.clip) {
+      assert.ok(MotionClips[policy.clip.name], `${state} clip exists`);
+    }
+    if (policy.motion) {
+      assert.ok(ALLOWED_MOTION_NAMES.includes(policy.motion.name), `${state} motion exists`);
+    }
+    if (policy.gaze) {
+      assert.ok(ALLOWED_GAZE_MODES.includes(policy.gaze.mode), `${state} gaze exists`);
+    }
+  }
+}
+
+function testPoseDirectorAppliesActingPolicyToControllers() {
+  const { calls, motion, expression, lookAt } = createFakeControllers();
+  const director = new PoseDirector({ motion, expression, lookAt });
+
+  const applied = director.act('success');
+
+  assert.equal(applied.state, 'success');
+  assert.deepEqual(calls, [
+    {
+      type: 'expressionProfile',
+      name: 'happy',
+      options: { intensity: 0.85, duration: 1200, fadeSec: 0.18 },
+    },
+    { type: 'clip', name: 'victory' },
+    { type: 'gaze', mode: 'mouse', data: undefined },
+  ]);
+}
+
+function createFakeMascotForStateMachine() {
+  const { calls, motion, expression, lookAt } = createFakeControllers();
+  const mascot = {
+    motion,
+    expression,
+    lookAt,
+    queue: { length: 0, isExecuting: false },
+    isUserInteracting: false,
+    act(state, meta) {
+      const director = new PoseDirector({ motion, expression, lookAt });
+      return director.act(state, meta);
+    },
+    _getBlendShapeProxy() {
+      return null;
+    },
+  };
+  return { calls, mascot };
+}
+
+function testTalkingStateUsesActingStatePolicyWhenPresent() {
+  const { calls, mascot } = createFakeMascotForStateMachine();
+  const machine = new MascotStateMachine(mascot);
+
+  machine.dispatch('talking', {
+    text: '完成',
+    emotion: 'joy',
+    motion: 'wave',
+    actingState: 'success',
+  });
+
+  assert.deepEqual(calls, [
+    {
+      type: 'expressionProfile',
+      name: 'happy',
+      options: { intensity: 0.85, duration: 1200, fadeSec: 0.18 },
+    },
+    { type: 'clip', name: 'victory' },
+    { type: 'gaze', mode: 'mouse', data: undefined },
+  ]);
+}
+
+function testActionQueueForwardsActingStateToTalkingDispatch() {
+  let dispatched = null;
+  const mascot = {
+    dispatch(name, params) {
+      dispatched = { name, params };
+    },
+    state: {
+      cancelCurrentState() {},
+    },
+  };
+  const queue = new ActionQueue(mascot);
+
+  queue.enqueue({
+    type: 'say',
+    text: '完成',
+    emotion: 'joy',
+    motion: 'wave',
+    actingState: 'success',
+    timeout: 1000,
+  });
+  queue.clear('test_done');
+
+  assert.equal(dispatched.name, 'talking');
+  assert.equal(dispatched.params.actingState, 'success');
+}
+
+function testVrmMascotExposesActApiWithoutContextDigestPollution() {
+  const source = readFileSync('my_vrm_mascot/js/VrmMascot.js', 'utf8');
+  const digestMatch = source.match(/buildContextDigest\(\) \{[\s\S]*?\n  \}/);
+
+  assert.match(source, /act\(state,\s*meta\s*=\s*\{\}\)/);
+  assert.match(source, /actForIntentResult\(status,\s*intentObj\s*=\s*\{\}\)/);
+  assert.ok(digestMatch, 'buildContextDigest should remain present');
+  assert.doesNotMatch(digestMatch[0], /acting|expression|clip|gaze/i);
+}
+
+const tests = [
+  testSuccessPolicyUsesHappyVictoryMouse,
+  testRunningPolicyUsesPresentingAndPointGaze,
+  testBlockedPolicyUsesWarningNodNotLongWarningPose,
+  testThinkingPolicyDoesNotReferenceFakeClip,
+  testUnknownPolicyFallsBackToNeutralIdle,
+  testTracePolicyMappingUsesRuntimeStatus,
+  testPolicyReferencesOnlyExistingExpressionClipAndGazeModes,
+  testPoseDirectorAppliesActingPolicyToControllers,
+  testTalkingStateUsesActingStatePolicyWhenPresent,
+  testActionQueueForwardsActingStateToTalkingDispatch,
+  testVrmMascotExposesActApiWithoutContextDigestPollution,
+];
+
+for (const test of tests) {
+  test();
+  console.log(`PASS ${test.name}`);
+}
