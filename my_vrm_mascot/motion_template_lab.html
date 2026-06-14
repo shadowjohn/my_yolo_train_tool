@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Alicia Motion Mine — 先找好姿勢，再分類</title>
+  <title>Alicia Motion Mine — 先定義動作，再釘選姿勢</title>
   <style>
     :root {
       color-scheme: dark;
@@ -284,6 +284,24 @@
       line-height: 1.5;
     }
 
+    .motion-category-recommendation {
+      display: grid;
+      gap: 3px;
+      padding: 10px 12px;
+      border: 1px solid rgba(45, 212, 191, 0.28);
+      border-radius: 8px;
+      background: rgba(45, 212, 191, 0.08);
+    }
+
+    .motion-category-recommendation strong {
+      color: var(--accent-strong);
+    }
+
+    .motion-category-recommendation span {
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
     .lab-quick-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -502,6 +520,86 @@
       resize: vertical;
     }
 
+    .lab-field small {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .motion-profile-save-actions {
+      display: grid;
+      gap: 6px;
+    }
+
+    .motion-profile-save-actions button {
+      border-color: rgba(103, 232, 249, 0.74);
+      background: rgba(45, 212, 191, 0.14);
+      font-weight: 700;
+    }
+
+    .motion-profile-save-actions small {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .description-mining-panel {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid rgba(103, 232, 249, 0.42);
+      border-radius: 10px;
+      background: rgba(45, 212, 191, 0.08);
+    }
+
+    .description-mining-panel h2 {
+      margin: 0;
+      text-align: left;
+    }
+
+    .description-mining-panel p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .description-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .description-mining-actions {
+      display: grid;
+      grid-template-columns: minmax(180px, 1.2fr) repeat(2, minmax(130px, 1fr));
+      gap: 10px;
+    }
+
+    .description-mining-actions button {
+      min-height: 46px;
+      font-weight: 700;
+    }
+
+    #btnAnalyzeMotionDescription {
+      border-color: rgba(103, 232, 249, 0.82);
+      background: rgba(45, 212, 191, 0.16);
+    }
+
+    #btnSaveDescribedEntryNext {
+      border-color: rgba(167, 139, 250, 0.82);
+      background: linear-gradient(180deg, rgba(139, 92, 246, 0.82), rgba(109, 40, 217, 0.82));
+    }
+
+    #descriptionSuggestionState {
+      min-height: 22px;
+      color: var(--accent-strong);
+    }
+
+    #quickReviewPanel {
+      display: none;
+    }
+
     .lab-field select:disabled {
       opacity: 0.42;
     }
@@ -556,7 +654,7 @@
 
     .miner-shell {
       min-height: 100vh;
-      grid-template-columns: 230px minmax(560px, 1fr) 320px;
+      grid-template-columns: minmax(240px, 280px) minmax(0, 1fr) minmax(300px, 340px);
       grid-template-rows: auto minmax(360px, 1fr) auto;
       grid-template-areas:
         "topbar topbar topbar"
@@ -668,7 +766,15 @@
       align-self: start;
       display: grid;
       gap: 28px;
+      min-width: 0;
+      overflow: hidden;
       color: var(--text);
+    }
+
+    .miner-stage,
+    .miner-classifier,
+    .miner-sidebar {
+      min-width: 0;
     }
 
     .miner-guide h2 {
@@ -696,11 +802,50 @@
       background: rgba(15, 23, 42, 0.6);
     }
 
-    .miner-guide li::before {
+    .miner-flow-list li::before {
       content: "✓";
       margin-right: 10px;
       color: #a78bfa;
       font-weight: 800;
+    }
+
+    .mine-filter-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .mine-filter-tabs label {
+      display: grid;
+      place-items: center;
+      min-height: 34px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.64);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .mine-filter-tabs input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .mine-filter-tabs label:has(input:checked) {
+      border-color: rgba(103, 232, 249, 0.72);
+      background: rgba(45, 212, 191, 0.12);
+      color: var(--accent-strong);
+    }
+
+    .mine-filter-summary {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
     }
 
     .mine-list,
@@ -722,6 +867,7 @@
       display: grid;
       gap: 4px;
       width: 100%;
+      min-width: 0;
       padding: 10px 12px;
       border-color: rgba(148, 163, 184, 0.26);
       text-align: left;
@@ -729,14 +875,33 @@
 
     .mine-card-button.is-selected,
     .pinned-candidate-button.is-selected {
-      border-color: rgba(103, 232, 249, 0.82);
-      box-shadow: 0 0 0 1px rgba(103, 232, 249, 0.2) inset;
+      border: 3px solid #67e8f9;
+      background: rgba(45, 212, 191, 0.12);
+      box-shadow: 0 0 0 2px rgba(103, 232, 249, 0.24) inset, 0 0 24px rgba(45, 212, 191, 0.22);
+    }
+
+    .mine-card-button.is-profile-saved {
+      border-color: rgba(45, 212, 191, 0.62);
+    }
+
+    .mine-card-button.is-selected.is-profile-saved {
+      border-color: #67e8f9;
+    }
+
+    .mine-empty-state {
+      padding: 10px 12px;
+      border: 1px dashed rgba(148, 163, 184, 0.28);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
     }
 
     .mine-card-button strong,
     .pinned-candidate-button strong {
       color: var(--text);
       line-height: 1.25;
+      overflow-wrap: anywhere;
     }
 
     .mine-card-button span,
@@ -744,6 +909,7 @@
       color: var(--muted);
       font-size: 12px;
       line-height: 1.4;
+      overflow-wrap: anywhere;
     }
 
     .miner-stage {
@@ -886,6 +1052,28 @@
 
     .lab-quick-button.is-recommended {
       box-shadow: 0 0 0 2px rgba(250, 250, 250, 0.18) inset, 0 0 24px rgba(167, 139, 250, 0.42);
+    }
+
+    .lab-quick-button[data-motion-category] {
+      border-color: rgba(148, 163, 184, 0.26);
+      background: rgba(15, 23, 42, 0.72);
+    }
+
+    .lab-quick-button[data-motion-category].is-selected,
+    .lab-quick-button.is-selected {
+      background: linear-gradient(180deg, rgba(45, 212, 191, 0.22), rgba(15, 23, 42, 0.86));
+      border: 3px solid #67e8f9;
+      box-shadow: 0 0 0 2px rgba(103, 232, 249, 0.24) inset, 0 0 24px rgba(45, 212, 191, 0.24);
+    }
+
+    .lab-quick-button[data-motion-category].is-saved-profile {
+      border-color: rgba(250, 204, 21, 0.84);
+      box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.18) inset, 0 0 18px rgba(250, 204, 21, 0.14);
+    }
+
+    .lab-quick-button[data-motion-category].is-selected.is-saved-profile {
+      border-color: #67e8f9;
+      box-shadow: 0 0 0 2px rgba(103, 232, 249, 0.24) inset, 0 0 24px rgba(45, 212, 191, 0.24);
     }
 
     .lab-quick-button.is-recommended::after {
@@ -1067,6 +1255,11 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
+      .description-grid,
+      .description-mining-actions {
+        grid-template-columns: 1fr;
+      }
+
       .miner-nav-actions {
         grid-template-columns: 1fr;
       }
@@ -1094,7 +1287,7 @@
         <span class="miner-gem">◆</span>
         <div>
           <h1>Alicia Motion Mine</h1>
-          <p>先找好姿勢，再分類 <span>v1.1</span></p>
+          <p>先定義動作，再釘選姿勢 <span>v1.2</span></p>
         </div>
       </div>
       <div id="minerCurrentSample" class="miner-sample-pill">尚未選取樣本</div>
@@ -1109,20 +1302,36 @@
     <aside class="miner-guide" aria-label="極簡採礦說明">
       <section>
         <h2>礦場流程</h2>
-        <ul>
-          <li>選一支 VRMA</li>
-          <li>播放或拖時間軸</li>
-          <li>釘選有料瞬間</li>
-          <li>再分類候選片段</li>
+          <ul class="miner-flow-list">
+            <li>選一支 VRMA</li>
+            <li>先定義這支 VRMA 主類別</li>
+            <li>播放或拖時間軸</li>
+          <li>釘選 moment，自動繼承主分類</li>
+          <li>必要時再微調候選片段</li>
         </ul>
       </section>
       <section>
         <h2>礦區</h2>
+        <div class="mine-filter-tabs" role="radiogroup" aria-label="礦區篩選">
+          <label>
+            <input id="mineFilterUnclassified" type="radio" name="mineFilter" value="unclassified" checked>
+            <span>未分類</span>
+          </label>
+          <label>
+            <input id="mineFilterClassified" type="radio" name="mineFilter" value="classified">
+            <span>已分類</span>
+          </label>
+          <label>
+            <input id="mineFilterAll" type="radio" name="mineFilter" value="all">
+            <span>全部</span>
+          </label>
+        </div>
+        <p id="mineFilterSummary" class="mine-filter-summary">未分類 0 / 已分類 0</p>
         <ol id="mineList" class="mine-list"></ol>
       </section>
       <section>
         <h2>操作說明</h2>
-        <p>Space 播放 / 暫停，P 釘選這一刻。分類只作用在已釘選的候選片段。</p>
+        <p>Space 播放 / 暫停，P 釘選這一刻。一支 VRMA = 一個 motion intent，候選片段會先繼承主分類。</p>
       </section>
     </aside>
 
@@ -1135,6 +1344,78 @@
     </section>
 
     <section class="lab-mining-panel miner-classifier">
+      <section id="descriptionMiningPanel" class="description-mining-panel" aria-label="描述採礦 Description Mining">
+        <h2>描述採礦</h2>
+        <p>先用人類語言描述這支動作或目前片段。分類可以晚點交給 LLM，這裡先累積乾淨語意資料。</p>
+        <div class="description-grid">
+          <label class="lab-field motion-description-field">
+            <span>動作描述</span>
+            <textarea id="motionDescription" placeholder="例如：右手在前方作出往自己身邊招的動作，像是在叫對方過來。"></textarea>
+          </label>
+          <label class="lab-field">
+            <span>用途描述</span>
+            <textarea id="usageDescription" placeholder="例如：通常用於示意靠近、跟上、往這邊看，帶有引導意味。"></textarea>
+          </label>
+          <label class="lab-field">
+            <span>Agent 用途</span>
+            <textarea id="agentUsage" placeholder="每行一個用途，例如：&#10;引導使用者查看指定位置&#10;呼叫使用者注意某個目標"></textarea>
+          </label>
+        </div>
+        <div class="description-mining-actions">
+          <button id="btnAnalyzeMotionDescription" type="button">分析動作並填入建議</button>
+          <button id="btnSaveDescribedEntry" type="button">儲存這筆</button>
+          <button id="btnSaveDescribedEntryNext" type="button">儲存並下一筆</button>
+        </div>
+        <p id="descriptionSuggestionState">尚未產生描述建議。</p>
+        <div class="motion-profile-save-actions">
+          <button id="btnSaveMotionProfile" type="button">儲存主分類與描述</button>
+          <small>會寫入 motion_profiles.json 與 mining_log.json，保留目前類型、分數與人類描述。</small>
+        </div>
+      </section>
+
+      <section id="motionCategoryPanel" class="lab-quick-panel" aria-label="動作主分類 Motion Category">
+        <h2>動作主分類 <small>Motion Category</small></h2>
+        <p>一支 VRMA = 一個 motion intent。先決定這支動作大類，釘選 moment 會先套用這個分類。</p>
+        <div class="motion-category-recommendation" aria-live="polite">
+          <p>推薦：<strong id="motionCategorySuggestionLabel">等待載入</strong> <span id="motionCategorySuggestionConfidence">0%</span></p>
+          <p id="motionCategorySuggestionReason">載入 VRMA 後，系統會先用檔名與姿勢特徵建議主分類。</p>
+          <p>存檔：<span id="motionProfileSaveState">尚未載入 motion_profiles.json</span></p>
+        </div>
+        <div class="lab-quick-grid">
+          <button class="lab-quick-button" type="button" data-motion-category="present">
+            <kbd>1</kbd><span>介紹<small>present</small></span>
+          </button>
+          <button class="lab-quick-button" type="button" data-motion-category="point">
+            <kbd>2</kbd><span>指向<small>point</small></span>
+          </button>
+          <button class="lab-quick-button" type="button" data-motion-category="think">
+            <kbd>3</kbd><span>思考<small>think</small></span>
+          </button>
+          <button class="lab-quick-button" type="button" data-motion-category="warning">
+            <kbd>4</kbd><span>警告<small>warning</small></span>
+          </button>
+          <button class="lab-quick-button" type="button" data-motion-category="success">
+            <kbd>5</kbd><span>成功<small>success</small></span>
+          </button>
+          <button class="lab-quick-button" type="button" data-motion-category="candidate_future">
+            <kbd>6</kbd><span>未來候選<small>candidate_future</small></span>
+          </button>
+          <button class="lab-quick-button" type="button" data-motion-category="reject">
+            <kbd>X</kbd><span>淘汰<small>reject</small></span>
+          </button>
+        </div>
+        <label class="lab-field">
+          <span>動作分數</span>
+          <select id="motionScore">
+            <option value="5">5 / 這支很有料</option>
+            <option value="4" selected>4 / 可挖</option>
+            <option value="3">3 / 待觀察</option>
+            <option value="2">2 / 局部可參考</option>
+            <option value="1">1 / 不適合 Agent</option>
+          </select>
+        </label>
+      </section>
+
       <section class="mine-explorer-panel" aria-label="VRMA Explorer">
         <h2>VRMA Explorer</h2>
         <div class="mine-explorer-actions">
@@ -1156,7 +1437,8 @@
         </div>
       </section>
       <section id="quickReviewPanel" class="lab-quick-panel" aria-label="快速標註 Quick Review Mode">
-        <h2>已釘選片段最像？</h2>
+        <h2>候選片段微調分類</h2>
+        <p>釘選後已繼承 VRMA 主分類；只有不符合時才按這裡覆寫。</p>
         <div class="lab-quick-grid">
           <button id="quickReviewPresent" class="lab-quick-button" type="button" data-quick-category="present" data-quick-key="Q" data-miner-key="1">
             <kbd>1</kbd><span>介紹<small>present</small></span>
@@ -1186,7 +1468,7 @@
         <button id="btnMinerNext" type="button">下一個候選</button>
         <button id="btnUndoMiningCandidate" type="button">復原上一步</button>
       </div>
-      <p class="miner-auto-copy">先釘選 moment，再用分類按鈕標記；不再強迫審核每個 frame。</p>
+      <p class="miner-auto-copy">先替整支 VRMA 定主分類，再釘選好看的 moment；候選片段會先繼承主分類，可再微調。</p>
     </section>
 
     <aside class="lab-panel miner-sidebar" aria-label="採礦狀態與進階工具">
@@ -1232,6 +1514,7 @@
             <span>範例動作</span>
             <select id="exampleVrmaSelect">
               <option value="Angry.vrma">Angry.vrma</option>
+              <option value="Blush.vrma">Blush.vrma</option>
               <option value="Clapping.vrma">Clapping.vrma</option>
               <option value="Goodbye.vrma">Goodbye.vrma</option>
               <option value="Jump.vrma">Jump.vrma</option>
@@ -1280,7 +1563,7 @@
 
           <section id="reviewQueuePanel" class="lab-review-panel" aria-label="審核清單 Review Queue">
             <h2>建議取樣點 <small>Suggested Samples</small></h2>
-            <p>自動切點只作為提示，不再變成必審清單；真正要分類的 moment 請先釘選。</p>
+            <p>自動切點只作為提示，不再變成必審清單；真正要留下的 moment 請先釘選。</p>
             <div class="lab-review-controls">
               <button id="btnGenerateReviewQueue" type="button">產生清單</button>
               <select id="reviewQueueFilter" aria-label="審核清單篩選">
@@ -1404,8 +1687,12 @@
     } from './js/MotionTemplateImporter.js';
 
     const EXAMPLE_VRMA_BASE = 'examples/m6_7_vrma_samples/';
+    const VRMA_SAMPLE_API_URL = '/api/vrma-samples';
+    const MOTION_PROFILE_API_URL = '/api/motion-profiles';
+    const MOTION_MINING_LOG_API_URL = '/api/motion-mining-log';
     const EXAMPLE_VRMA_DURATIONS = Object.freeze({
       'Angry.vrma': 3.933,
+      'Blush.vrma': 3.933,
       'Clapping.vrma': 3.933,
       'Goodbye.vrma': 3.933,
       'Jump.vrma': 3.933,
@@ -1417,12 +1704,84 @@
       'Thinking.vrma': 3.933,
     });
     const MINING_CATEGORIES = [...MOTION_MINING_CATEGORIES];
+    const DEFAULT_MOTION_CATEGORY_BY_SOURCE = Object.freeze({
+      'Angry.vrma': 'warning',
+      'Blush.vrma': 'candidate_future',
+      'Clapping.vrma': 'success',
+      'Goodbye.vrma': 'success',
+      'Jump.vrma': 'candidate_future',
+      'LookAround.vrma': 'think',
+      'Relax.vrma': 'present',
+      'Sad.vrma': 'candidate_future',
+      'Sleepy.vrma': 'reject',
+      'Surprised.vrma': 'warning',
+      'Thinking.vrma': 'think',
+    });
+    const DEFAULT_MOTION_SCORE_BY_CATEGORY = Object.freeze({
+      present: 4,
+      point: 4,
+      think: 5,
+      warning: 4,
+      success: 4,
+      candidate_future: 3,
+      reject: 1,
+    });
+    const MOTION_DESCRIPTION_RULES = Object.freeze([
+      {
+        id: 'right_hand_come_here',
+        when: (sig) => (
+          sig.activeSide === 'right'
+          && sig.dominantBone === 'rightHand'
+          && sig.repeatCount >= 2
+          && sig.forwardBackBias === 'toward_body'
+        ),
+        draft: {
+          motionDescription: '右手伸向前方，手掌朝向自己方向，重複做出向身體靠近的招手動作。',
+          usageDescription: '通常用於示意對方靠近、跟上、過來或引導移動。具有「come here」、「跟我來」、「請往這邊」的語意。',
+          agentUsage: [
+            '引導使用者查看指定位置',
+            '呼叫使用者注意某個目標',
+          ],
+          confidence: 0.72,
+        },
+      },
+      {
+        id: 'hand_near_chin_thinking',
+        when: (sig) => sig.handNearChin && sig.headMotion === 'stable',
+        draft: {
+          motionDescription: '手部靠近下巴或臉側，頭部保持穩定，呈現停頓與思考姿態。',
+          usageDescription: '通常用於表示思考、理解問題、等待查詢結果或分析中。',
+          agentUsage: [
+            '回覆前的思考狀態',
+            '資料查詢或分析中的等待提示',
+          ],
+          confidence: 0.68,
+        },
+      },
+      {
+        id: 'arm_forward_pointing',
+        when: (sig) => sig.armExtendedForward && sig.handMotion === 'stable',
+        draft: {
+          motionDescription: '手臂向前伸出，手部保持在前方，呈現指向或示意特定方向的姿態。',
+          usageDescription: '通常用於指出目標、引導視線或提示使用者查看指定位置。',
+          agentUsage: [
+            '指向地圖上的目標',
+            '提示使用者注意查詢結果',
+          ],
+          confidence: 0.7,
+        },
+      },
+    ]);
     const DEG = Math.PI / 180;
+    const PREVIEW_CAMERA_POSITION = Object.freeze({ x: 0, y: 1.35, z: -3.3 });
+    const PREVIEW_CAMERA_TARGET = Object.freeze({ x: 0, y: 1.25, z: 0 });
 
     const els = {
       viewport: document.getElementById('labViewport'),
       loadState: document.getElementById('labLoadState'),
       mineList: document.getElementById('mineList'),
+      mineFilterInputs: Array.from(document.querySelectorAll('input[name="mineFilter"]')),
+      mineFilterSummary: document.getElementById('mineFilterSummary'),
       minerCurrentSample: document.getElementById('minerCurrentSample'),
       minerProgressText: document.getElementById('minerProgressText'),
       minerProgressBar: document.getElementById('minerProgressBar'),
@@ -1440,6 +1799,20 @@
       btnPinMoment: document.getElementById('btnPinMoment'),
       btnSuggestedPrevious: document.getElementById('btnSuggestedPrevious'),
       btnSuggestedNext: document.getElementById('btnSuggestedNext'),
+      motionCategorySuggestionLabel: document.getElementById('motionCategorySuggestionLabel'),
+      motionCategorySuggestionConfidence: document.getElementById('motionCategorySuggestionConfidence'),
+      motionCategorySuggestionReason: document.getElementById('motionCategorySuggestionReason'),
+      motionProfileSaveState: document.getElementById('motionProfileSaveState'),
+      motionCategoryButtons: Array.from(document.querySelectorAll('.lab-quick-button[data-motion-category]')),
+      motionScore: document.getElementById('motionScore'),
+      motionDescription: document.getElementById('motionDescription'),
+      usageDescription: document.getElementById('usageDescription'),
+      agentUsage: document.getElementById('agentUsage'),
+      btnAnalyzeMotionDescription: document.getElementById('btnAnalyzeMotionDescription'),
+      btnSaveDescribedEntry: document.getElementById('btnSaveDescribedEntry'),
+      btnSaveDescribedEntryNext: document.getElementById('btnSaveDescribedEntryNext'),
+      descriptionSuggestionState: document.getElementById('descriptionSuggestionState'),
+      btnSaveMotionProfile: document.getElementById('btnSaveMotionProfile'),
       pinnedCandidateList: document.getElementById('pinnedCandidateList'),
       fileInput: document.getElementById('vrmaFileInput'),
       exampleSelect: document.getElementById('exampleVrmaSelect'),
@@ -1498,10 +1871,17 @@
     let isPlaying = false;
     let previewMode = 'agent';
     let sourceWarnings = [];
+    let descriptionSourceState = 'human';
+    let latestDescriptionSuggestion = null;
+    let motionPreviewTimer = 0;
     const miningEntries = [];
     const reviewQueue = [];
     const suggestedSamples = [];
     const reviewActionHistory = [];
+    const motionProfiles = new Map();
+    const savedMotionProfileSources = new Set();
+    const savedMotionProfileCategories = new Map();
+    const vrmaSampleCatalog = new Map();
     let selectedReviewQueueId = '';
 
     init().catch((err) => {
@@ -1517,12 +1897,10 @@
 
       scene = new THREE.Scene();
       camera = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
-      camera.position.set(0, 1.35, 3.3);
 
       controls = new OrbitControls(camera, renderer.domElement);
-      controls.target.set(0, 1.25, 0);
       controls.enableDamping = true;
-      controls.update();
+      resetPreviewCamera();
 
       scene.add(new THREE.AmbientLight(0xffffff, 1.2));
       const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
@@ -1531,6 +1909,8 @@
 
       clock = new THREE.Clock();
       await loadBasePreset();
+      await loadVrmaSamplesFromServer();
+      await loadMotionProfilesFromServer();
       await loadAlicia();
 
       window.addEventListener('resize', resize);
@@ -1598,9 +1978,16 @@
       }
     }
 
-    async function loadExampleVrma(fileName = els.exampleSelect.value || 'Relax.vrma') {
+    async function loadExampleVrma(fileName = els.exampleSelect.value || 'Relax.vrma', { autoplay = false } = {}) {
       els.exampleSelect.value = fileName;
-      await loadVrmaFromUrl(`${EXAMPLE_VRMA_BASE}${encodeURIComponent(fileName)}`, fileName);
+      const sample = vrmaSampleCatalog.get(fileName);
+      const url = sample?.url || `${EXAMPLE_VRMA_BASE}${encodeURIComponent(fileName)}`;
+      await loadVrmaFromUrl(url, fileName);
+      if (autoplay) {
+        els.sampleTime.value = '0';
+        sampleAt(0);
+        playMotion();
+      }
     }
 
     async function loadVrmaFromUrl(url, fileName) {
@@ -1623,13 +2010,16 @@
 
       sourceFileName = fileName;
       sourceWarnings = loaderWarnings;
+      ensureMotionProfile(fileName);
       els.sourceFile.textContent = fileName;
       els.sampleTime.max = String(clip.duration || 0);
       els.sampleTime.value = '0';
       els.durationLabel.textContent = `${formatSeconds(clip.duration || 0)}s`;
       updateTimeLabel(0);
       setStatus('已載入 VRMA');
+      resetPreviewCamera();
       sampleAt(0);
+      renderMotionCategoryControls();
       renderMineList();
     }
 
@@ -1682,6 +2072,7 @@
       setWarnings(warnings);
       renderJson(latestPreset);
       renderMiningSuggestion(suggestMiningCategory(latestPreset));
+      renderMotionCategoryControls();
       updateMinerCurrentSample();
       setStatus('已取樣');
     }
@@ -1809,13 +2200,108 @@
         .sort((a, b) => a.localeCompare(b));
     }
 
+    function getMineFilterValue() {
+      return els.mineFilterInputs.find((input) => input.checked)?.value || 'unclassified';
+    }
+
+    function isMotionProfileSaved(fileName) {
+      return savedMotionProfileSources.has(fileName);
+    }
+
+    function seedStaticVrmaSampleCatalog() {
+      for (const option of els.exampleSelect.options) {
+        if (!option.value) continue;
+        vrmaSampleCatalog.set(option.value, {
+          name: option.value,
+          path: option.value,
+          url: `${EXAMPLE_VRMA_BASE}${encodeURIComponent(option.value)}`,
+          external: false,
+        });
+      }
+    }
+
+    function renderExampleVrmaOptions(samples = []) {
+      const previous = els.exampleSelect.value;
+      const options = samples
+        .filter((sample) => sample?.name && sample?.url)
+        .sort((a, b) => Number(a.external) - Number(b.external) || a.name.localeCompare(b.name));
+
+      if (!options.length) return;
+
+      els.exampleSelect.replaceChildren(...options.map((sample) => {
+        const option = document.createElement('option');
+        option.value = sample.name;
+        option.textContent = sample.external ? `${sample.name}（外部）` : sample.name;
+        return option;
+      }));
+
+      if (previous && options.some((sample) => sample.name === previous)) {
+        els.exampleSelect.value = previous;
+      }
+    }
+
+    async function loadVrmaSamplesFromServer() {
+      seedStaticVrmaSampleCatalog();
+      try {
+        const response = await fetch(VRMA_SAMPLE_API_URL, {
+          headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const samples = Array.isArray(data?.samples) ? data.samples : [];
+        if (!samples.length) return;
+
+        vrmaSampleCatalog.clear();
+        for (const sample of samples) {
+          const name = String(sample.name || '').trim();
+          const url = String(sample.url || '').trim();
+          if (!name || !url || !name.toLowerCase().endsWith('.vrma')) continue;
+          vrmaSampleCatalog.set(name, {
+            name,
+            path: String(sample.path || name),
+            url,
+            external: Boolean(sample.external),
+            size: Number(sample.size || 0),
+          });
+        }
+        renderExampleVrmaOptions([...vrmaSampleCatalog.values()]);
+      } catch (err) {
+        console.warn('[MotionMine] load vrma samples failed; using static examples', err);
+      }
+    }
+
     function renderMineList() {
-      const files = getExampleVrmaFiles();
+      const allFiles = getExampleVrmaFiles();
+      const savedCount = allFiles.filter((fileName) => isMotionProfileSaved(fileName)).length;
+      const unsavedCount = allFiles.length - savedCount;
+      const filter = getMineFilterValue();
+      const files = allFiles.filter((fileName) => {
+        if (filter === 'classified') return isMotionProfileSaved(fileName);
+        if (filter === 'all') return true;
+        return !isMotionProfileSaved(fileName);
+      });
+
+      els.mineFilterSummary.textContent = `未分類 ${unsavedCount} / 已分類 ${savedCount} / 全部 ${allFiles.length}`;
+
+      if (!files.length) {
+        const li = document.createElement('li');
+        li.className = 'mine-empty-state';
+        li.textContent = filter === 'classified'
+          ? '目前沒有已分類 VRMA'
+          : filter === 'all'
+            ? '目前沒有 VRMA'
+            : '目前沒有未分類 VRMA';
+        els.mineList.replaceChildren(li);
+        return;
+      }
+
       els.mineList.replaceChildren(...files.map((fileName) => {
         const li = document.createElement('li');
         const button = document.createElement('button');
         const title = document.createElement('strong');
         const meta = document.createElement('span');
+        const profile = ensureMotionProfile(fileName);
+        const isSaved = isMotionProfileSaved(fileName);
         const pinned = reviewQueue.filter((entry) => entry.source === fileName);
         const classified = pinned.filter((entry) => entry.status === 'classified');
         const distribution = buildMineCategorySummary(classified);
@@ -1826,11 +2312,12 @@
           'mine-card-button',
           sourceFileName === fileName ? 'is-selected' : '',
         ].filter(Boolean).join(' ');
+        button.classList.toggle('is-profile-saved', isSaved);
         title.textContent = fileName;
-        meta.textContent = `已釘選 ${pinned.length} / 已分類 ${classified.length}${distribution ? ` / ${distribution}` : ''}`;
+        meta.textContent = `${isSaved ? '已設定' : '未設定'} ${getCategoryLabel(profile.motionCategory).split(' ')[0]} / 已釘選 ${pinned.length} / 已分類 ${classified.length}${distribution ? ` / ${distribution}` : ''}`;
         button.append(title, meta);
         button.addEventListener('click', () => {
-          loadExampleVrma(fileName).catch(handleReviewQueueError);
+          loadExampleVrma(fileName, { autoplay: true }).catch(handleReviewQueueError);
         });
         li.append(button);
         return li;
@@ -1895,6 +2382,330 @@
         .toLowerCase() || 'sample';
     }
 
+    function ensureMotionProfile(fileName = sourceFileName) {
+      const source = String(fileName || '').trim();
+      if (!source) return null;
+      if (!motionProfiles.has(source)) {
+        const category = DEFAULT_MOTION_CATEGORY_BY_SOURCE[source] || suggestMotionCategory(source)?.category || 'candidate_future';
+        motionProfiles.set(source, {
+          source,
+          motionCategory: category,
+          motionScore: DEFAULT_MOTION_SCORE_BY_CATEGORY[category] || 3,
+          description: '',
+          usageDescription: '',
+          agentUsage: [],
+          note: '',
+          updatedAt: formatLocalIsoDateTime(),
+        });
+      }
+      return motionProfiles.get(source);
+    }
+
+    function getCurrentMotionProfile() {
+      return ensureMotionProfile(sourceFileName);
+    }
+
+    function getMotionProfileDescription(profile) {
+      return String(profile?.description || profile?.note || '');
+    }
+
+    function renderMotionDescriptionField(profile = getCurrentMotionProfile()) {
+      renderDescriptionMiningFields(getSelectedReviewQueueItem(), profile);
+    }
+
+    function renderDescriptionMiningFields(item = getSelectedReviewQueueItem(), profile = getCurrentMotionProfile()) {
+      if (!els.motionDescription || isDescriptionFieldActive()) return;
+
+      if (item?.status === 'described' || item?.motionDescription || item?.usageDescription || item?.agentUsage) {
+        els.motionDescription.value = item.motionDescription || '';
+        els.usageDescription.value = item.usageDescription || '';
+        els.agentUsage.value = Array.isArray(item.agentUsage) ? item.agentUsage.join('\n') : String(item.agentUsage || '');
+        descriptionSourceState = item.descriptionSource || 'human';
+        latestDescriptionSuggestion = item.suggestion || null;
+        setDescriptionSuggestionState(getDescriptionSourceLabel(descriptionSourceState));
+        return;
+      }
+
+      els.motionDescription.value = getMotionProfileDescription(profile);
+      els.usageDescription.value = profile.usageDescription || '';
+      els.agentUsage.value = Array.isArray(profile.agentUsage) ? profile.agentUsage.join('\n') : String(profile.agentUsage || '');
+      descriptionSourceState = 'human';
+      latestDescriptionSuggestion = null;
+      setDescriptionSuggestionState('可手填描述，或按「分析動作並填入建議」。');
+    }
+
+    function isDescriptionFieldActive() {
+      return [els.motionDescription, els.usageDescription, els.agentUsage].includes(document.activeElement);
+    }
+
+    function syncMotionDescriptionToProfile(profile = getCurrentMotionProfile()) {
+      if (!profile || !els.motionDescription) return null;
+      const fields = getDescriptionMiningFields();
+      const description = String(els.motionDescription.value || '').trim();
+      profile.description = description;
+      profile.usageDescription = fields.usageDescription;
+      profile.agentUsage = parseAgentUsage(fields.agentUsageText);
+      profile.note = description;
+      profile.updatedAt = formatLocalIsoDateTime();
+      return profile;
+    }
+
+    async function saveMotionDescription() {
+      const profile = syncMotionDescriptionToProfile();
+      if (!profile) return null;
+      setStatus(`正在儲存 ${profile.source} 主分類與描述`);
+      return saveMotionProfileToServer(profile);
+    }
+
+    function getDescriptionMiningFields() {
+      return {
+        motionDescription: String(els.motionDescription?.value || '').trim(),
+        usageDescription: String(els.usageDescription?.value || '').trim(),
+        agentUsageText: String(els.agentUsage?.value || '').trim(),
+      };
+    }
+
+    function parseAgentUsage(value = '') {
+      return String(value || '')
+        .split(/[\n；;]+/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+
+    function markDescriptionFieldEdited() {
+      if (descriptionSourceState === 'rule_suggested') {
+        descriptionSourceState = 'human_edited_rule';
+        setDescriptionSuggestionState('已修改規則建議，儲存後會標記為 human_edited_rule。');
+        return;
+      }
+
+      if (descriptionSourceState !== 'human_edited_rule') {
+        descriptionSourceState = 'human';
+      }
+    }
+
+    function setDescriptionSuggestionState(text) {
+      if (els.descriptionSuggestionState) {
+        els.descriptionSuggestionState.textContent = text;
+      }
+    }
+
+    function getDescriptionSourceLabel(source) {
+      const labels = {
+        human: '目前是手填描述。',
+        rule_suggested: '已填入規則建議，請人工確認後儲存。',
+        human_edited_rule: '已修改規則建議，儲存後會標記為 human_edited_rule。',
+      };
+      return labels[source] || '目前是手填描述。';
+    }
+
+    function suggestMotionCategoryFromSource(fileName = '') {
+      const source = String(fileName || '').toLowerCase();
+      if (source.includes('angry') || source.includes('surprised')) return 'warning';
+      if (source.includes('thinking') || source.includes('lookaround')) return 'think';
+      if (source.includes('clapping') || source.includes('goodbye')) return 'success';
+      if (source.includes('relax')) return 'present';
+      if (source.includes('jump')) return 'candidate_future';
+      if (source.includes('sleepy')) return 'reject';
+      return 'candidate_future';
+    }
+
+    function setMotionCategory(category, { score = Number(els.motionScore.value || 4), silent = false } = {}) {
+      if (!sourceFileName) {
+        setWarnings(['請先選一支 VRMA，再設定動作主分類']);
+        return null;
+      }
+
+      const normalizedCategory = MINING_CATEGORIES.includes(category) ? category : 'candidate_future';
+      const profile = ensureMotionProfile(sourceFileName);
+      profile.motionCategory = normalizedCategory;
+      profile.motionScore = Math.max(1, Math.min(5, Math.trunc(Number(score) || DEFAULT_MOTION_SCORE_BY_CATEGORY[normalizedCategory] || 3)));
+      syncMotionDescriptionToProfile(profile);
+      profile.updatedAt = formatLocalIsoDateTime();
+
+      els.motionScore.value = String(profile.motionScore);
+      els.miningCategory.value = normalizedCategory;
+      if (normalizedCategory === 'reject') {
+        els.miningScore.value = '1';
+        els.miningSourceScore.value = String(Math.max(2, profile.motionScore));
+        els.miningAgentScore.value = '1';
+      } else if (normalizedCategory === 'candidate_future') {
+        els.miningScore.value = String(profile.motionScore);
+        els.miningSourceScore.value = String(Math.max(4, profile.motionScore));
+        els.miningAgentScore.value = '2';
+      } else {
+        els.miningScore.value = String(profile.motionScore);
+        els.miningSourceScore.value = String(profile.motionScore);
+        els.miningAgentScore.value = String(profile.motionScore);
+      }
+      updateRejectReasonState();
+      renderMotionCategoryControls();
+      renderMineList();
+
+      if (!silent) {
+        setStatus(`已設定 ${sourceFileName} 主分類：${getCategoryLabel(normalizedCategory)}`);
+        saveMotionProfileToServer(profile);
+      }
+      return profile;
+    }
+
+    async function loadMotionProfilesFromServer() {
+      setMotionProfileSaveState('正在讀取 motion_profiles.json');
+      try {
+        const response = await fetch(MOTION_PROFILE_API_URL, {
+          headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const profiles = data?.profiles || {};
+        for (const [source, profile] of Object.entries(profiles)) {
+          if (!source || !profile || typeof profile !== 'object') continue;
+          const normalizedProfile = normalizeMotionProfileForClient(profile);
+          motionProfiles.set(source, normalizedProfile);
+          savedMotionProfileSources.add(source);
+          savedMotionProfileCategories.set(source, normalizedProfile.motionCategory);
+        }
+        setMotionProfileSaveState(`已讀取 motion_profiles.json（${motionProfiles.size} 筆）`);
+      } catch (err) {
+        setMotionProfileSaveState('尚未連線存檔 API，主分類只會暫存在本頁');
+        console.warn('[MotionMine] load motion_profiles.json failed', err);
+      }
+    }
+
+    async function saveMotionProfileToServer(profile) {
+      if (!profile) return;
+      setMotionProfileSaveState('儲存中...');
+      try {
+        const response = await fetch(MOTION_PROFILE_API_URL, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            profile: serializeMotionProfile(profile),
+          }),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const savedProfile = normalizeMotionProfileForClient(data.profile || profile);
+        motionProfiles.set(savedProfile.source, savedProfile);
+        savedMotionProfileSources.add(savedProfile.source);
+        savedMotionProfileCategories.set(savedProfile.source, savedProfile.motionCategory);
+        renderMineList();
+        renderMotionCategoryControls();
+        setMotionProfileSaveState('已儲存到 motion_profiles.json');
+        setStatus(`已儲存 ${savedProfile.source} 主分類：${getCategoryLabel(savedProfile.motionCategory)}`);
+        return savedProfile;
+      } catch (err) {
+        setMotionProfileSaveState('存檔失敗，請確認本地 server 是否仍在執行');
+        setWarnings([`主分類存檔失敗：${err?.message || err}`]);
+        console.warn('[MotionMine] save motion profile failed', err);
+        return null;
+      }
+    }
+
+    function serializeMotionProfile(profile) {
+      return {
+        source: profile.source,
+        motionCategory: profile.motionCategory,
+        motionScore: profile.motionScore,
+        description: profile.description || profile.note || '',
+        usageDescription: profile.usageDescription || '',
+        agentUsage: Array.isArray(profile.agentUsage) ? profile.agentUsage : [],
+        note: profile.description || profile.note || '',
+        updatedAt: profile.updatedAt || formatLocalIsoDateTime(),
+      };
+    }
+
+    function normalizeMotionProfileForClient(profile) {
+      const source = String(profile.source || '').trim();
+      const category = MINING_CATEGORIES.includes(profile.motionCategory)
+        ? profile.motionCategory
+        : 'candidate_future';
+      return {
+        source,
+        motionCategory: category,
+        motionScore: Math.max(1, Math.min(5, Math.trunc(Number(profile.motionScore) || DEFAULT_MOTION_SCORE_BY_CATEGORY[category] || 3))),
+        description: String(profile.description || profile.note || ''),
+        usageDescription: String(profile.usageDescription || ''),
+        agentUsage: Array.isArray(profile.agentUsage) ? profile.agentUsage.map((item) => String(item)) : [],
+        note: String(profile.description || profile.note || ''),
+        updatedAt: String(profile.updatedAt || formatLocalIsoDateTime()),
+      };
+    }
+
+    function setMotionProfileSaveState(text) {
+      els.motionProfileSaveState.textContent = text;
+    }
+
+    function renderMotionCategoryControls() {
+      const profile = getCurrentMotionProfile();
+      const category = profile?.motionCategory || '';
+      renderMotionCategoryRecommendation(suggestMotionCategory(sourceFileName, latestPreset));
+      const isSavedProfileCategory = savedMotionProfileSources.has(sourceFileName)
+        && savedMotionProfileCategories.get(sourceFileName) === category;
+      if (profile) {
+        els.motionScore.value = String(profile.motionScore || DEFAULT_MOTION_SCORE_BY_CATEGORY[category] || 3);
+        renderMotionDescriptionField(profile);
+      }
+
+      for (const button of els.motionCategoryButtons) {
+        button.classList.toggle('is-selected', button.dataset.motionCategory === category);
+        button.classList.toggle('is-saved-profile', isSavedProfileCategory && button.dataset.motionCategory === category);
+      }
+    }
+
+    function renderMotionCategoryRecommendation(suggestion) {
+      if (!suggestion) {
+        els.motionCategorySuggestionLabel.textContent = '等待載入';
+        els.motionCategorySuggestionConfidence.textContent = '0%';
+        els.motionCategorySuggestionReason.textContent = '載入 VRMA 後，系統會先用檔名與姿勢特徵建議主分類。';
+        return null;
+      }
+
+      els.motionCategorySuggestionLabel.textContent = suggestion.label;
+      els.motionCategorySuggestionConfidence.textContent = `${Math.round(suggestion.confidence * 100)}%`;
+      els.motionCategorySuggestionReason.textContent = suggestion.reason;
+      return suggestion;
+    }
+
+    function applyMotionProfileToPinnedMoment(item) {
+      const profile = getCurrentMotionProfile();
+      if (!item || !profile) return item;
+
+      const category = profile.motionCategory || 'candidate_future';
+      const sequence = getNextCategorySequence(category, item.queueKey);
+      const score = profile.motionScore || DEFAULT_MOTION_SCORE_BY_CATEGORY[category] || 3;
+      const entry = buildMotionMiningEntry({
+        source: item.source,
+        sampleTime: item.sampleTime,
+        category,
+        score,
+        sourceScore: category === 'reject' ? Math.max(2, score) : score,
+        agentScore: category === 'candidate_future' ? Math.min(2, score) : score,
+        rejectReason: category === 'reject' ? 'unclear_intent' : '',
+        reason: category === 'candidate_future' ? 'requires_lower_body' : '',
+        note: `繼承 ${item.source} 的動作主分類：${getCategoryLabel(category)}。`,
+        tags: category === 'reject'
+          ? 'negative_sample, motion_profile'
+          : category === 'candidate_future'
+            ? 'future_candidate, motion_profile'
+            : 'upper_body, agent_friendly, motion_profile',
+        sequence,
+        createdAt: item.createdAt,
+      });
+
+      Object.assign(entry, {
+        status: 'classified',
+        queueKey: item.queueKey,
+        motionCategory: profile.motionCategory,
+        motionScore: profile.motionScore,
+        categorySource: 'motion_profile',
+      });
+      return entry;
+    }
+
     function generateReviewQueue({ silent = false } = {}) {
       const items = buildReviewQueueItems(getExampleVrmaFiles(), EXAMPLE_VRMA_DURATIONS);
       suggestedSamples.splice(0, suggestedSamples.length, ...items);
@@ -1936,15 +2747,17 @@
         queueKey,
         createdAt: formatLocalIsoDateTime(),
       };
+      const inheritedItem = applyMotionProfileToPinnedMoment(item);
 
-      reviewQueue.push(item);
-      selectedReviewQueueId = item.queueKey;
-      reviewActionHistory.push({ type: 'pin', queueKey: item.queueKey });
+      reviewQueue.push(inheritedItem);
+      selectedReviewQueueId = inheritedItem.queueKey;
+      reviewActionHistory.push({ type: 'pin', queueKey: inheritedItem.queueKey });
+      renderDescriptionMiningFields(inheritedItem);
       renderReviewQueue();
       renderPinnedCandidates();
       renderMineList();
       renderMiningList();
-      setStatus(`已釘選 ${sourceFileName} @ ${formatSeconds(sampleTime)}s`);
+      setStatus(`已釘選 ${sourceFileName} @ ${formatSeconds(sampleTime)}s，套用主分類 ${getCategoryLabel(inheritedItem.category)}`);
       return true;
     }
 
@@ -1962,6 +2775,8 @@
       const sampleTime = clampSampleTime(item.sampleTime, clip?.duration || item.sampleTime);
       els.sampleTime.value = String(sampleTime);
       sampleAt(sampleTime);
+      renderDescriptionMiningFields(item);
+      previewSelectedMotionSegment(sampleTime);
       setStatus(`已選取 ${item.source} @ ${formatSeconds(sampleTime)}s`);
       renderReviewQueue();
       renderPinnedCandidates();
@@ -1992,6 +2807,7 @@
         ? before
         : cloneReviewQueueItem(before.pendingSnapshot || before);
       const sequence = getNextCategorySequence(preset.category, item.queueKey);
+      const motionProfile = ensureMotionProfile(item.source);
       const entry = buildMotionMiningEntry({
         source: item.source,
         sampleTime: item.sampleTime,
@@ -2004,6 +2820,11 @@
         status: 'classified',
         queueKey: item.queueKey,
         pendingSnapshot: cloneReviewQueueItem(pendingBaseline),
+        motionCategory: item.motionCategory || motionProfile?.motionCategory || preset.category,
+        motionScore: item.motionScore || motionProfile?.motionScore || preset.score,
+        categorySource: preset.category === (item.motionCategory || motionProfile?.motionCategory)
+          ? 'motion_profile'
+          : 'moment_override',
       });
       if (before.status === 'classified' && before.createdAt) {
         entry.createdAt = before.createdAt;
@@ -2071,6 +2892,7 @@
       const sampleTime = clampSampleTime(item.sampleTime, clip?.duration || item.sampleTime);
       els.sampleTime.value = String(sampleTime);
       sampleAt(sampleTime);
+      previewSelectedMotionSegment(sampleTime);
       setStatus(`已跳到建議取樣點 ${item.source} @ ${formatSeconds(sampleTime)}s`);
       renderReviewQueue();
     }
@@ -2086,6 +2908,32 @@
       const fromIndex = reviewQueue.findIndex((entry) => entry.queueKey === fromQueueKey);
       const nextItem = pendingItems.find((entry) => reviewQueue.indexOf(entry) > fromIndex) || pendingItems[0];
       await selectReviewQueueItem(nextItem.queueKey);
+    }
+
+    async function advanceToNextMineSource(fromFileName = sourceFileName) {
+      const files = getExampleVrmaFiles();
+      if (files.length === 0) {
+        setWarnings(['目前沒有可切換的 VRMA']);
+        return;
+      }
+
+      const fromIndex = Math.max(0, files.indexOf(fromFileName));
+      const ordered = [
+        ...files.slice(fromIndex + 1),
+        ...files.slice(0, fromIndex + 1),
+      ];
+      const nextFileName = ordered.find((fileName) => !isMotionProfileSaved(fileName))
+        || ordered[0]
+        || files[0];
+
+      if (!nextFileName || nextFileName === sourceFileName) {
+        setStatus('已沒有下一支未設定 VRMA');
+        return;
+      }
+
+      selectedReviewQueueId = '';
+      await loadExampleVrma(nextFileName, { autoplay: true });
+      setStatus(`已跳到下一支 VRMA：${nextFileName}`);
     }
 
     function selectAdjacentPinnedCandidate(direction) {
@@ -2260,7 +3108,8 @@
       }
 
       const category = els.miningCategory.value || 'present';
-      const sequence = miningEntries.filter((entry) => entry.category === category).length + 1;
+      const motionProfile = getCurrentMotionProfile();
+      const sequence = getNextCategorySequence(category);
       const entry = buildMotionMiningEntry({
         source: sourceFileName,
         sampleTime: Number(els.sampleTime.value || 0),
@@ -2274,7 +3123,12 @@
         tags: els.miningTags.value,
         sequence,
       });
-      Object.assign(entry, { status: 'classified' });
+      Object.assign(entry, {
+        status: 'classified',
+        motionCategory: motionProfile?.motionCategory || category,
+        motionScore: motionProfile?.motionScore || Number(els.miningScore.value || 3),
+        categorySource: category === motionProfile?.motionCategory ? 'motion_profile' : 'manual_advanced',
+      });
 
       addMiningEntry(entry, `已加入候選 ${entry.id}`);
     }
@@ -2295,6 +3149,14 @@
     }
 
     function findDuplicateMiningEntry(entry) {
+      if (entry.status === 'described') {
+        return getClassifiedMiningEntries().find((item) => (
+          item.status === 'described'
+          && item.source === entry.source
+          && item.sampleTime === entry.sampleTime
+        ));
+      }
+
       return getClassifiedMiningEntries().find((item) => (
         item.source === entry.source
         && item.sampleTime === entry.sampleTime
@@ -2374,14 +3236,14 @@
 
     function getClassifiedMiningEntries() {
       return [
-        ...reviewQueue.filter((entry) => entry.status === 'classified'),
+        ...reviewQueue.filter((entry) => entry.status === 'classified' || entry.status === 'described'),
         ...miningEntries,
       ];
     }
 
     function getExportableMiningEntries() {
       return getClassifiedMiningEntries()
-        .filter((entry) => entry.status === 'classified')
+        .filter((entry) => entry.status === 'classified' || entry.status === 'described')
         .map(stripReviewQueueFields);
     }
 
@@ -2397,7 +3259,7 @@
     function updateMinerProgress() {
       const sourceCount = getExampleVrmaFiles().length;
       const pinnedCount = reviewQueue.length;
-      const classifiedCount = reviewQueue.filter((entry) => entry.status === 'classified').length;
+      const classifiedCount = reviewQueue.filter((entry) => entry.status === 'classified' || entry.status === 'described').length;
       const percent = pinnedCount > 0 ? Math.round((classifiedCount / pinnedCount) * 100) : 0;
 
       els.minerProgressText.textContent = `${classifiedCount} / ${pinnedCount}`;
@@ -2413,7 +3275,9 @@
       const item = getSelectedReviewQueueItem();
       const sampleTime = item?.sampleTime ?? Number(els.sampleTime.value || 0);
       const fileName = item?.source || sourceFileName || '尚未選取';
-      els.minerCurrentSample.textContent = `${fileName} · ${formatSeconds(sampleTime)}s`;
+      const profile = fileName === '尚未選取' ? null : ensureMotionProfile(fileName);
+      const category = profile ? ` · ${getCategoryLabel(profile.motionCategory).split(' ')[0]}` : '';
+      els.minerCurrentSample.textContent = `${fileName} · ${formatSeconds(sampleTime)}s${category}`;
     }
 
     function renderPinnedCandidates() {
@@ -2430,9 +3294,11 @@
         const button = document.createElement('button');
         const title = document.createElement('strong');
         const meta = document.createElement('span');
-        const status = entry.status === 'classified'
-          ? `已分類 / ${getCategoryLabel(entry.category)} / ${entry.score} 分`
-          : '待分類';
+        const status = entry.status === 'described'
+          ? '已描述 / 等待 LLM 分類'
+          : entry.status === 'classified'
+            ? `${entry.categorySource === 'moment_override' ? '微調分類' : '繼承主分類'} / ${getCategoryLabel(entry.category)} / ${entry.score} 分`
+            : '待分類';
 
         button.type = 'button';
         button.dataset.pinnedCandidateId = entry.queueKey;
@@ -2522,6 +3388,73 @@
       ]);
     }
 
+    function suggestMotionCategory(fileName = sourceFileName, pose = latestPreset) {
+      const sourceName = String(fileName || '').trim();
+      if (!sourceName) return null;
+
+      if (DEFAULT_MOTION_CATEGORY_BY_SOURCE[sourceName]) {
+        const category = DEFAULT_MOTION_CATEGORY_BY_SOURCE[sourceName];
+        return buildSuggestion(category, getMotionCategoryConfidence(category, sourceName), getMotionCategoryReason(category, sourceName), getMotionCategoryAlternatives(category));
+      }
+
+      const inferred = suggestMotionCategoryFromSource(sourceName);
+      if (inferred !== 'candidate_future') {
+        return buildSuggestion(inferred, 0.62, getMotionCategoryReason(inferred, sourceName), getMotionCategoryAlternatives(inferred));
+      }
+
+      if (pose) {
+        const poseSuggestion = suggestMiningCategory(pose);
+        return buildSuggestion(
+          poseSuggestion.category,
+          Math.min(0.58, poseSuggestion.confidence),
+          `檔名語意不明，先參考目前取樣姿勢：${poseSuggestion.reason}`,
+          poseSuggestion.alternatives.map((item) => [item.category, item.confidence])
+        );
+      }
+
+      return buildSuggestion('candidate_future', 0.42, '檔名沒有明確語意，建議先列為未來候選，再播放確認是否值得釘選。', [
+        ['think', 0.22],
+        ['present', 0.18],
+      ]);
+    }
+
+    function getMotionCategoryConfidence(category, fileName = '') {
+      const source = String(fileName || '').toLowerCase();
+      if (source.includes('thinking')) return 0.82;
+      if (source.includes('angry') || source.includes('surprised')) return 0.76;
+      if (source.includes('clapping') || source.includes('goodbye')) return 0.7;
+      if (source.includes('relax') || source.includes('lookaround')) return 0.66;
+      if (category === 'candidate_future' || category === 'reject') return 0.58;
+      return 0.62;
+    }
+
+    function getMotionCategoryReason(category, fileName = '') {
+      const source = String(fileName || '').replace(/\.[^.]+$/, '') || '這支 VRMA';
+      const reasons = {
+        present: `${source} 偏展示或放鬆開場，適合先當介紹類 motion intent。`,
+        point: `${source} 可能帶有指示方向或位置的語意，適合先當指向類 motion intent。`,
+        think: `${source} 偏觀察、停頓或思考語意，適合查詢中、分析中狀態。`,
+        warning: `${source} 有提醒、限制或情緒張力，適合警告與異常狀態。`,
+        success: `${source} 偏正向回饋、完成或招呼語意，可先歸成功類。`,
+        candidate_future: `${source} 可能需要下半身、hips 或重心配合，先保留為未來候選。`,
+        reject: `${source} 目前不太像 Agent 常用語意，建議先放淘汰或低分觀察。`,
+      };
+      return reasons[category] || `${source} 暫無明確語意，建議播放後再決策。`;
+    }
+
+    function getMotionCategoryAlternatives(category) {
+      const alternatives = {
+        present: [['point', 0.22], ['success', 0.16]],
+        point: [['present', 0.24], ['candidate_future', 0.18]],
+        think: [['present', 0.16], ['candidate_future', 0.14]],
+        warning: [['think', 0.18], ['candidate_future', 0.14]],
+        success: [['present', 0.22], ['candidate_future', 0.16]],
+        candidate_future: [['present', 0.2], ['think', 0.18]],
+        reject: [['candidate_future', 0.24], ['warning', 0.14]],
+      };
+      return alternatives[category] || [['candidate_future', 0.2], ['think', 0.14]];
+    }
+
     function extractPoseFeatures(pose) {
       const rotation = pose?.basePose?.rotation || {};
       const leftUpperArm = rotation.leftUpperArm || {};
@@ -2560,6 +3493,259 @@
           confidence: value,
         })),
       };
+    }
+
+    function buildMotionSignature(item = getSelectedReviewQueueItem()) {
+      const pose = latestPreset || {};
+      const rotation = pose?.basePose?.rotation || {};
+      const source = String(item?.source || sourceFileName || '').toLowerCase();
+      const leftActivity = getArmActivity(rotation, 'left');
+      const rightActivity = getArmActivity(rotation, 'right');
+      const activeSide = rightActivity >= leftActivity ? 'right' : 'left';
+      const dominantBone = `${activeSide}Hand`;
+      const highActivityBones = ['UpperArm', 'LowerArm', 'Hand']
+        .map((name) => `${activeSide}${name}`)
+        .filter((bone) => getBoneActivity(rotation[bone]) > 12);
+      const features = extractPoseFeatures(pose);
+      const amplitude = Math.min(1, Math.round((Math.max(leftActivity, rightActivity) / 90) * 100) / 100);
+      const repeatCount = /come|on|greeting|acknowledg|beckon|call/.test(source) ? 3 : amplitude > 0.42 ? 2 : 1;
+      const forwardBackBias = /come|on|greeting|acknowledg|beckon|call/.test(source)
+        ? 'toward_body'
+        : features.handAwayFromBody
+          ? 'away_from_body'
+          : 'neutral';
+
+      return {
+        activeSide,
+        dominantBone,
+        highActivityBones,
+        repeatCount,
+        amplitude,
+        verticalBias: features.armRaised ? 'up' : 'neutral',
+        forwardBackBias,
+        headMotion: 'stable',
+        torsoMotion: features.forwardPressure ? 'forward_pressure' : 'stable',
+        handMotion: repeatCount >= 2 ? 'repeated' : 'stable',
+        handNearChin: features.handNearFace,
+        armExtendedForward: features.armExtended && features.handAwayFromBody,
+      };
+    }
+
+    function getArmActivity(rotation, side) {
+      return ['UpperArm', 'LowerArm', 'Hand']
+        .map((name) => getBoneActivity(rotation[`${side}${name}`]))
+        .reduce((sum, value) => sum + value, 0);
+    }
+
+    function getBoneActivity(bone = {}) {
+      return Math.abs(bone.x || 0) + Math.abs(bone.y || 0) + Math.abs(bone.z || 0);
+    }
+
+    function suggestMotionDescription(item = getSelectedReviewQueueItem()) {
+      const motionSignature = buildMotionSignature(item);
+      const matchedRule = MOTION_DESCRIPTION_RULES.find((rule) => rule.when(motionSignature));
+      if (matchedRule) {
+        return {
+          source: 'math_rule',
+          confidence: matchedRule.draft.confidence,
+          matchedRules: [matchedRule.id],
+          motionSignature,
+          draft: {
+            motionDescription: matchedRule.draft.motionDescription,
+            usageDescription: matchedRule.draft.usageDescription,
+            agentUsage: [...matchedRule.draft.agentUsage],
+          },
+        };
+      }
+
+      return {
+        source: 'math_rule',
+        confidence: 0.38,
+        matchedRules: ['fallback_pose_summary'],
+        motionSignature,
+        draft: {
+          motionDescription: `${item?.source || sourceFileName || '這支 VRMA'} 在 ${formatSeconds(item?.sampleTime ?? Number(els.sampleTime.value || 0))}s 的上半身姿勢有可觀察特徵，建議人工補充動作細節。`,
+          usageDescription: '目前規則無法穩定判斷用途，建議先用人類描述保留語意，後續交給 LLM 再分類。',
+          agentUsage: [
+            '保留為待分析姿勢',
+          ],
+        },
+      };
+    }
+
+    function applyMotionDescriptionSuggestion() {
+      if (!latestPreset && clip) {
+        sampleAt(Number(els.sampleTime.value || 0));
+      }
+
+      if (!sourceFileName || !latestPreset) {
+        setWarnings(['請先載入 VRMA 並取樣後再分析描述']);
+        return null;
+      }
+
+      const item = getSelectedReviewQueueItem();
+      const suggestion = suggestMotionDescription(item);
+      els.motionDescription.value = suggestion.draft.motionDescription;
+      els.usageDescription.value = suggestion.draft.usageDescription;
+      els.agentUsage.value = suggestion.draft.agentUsage.join('\n');
+      latestDescriptionSuggestion = {
+        source: suggestion.source,
+        confidence: suggestion.confidence,
+        matchedRules: suggestion.matchedRules,
+        motionSignature: suggestion.motionSignature,
+      };
+      descriptionSourceState = 'rule_suggested';
+      setDescriptionSuggestionState(`已套用規則建議：${suggestion.matchedRules.join(', ')}，信心 ${Math.round(suggestion.confidence * 100)}%。`);
+      return suggestion;
+    }
+
+    async function saveDescribedMiningEntry({ advance = false } = {}) {
+      if (!sourceFileName) {
+        setWarnings(['請先選取或載入 VRMA，再儲存描述']);
+        return null;
+      }
+
+      const fields = getDescriptionMiningFields();
+      if (!fields.motionDescription && !fields.usageDescription && !fields.agentUsageText) {
+        setWarnings(['請先填寫動作描述、用途描述或 Agent 用途']);
+        return null;
+      }
+
+      const item = getSelectedReviewQueueItem();
+      const sampleTime = roundReviewTime(item?.sampleTime ?? Number(els.sampleTime.value || 0));
+      const suggestion = latestDescriptionSuggestion || suggestMotionDescription(item);
+      const profile = syncMotionDescriptionToProfile(ensureMotionProfile(item?.source || sourceFileName));
+      const entry = {
+        id: getDescribedEntryId(item, sampleTime),
+        source: item?.source || sourceFileName,
+        sampleTime,
+        status: 'described',
+        motionDescription: fields.motionDescription,
+        usageDescription: fields.usageDescription,
+        agentUsage: parseAgentUsage(fields.agentUsageText),
+        category: null,
+        classificationSource: 'pending_llm',
+        descriptionSource: descriptionSourceState,
+        suggestion: latestDescriptionSuggestion || {
+          source: suggestion.source,
+          confidence: suggestion.confidence,
+          matchedRules: suggestion.matchedRules,
+          motionSignature: suggestion.motionSignature,
+        },
+        createdAt: item?.createdAt || formatLocalIsoDateTime(),
+      };
+
+      const savedProfile = await saveMotionProfileToServer(profile);
+      if (!savedProfile) return null;
+
+      const savedEntry = await saveDescribedMiningEntryToServer(entry);
+      if (!savedEntry) return null;
+
+      upsertDescribedEntry(savedEntry, item);
+      setStatus(`已儲存描述 ${savedEntry.id}`);
+      if (advance) {
+        await advanceToNextMineSource(entry.source || sourceFileName);
+      }
+      return savedEntry;
+    }
+
+    async function saveDescribedMiningEntryToServer(entry) {
+      setDescriptionSuggestionState('正在寫入 mining_log.json...');
+      try {
+        const response = await fetch(MOTION_MINING_LOG_API_URL, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            entry: serializeDescribedMiningEntry(entry),
+          }),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const savedEntry = normalizeSavedDescribedEntry(data.entry || entry);
+        setDescriptionSuggestionState(`已寫入 mining_log.json：${savedEntry.id}`);
+        return savedEntry;
+      } catch (err) {
+        setDescriptionSuggestionState('寫入 mining_log.json 失敗');
+        setWarnings([`描述採礦存檔失敗：${err?.message || err}`]);
+        console.warn('[MotionMine] save described mining entry failed', err);
+        return null;
+      }
+    }
+
+    function serializeDescribedMiningEntry(entry) {
+      return stripReviewQueueFields({
+        id: entry.id,
+        source: entry.source,
+        sampleTime: entry.sampleTime,
+        status: 'described',
+        motionDescription: entry.motionDescription || '',
+        usageDescription: entry.usageDescription || '',
+        agentUsage: Array.isArray(entry.agentUsage) ? entry.agentUsage : [],
+        category: null,
+        classificationSource: entry.classificationSource || 'pending_llm',
+        descriptionSource: entry.descriptionSource || 'human',
+        suggestion: entry.suggestion || {},
+        createdAt: entry.createdAt || formatLocalIsoDateTime(),
+      });
+    }
+
+    function normalizeSavedDescribedEntry(entry) {
+      return {
+        ...entry,
+        source: String(entry?.source || sourceFileName),
+        sampleTime: roundReviewTime(Number(entry?.sampleTime || 0)),
+        status: 'described',
+        motionDescription: String(entry?.motionDescription || ''),
+        usageDescription: String(entry?.usageDescription || ''),
+        agentUsage: Array.isArray(entry?.agentUsage) ? entry.agentUsage : [],
+        category: null,
+        classificationSource: String(entry?.classificationSource || 'pending_llm'),
+        descriptionSource: String(entry?.descriptionSource || descriptionSourceState || 'human'),
+        suggestion: entry?.suggestion && typeof entry.suggestion === 'object' ? entry.suggestion : {},
+        createdAt: String(entry?.createdAt || formatLocalIsoDateTime()),
+      };
+    }
+
+    function getDescribedEntryId(item, sampleTime) {
+      if (item?.id && String(item.id).startsWith('described_')) return item.id;
+      const used = getClassifiedMiningEntries()
+        .map((entry) => String(entry.id || ''))
+        .filter((id) => id.startsWith('described_'))
+        .map((id) => Number(id.slice('described_'.length)) || 0);
+      const next = Math.max(0, ...used) + 1;
+      return `described_${String(next).padStart(3, '0')}`;
+    }
+
+    function upsertDescribedEntry(entry, item = getSelectedReviewQueueItem()) {
+      if (item) {
+        const before = cloneReviewQueueItem(item);
+        replaceObject(item, {
+          ...before,
+          ...entry,
+          queueKey: before.queueKey,
+          pendingSnapshot: before.pendingSnapshot || (before.status === 'pending' ? cloneReviewQueueItem(before) : undefined),
+        });
+        selectedReviewQueueId = item.queueKey;
+      } else {
+        const existing = miningEntries.find((candidate) => (
+          candidate.status === 'described'
+          && candidate.source === entry.source
+          && candidate.sampleTime === entry.sampleTime
+        ));
+        if (existing) {
+          replaceObject(existing, entry);
+        } else {
+          miningEntries.push(entry);
+        }
+      }
+
+      renderReviewQueue();
+      renderPinnedCandidates();
+      renderMineList();
+      renderMiningList();
     }
 
     function renderMiningOptions() {
@@ -2602,12 +3788,23 @@
 
       els.miningCandidateList.replaceChildren(...entries.map((entry) => {
         const li = document.createElement('li');
+        if (entry.status === 'described') {
+          const title = document.createElement('strong');
+          title.textContent = entry.id;
+          const meta = document.createTextNode(` ${entry.source} @ ${formatSeconds(entry.sampleTime)}s / described / pending_llm`);
+          const note = document.createElement('span');
+          note.textContent = entry.motionDescription || entry.usageDescription || '尚無描述';
+          li.append(title, meta, document.createElement('br'), note);
+          return li;
+        }
+
         const reason = entry.rejectReason ? ` / ${entry.rejectReason}` : '';
         const futureReason = entry.reason ? ` / ${entry.reason}` : '';
         const file = entry.exportedPoseFile ? ` / ${entry.exportedPoseFile}` : '';
+        const motion = entry.motionCategory ? ` / motion ${entry.motionCategory}` : '';
         const title = document.createElement('strong');
         title.textContent = entry.id;
-        const meta = document.createTextNode(` ${entry.source} @ ${formatSeconds(entry.sampleTime)}s / ${entry.category}${reason}${futureReason} / ${entry.score} 分 / source ${entry.sourceScore} / agent ${entry.agentScore}${file}`);
+        const meta = document.createTextNode(` ${entry.source} @ ${formatSeconds(entry.sampleTime)}s / ${entry.category}${motion}${reason}${futureReason} / ${entry.score} 分 / source ${entry.sourceScore} / agent ${entry.agentScore}${file}`);
         const note = document.createElement('span');
         note.textContent = entry.note || '無備註';
         li.append(title, meta, document.createElement('br'), note);
@@ -2730,6 +3927,18 @@
       setStatus('播放中');
     }
 
+    function previewSelectedMotionSegment(sampleTime) {
+      if (!clip || !action) return;
+      window.clearTimeout(motionPreviewTimer);
+      els.sampleTime.value = String(sampleTime);
+      sampleAt(sampleTime);
+      playMotion();
+      motionPreviewTimer = window.setTimeout(() => {
+        sampleAt(sampleTime);
+        setStatus(`已預覽並停在 ${formatSeconds(sampleTime)}s`);
+      }, 900);
+    }
+
     function pauseMotion() {
       if (!action || !clip) {
         setWarnings(['請先載入 VRMA']);
@@ -2827,6 +4036,36 @@
       els.btnPinMoment.addEventListener('click', pinCurrentMoment);
       els.btnSuggestedPrevious.addEventListener('click', () => sampleAdjacentSuggestedTime(-1));
       els.btnSuggestedNext.addEventListener('click', () => sampleAdjacentSuggestedTime(1));
+      for (const button of els.motionCategoryButtons) {
+        button.addEventListener('click', () => setMotionCategory(button.dataset.motionCategory));
+      }
+      for (const input of els.mineFilterInputs) {
+        input.addEventListener('change', renderMineList);
+      }
+      els.motionScore.addEventListener('change', () => {
+        const profile = getCurrentMotionProfile();
+        if (profile) setMotionCategory(profile.motionCategory, { score: Number(els.motionScore.value || profile.motionScore) });
+      });
+      els.btnSaveMotionProfile.addEventListener('click', () => saveMotionDescription());
+      els.motionDescription.addEventListener('input', () => {
+        syncMotionDescriptionToProfile();
+        markDescriptionFieldEdited();
+      });
+      els.usageDescription.addEventListener('input', markDescriptionFieldEdited);
+      els.agentUsage.addEventListener('input', markDescriptionFieldEdited);
+      els.motionDescription.addEventListener('keydown', (event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+          event.preventDefault();
+          saveMotionDescription();
+        }
+      });
+      els.btnAnalyzeMotionDescription.addEventListener('click', () => applyMotionDescriptionSuggestion());
+      els.btnSaveDescribedEntry.addEventListener('click', () => {
+        saveDescribedMiningEntry().catch(handleReviewQueueError);
+      });
+      els.btnSaveDescribedEntryNext.addEventListener('click', () => {
+        saveDescribedMiningEntry({ advance: true }).catch(handleReviewQueueError);
+      });
       for (const button of els.quickReviewButtons) {
         button.addEventListener('click', () => addQuickReviewCandidate(button.dataset.quickCategory));
       }
@@ -2869,6 +4108,21 @@
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height, false);
+    }
+
+    function resetPreviewCamera() {
+      if (!camera || !controls) return;
+      camera.position.set(
+        PREVIEW_CAMERA_POSITION.x,
+        PREVIEW_CAMERA_POSITION.y,
+        PREVIEW_CAMERA_POSITION.z
+      );
+      controls.target.set(
+        PREVIEW_CAMERA_TARGET.x,
+        PREVIEW_CAMERA_TARGET.y,
+        PREVIEW_CAMERA_TARGET.z
+      );
+      controls.update();
     }
 
     function setStatus(text) {

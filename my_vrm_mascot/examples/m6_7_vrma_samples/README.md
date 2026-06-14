@@ -17,6 +17,7 @@ https://github.com/tk256ailab/vrm-viewer
 Files included:
 
 - `Angry.vrma`
+- `Blush.vrma`
 - `Clapping.vrma`
 - `Goodbye.vrma`
 - `Jump.vrma`

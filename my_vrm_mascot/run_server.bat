@@ -7,8 +7,8 @@ echo ==================================
 echo   My VRM Mascot Local Server
 echo ==================================
 echo.
-echo Portal: http://127.0.0.1:8765/portal.html
-echo Main:   http://127.0.0.1:8765/
+echo Workbench: http://127.0.0.1:8765/
+echo Runtime:   http://127.0.0.1:8765/mascot_runtime.html
 echo.
 
 python server.py

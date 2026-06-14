@@ -8,7 +8,7 @@ import {
   getInspectorBonesForGroup,
 } from '../my_vrm_mascot/js/CharacterInspectorLabels.js';
 
-const indexHtml = readFileSync(new URL('../my_vrm_mascot/index.html', import.meta.url), 'utf8');
+const runtimeHtml = readFileSync(new URL('../my_vrm_mascot/mascot_runtime.html', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../my_vrm_mascot/css/mascot.css', import.meta.url), 'utf8');
 
 function testSectionMetadataUsesChineseLabels() {
@@ -59,34 +59,34 @@ function testBoneLabelsKeepChineseAndHumanoidIds() {
 }
 
 function testIndexHtmlUsesCharacterInspectorCopy() {
-  assert.match(indexHtml, /角色檢查器/);
-  assert.match(indexHtml, /Character Inspector/);
-  assert.match(indexHtml, /開發者模式/);
-  assert.match(indexHtml, /複製 JSON/);
-  assert.match(indexHtml, /儲存本機/);
-  assert.match(indexHtml, /重設骨骼/);
-  assert.match(indexHtml, /全部重設/);
-  assert.doesNotMatch(indexHtml, />Reset Bone</);
-  assert.doesNotMatch(indexHtml, />Reset All</);
-  assert.doesNotMatch(indexHtml, />Save Local</);
-  assert.doesNotMatch(indexHtml, />Pose Calibration</);
+  assert.match(runtimeHtml, /角色檢查器/);
+  assert.match(runtimeHtml, /Character Inspector/);
+  assert.match(runtimeHtml, /開發者模式/);
+  assert.match(runtimeHtml, /複製 JSON/);
+  assert.match(runtimeHtml, /儲存本機/);
+  assert.match(runtimeHtml, /重設骨骼/);
+  assert.match(runtimeHtml, /全部重設/);
+  assert.doesNotMatch(runtimeHtml, />Reset Bone</);
+  assert.doesNotMatch(runtimeHtml, />Reset All</);
+  assert.doesNotMatch(runtimeHtml, />Save Local</);
+  assert.doesNotMatch(runtimeHtml, />Pose Calibration</);
 }
 
 function testIndexHtmlKeepsInspectorContracts() {
-  assert.match(indexHtml, /data-inspector-section="\$\{escapeHtml\(section\.id\)\}"/);
-  assert.match(indexHtml, /\$\{section\.enabled \? '' : 'disabled'\}/);
-  assert.match(indexHtml, /data-inspector-group="\$\{escapeHtml\(groupId\)\}"/);
-  assert.match(indexHtml, /id="btnInspectorCopyJson"/);
-  assert.match(indexHtml, /id="btnInspectorSaveLocal"/);
-  assert.match(indexHtml, /id="btnInspectorResetBone"/);
-  assert.match(indexHtml, /id="btnInspectorResetAll"/);
+  assert.match(runtimeHtml, /data-inspector-section="\$\{escapeHtml\(section\.id\)\}"/);
+  assert.match(runtimeHtml, /\$\{section\.enabled \? '' : 'disabled'\}/);
+  assert.match(runtimeHtml, /data-inspector-group="\$\{escapeHtml\(groupId\)\}"/);
+  assert.match(runtimeHtml, /id="btnInspectorCopyJson"/);
+  assert.match(runtimeHtml, /id="btnInspectorSaveLocal"/);
+  assert.match(runtimeHtml, /id="btnInspectorResetBone"/);
+  assert.match(runtimeHtml, /id="btnInspectorResetAll"/);
 }
 
 function testInspectorLocalPresetDoesNotOverwriteModelDefault() {
-  assert.match(indexHtml, /vrmMascot\.posePreset\.v2\./);
-  assert.match(indexHtml, /mascot\.onLoaded = \(\) => \{[\s\S]*loadInspectorPresetFromLocal\(\)/);
+  assert.match(runtimeHtml, /vrmMascot\.posePreset\.v2\./);
+  assert.match(runtimeHtml, /mascot\.onLoaded = \(\) => \{[\s\S]*loadInspectorPresetFromLocal\(\)/);
   assert.doesNotMatch(
-    indexHtml,
+    runtimeHtml,
     /else\s*\{\s*mascot\.motion\.loadPosePreset\(\{ model: document\.getElementById\('modelSelector'\)\?\.value \|\| 'default' \}\);/
   );
 }

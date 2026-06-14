@@ -244,6 +244,62 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .metric-card {
+      padding: 16px;
+      border: 1px solid rgba(45, 212, 191, 0.24);
+      border-radius: 8px;
+      background: rgba(5, 10, 18, 0.42);
+    }
+
+    .metric-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .metric-value {
+      margin-top: 6px;
+      color: #d1faf5;
+      font-size: 30px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .skill-tree {
+      display: grid;
+      gap: 10px;
+    }
+
+    .skill-row {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr) 42px;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .skill-track {
+      height: 9px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.18);
+    }
+
+    .skill-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    }
+
     .card {
       display: grid;
       gap: 12px;
@@ -312,6 +368,7 @@
       .hero,
       .grid,
       .grid.two,
+      .dashboard-grid,
       .server-notes {
         grid-template-columns: 1fr;
       }
@@ -345,10 +402,11 @@
         </div>
       </a>
       <nav class="nav" aria-label="Workbench navigation">
-        <a href="#showcase">展示區</a>
         <a href="#motion-mining">Motion Mining</a>
-        <a href="#pose-tools">Pose / Motion Tools</a>
+        <a href="#skill-tree">Skill Tree</a>
+        <a href="#advanced-tools">Advanced Tools</a>
         <a href="#runtime-demo">Runtime Demo</a>
+        <a href="#showcase">展示區</a>
         <a href="#usage">使用方法</a>
         <a href="#server">Server</a>
       </nav>
@@ -356,11 +414,11 @@
 
     <section id="top" class="hero">
       <div class="hero-main">
-        <h2>把零散 demo 整理成可交付的 VRM 工具箱。</h2>
-        <p>這裡集中 My VRM Mascot 的主要展示、Motion Mining、姿勢工具、Runtime Demo 與本機伺服器啟動方式。先 local-first，未來要搬到 3wa / Apache2 + PHP 時再補寫入 API。</p>
+        <h2>Alicia Motion Studio 正式入口。</h2>
+        <p>這裡是正式 `index.html`：Motion Mining 是主線，Importer 與 JSON 檢視工具收進 Advanced Tools。資料會從 VRMA 採礦累積到 mining_log / report，再長成 Pose Library。</p>
         <div class="hero-actions">
-          <a class="button primary" href="index.html">開啟主展示</a>
-          <a class="button" href="motion_template_lab.html">進入 Alicia Motion Mine</a>
+          <a class="button primary" href="motion_template_lab.html">進入 Alicia Motion Mine</a>
+          <a class="button" href="mascot_runtime.html">開啟主展示</a>
           <a class="button" href="m6_acting_bridge_demo.html">測試 Acting Bridge</a>
         </div>
       </div>
@@ -371,55 +429,46 @@
           <li>執行 <code>run_server.bat</code></li>
           <li>開啟 <code>open_portal.bat</code></li>
           <li>不用時執行 <code>stop_server.bat</code></li>
-          <li>或直接前往 <code>http://127.0.0.1:8765/portal.html</code></li>
+          <li>或直接前往 <code>http://127.0.0.1:8765/</code></li>
         </ol>
         <pre>cd C:\Users\stw_s\Desktop\my_yolo_train_tool\my_vrm_mascot
 python .\server.py</pre>
       </aside>
     </section>
 
-    <section id="showcase" class="section">
-      <div class="section-header">
-        <div>
-          <h2>展示區</h2>
-          <p>給人看的主入口。這裡保留既有 `/` 行為，不把 portal 設成首頁，避免影響主要 demo。</p>
-        </div>
-      </div>
-      <div class="grid">
-        <article class="card">
-          <h3>主展示 / Agent Runtime</h3>
-          <p>GIS Agent、Debug Panel、Suggested Actions、VRM Mascot 的主要整合畫面。</p>
-          <div class="tag-row"><span class="tag">Agent Runtime</span><span class="tag">VRM</span><span class="tag">GIS</span></div>
-          <a class="button primary" href="index.html">開啟 index.html</a>
-        </article>
-        <article class="card">
-          <h3>專案 README</h3>
-          <p>查看目前 my_vrm_mascot 的開發說明與階段脈絡。</p>
-          <div class="tag-row"><span class="tag">Docs</span><span class="tag">Local-first</span></div>
-          <a class="button" href="README.md">開啟 README.md</a>
-        </article>
-        <article class="card">
-          <h3>VRMA 範例說明</h3>
-          <p>查看 M6.7 VRMA sample folder 的使用方式與採礦素材來源。</p>
-          <div class="tag-row"><span class="tag">VRMA</span><span class="tag">Samples</span></div>
-          <a class="button" href="examples/m6_7_vrma_samples/README.md">開啟 Samples README</a>
-        </article>
-      </div>
-    </section>
-
     <section id="motion-mining" class="section">
       <div class="section-header">
         <div>
           <h2>Motion Mining</h2>
-          <p>目前主線：從 VRMA 中播放、拖曳、釘選候選片段，再分類成可重用 Agent pose。</p>
+          <p>主線入口：先選 VRMA，播放與拖曳時間軸，釘選有料 moment，再把候選片段分類成可重用 Agent pose。</p>
         </div>
       </div>
+
+      <div class="dashboard-grid" aria-label="Motion mining dashboard">
+        <div class="metric-card">
+          <span>來源 VRMA</span>
+          <div class="metric-value">10</div>
+        </div>
+        <div class="metric-card">
+          <span>已挖 Pose</span>
+          <div class="metric-value">50</div>
+        </div>
+        <div class="metric-card">
+          <span>Future Candidate</span>
+          <div class="metric-value">5</div>
+        </div>
+        <div class="metric-card">
+          <span>Reject</span>
+          <div class="metric-value">10</div>
+        </div>
+      </div>
+
       <div class="grid">
         <article class="card">
           <h3>Alicia Motion Mine</h3>
-          <p>VRMA-centered mining workflow。先找好姿勢，再分類候選片段。</p>
-          <div class="tag-row"><span class="tag">M6.7</span><span class="tag">Pin Moment</span><span class="tag">Quick Review</span></div>
-          <a class="button primary" href="motion_template_lab.html">開啟 Motion Mine</a>
+          <p>目前唯一主入口。進去後是 VRMA Explorer：看整支動作、釘選候選片段，再進行分類。</p>
+          <div class="tag-row"><span class="tag">M6.7</span><span class="tag">VRMA Explorer</span><span class="tag">Pin Moment</span></div>
+          <a class="button primary" href="motion_template_lab.html">開啟 Alicia Motion Mine</a>
         </article>
         <article class="card">
           <h3>mining_log.json</h3>
@@ -429,18 +478,45 @@ python .\server.py</pre>
         </article>
         <article class="card">
           <h3>mining_report.json</h3>
-          <p>目前採礦統計摘要，後續可擴充成排行榜與分類分析。</p>
-          <div class="tag-row"><span class="tag">Report</span><span class="tag">Mining Sprint</span></div>
+          <p>採礦統計摘要，先看 Top Categories 與 Future / Reject 原因，再決定下一步 motion investment。</p>
+          <div class="tag-row"><span class="tag">Report</span><span class="tag">Sprint 001</span></div>
           <a class="button" href="examples/m6_7_motion_mining/mining_report.json">開啟 mining_report.json</a>
         </article>
       </div>
     </section>
 
-    <section id="pose-tools" class="section">
+    <section id="skill-tree" class="section">
       <div class="section-header">
         <div>
-          <h2>Pose / Motion Tools</h2>
-          <p>目前工具先集中在 Motion Mine；未來 Pose JSON Viewer、NaturalPosePreset Preview、VRMA Sample Tester 可以從這區延伸。</p>
+          <h2>Skill Tree</h2>
+          <p>目前採礦統計。它會直接告訴我們 Alicia 現在最有料的是 think，最缺的是 point / present 的後續擴充。</p>
+        </div>
+      </div>
+      <div class="grid two">
+        <article class="card">
+          <h3>Top Categories</h3>
+          <div class="skill-tree">
+            <div class="skill-row"><strong>Think</strong><div class="skill-track"><div class="skill-fill" style="width: 100%;"></div></div><span>11</span></div>
+            <div class="skill-row"><strong>Warning</strong><div class="skill-track"><div class="skill-fill" style="width: 82%;"></div></div><span>9</span></div>
+            <div class="skill-row"><strong>Success</strong><div class="skill-track"><div class="skill-fill" style="width: 55%;"></div></div><span>6</span></div>
+            <div class="skill-row"><strong>Present</strong><div class="skill-track"><div class="skill-fill" style="width: 45%;"></div></div><span>5</span></div>
+            <div class="skill-row"><strong>Point</strong><div class="skill-track"><div class="skill-fill" style="width: 36%;"></div></div><span>4</span></div>
+          </div>
+        </article>
+        <article class="card">
+          <h3>目前觀察</h3>
+          <p>Think 數量與品質都領先，很適合 GIS Agent 的查詢中、分析中、等待工具狀態。Future Candidate 主要卡在 lower body / weight shift，還不急著進 M8。</p>
+          <div class="tag-row"><span class="tag">Think leads</span><span class="tag">Present high score</span><span class="tag">Weight shift later</span></div>
+          <a class="button" href="examples/m6_7_motion_mining/mining_report.json">查看完整報告</a>
+        </article>
+      </div>
+    </section>
+
+    <section id="advanced-tools" class="section">
+      <div class="section-header">
+        <div>
+          <h2>Advanced Tools</h2>
+          <p>進階工具只服務 debug / 匯出 / 檢視，不再跟 Motion Mining 主入口搶位置。</p>
         </div>
       </div>
       <div class="grid">
@@ -483,11 +559,40 @@ python .\server.py</pre>
       </div>
     </section>
 
+    <section id="showcase" class="section">
+      <div class="section-header">
+        <div>
+          <h2>展示區</h2>
+          <p>給人看的 Agent Runtime 主展示已移到 `mascot_runtime.html`，正式 `/` 與 `index.html` 現在保留給 Workbench。</p>
+        </div>
+      </div>
+      <div class="grid">
+        <article class="card">
+          <h3>主展示 / Agent Runtime</h3>
+          <p>GIS Agent、Debug Panel、Suggested Actions、VRM Mascot 的主要整合畫面。</p>
+          <div class="tag-row"><span class="tag">Agent Runtime</span><span class="tag">VRM</span><span class="tag">GIS</span></div>
+          <a class="button primary" href="mascot_runtime.html">開啟 mascot_runtime.html</a>
+        </article>
+        <article class="card">
+          <h3>專案 README</h3>
+          <p>查看目前 my_vrm_mascot 的開發說明與階段脈絡。</p>
+          <div class="tag-row"><span class="tag">Docs</span><span class="tag">Local-first</span></div>
+          <a class="button" href="README.md">開啟 README.md</a>
+        </article>
+        <article class="card">
+          <h3>VRMA 範例說明</h3>
+          <p>查看 M6.7 VRMA sample folder 的使用方式與採礦素材來源。</p>
+          <div class="tag-row"><span class="tag">VRMA</span><span class="tag">Samples</span></div>
+          <a class="button" href="examples/m6_7_vrma_samples/README.md">開啟 Samples README</a>
+        </article>
+      </div>
+    </section>
+
     <section id="usage" class="section">
       <div class="section-header">
         <div>
           <h2>使用方法 / Skill</h2>
-          <p>本機開發以 `server.py` 為主；portal 是靜態入口，方便新人或未來部署時快速找到工具。</p>
+          <p>本機開發以 `server.py` 為主；正式 `index.html` 是 Workbench 入口，方便新人或未來部署時快速找到工具。</p>
         </div>
       </div>
       <div class="grid two">
@@ -503,7 +608,7 @@ stop_server.bat</pre>
           <pre>cd C:\Users\stw_s\Desktop\my_yolo_train_tool
 python .\my_vrm_mascot\server.py
 
-http://127.0.0.1:8765/portal.html</pre>
+http://127.0.0.1:8765/</pre>
         </article>
       </div>
     </section>

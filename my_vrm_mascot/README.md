@@ -5,16 +5,28 @@ Phase 1 MVP：載入 VRM 模型，實現 idle / blink / mouse look / wave / danc
 ## 快速開始
 
 ```bash
-# 在 my_yolo_train_tool 目錄下
-python -m http.server 8765 --directory my_vrm_mascot
+# 在 my_yolo_train_tool\my_vrm_mascot 目錄下
+run_server.bat
 
 # 開啟瀏覽器
-# http://localhost:8765
+# http://127.0.0.1:8765/
 ```
 
 > **注意**：ES Module 需要 HTTP server，不支援 `file://` 協定。
 
-開啟 VRMA 範本匯入實驗室：
+正式首頁是 Workbench / Portal：
+
+```text
+http://127.0.0.1:8765/
+```
+
+原本 Agent Runtime 主展示：
+
+```text
+http://127.0.0.1:8765/mascot_runtime.html
+```
+
+開啟 Alicia Motion Mine：
 
 ```text
 http://127.0.0.1:8765/motion_template_lab.html
@@ -24,7 +36,12 @@ http://127.0.0.1:8765/motion_template_lab.html
 
 ```
 my_vrm_mascot/
-  index.html                  # MVP 展示頁
+  index.html                  # Workbench 正式入口 / Alicia Motion Studio
+  mascot_runtime.html         # 原 Agent Runtime + VRM 主展示頁
+  portal.html                 # Workbench 相容入口
+  run_server.bat              # 啟動本機 server.py
+  open_portal.bat             # 開啟正式 Workbench 首頁
+  stop_server.bat             # 停止 8765 本機服務
   js/
     VrmMascot.js              # 主控制器（Three.js + VRM）
     MotionController.js       # 動作控制器（natural pose / idle / semantic motions / clip playback）

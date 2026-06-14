@@ -1,11 +1,319 @@
 import os
+import json
+from datetime import datetime
+from pathlib import Path
 from flask import Flask, request, jsonify
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 
+BASE_DIR = Path(__file__).resolve().parent
+DEFAULT_MOTION_PROFILE_STORE_PATH = BASE_DIR / "examples" / "m6_7_vrma_samples" / "review" / "motion_profiles.json"
+DEFAULT_MOTION_MINING_LOG_STORE_PATH = BASE_DIR / "examples" / "m6_7_vrma_samples" / "review" / "mining_log.json"
+VRMA_SAMPLE_DIR = BASE_DIR / "examples" / "m6_7_vrma_samples"
+MOTION_PROFILE_CATEGORIES = {
+    "present",
+    "point",
+    "think",
+    "warning",
+    "success",
+    "candidate_future",
+    "reject",
+}
+
+
+def _now_iso():
+    return datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+def _motion_profile_store_path():
+    configured = os.environ.get("MOTION_PROFILE_STORE_PATH")
+    return Path(configured) if configured else DEFAULT_MOTION_PROFILE_STORE_PATH
+
+
+def _motion_mining_log_store_path():
+    configured = os.environ.get("MOTION_MINING_LOG_STORE_PATH")
+    return Path(configured) if configured else DEFAULT_MOTION_MINING_LOG_STORE_PATH
+
+
+def _empty_motion_profile_document():
+    return {
+        "schemaVersion": 1,
+        "updatedAt": "",
+        "profiles": {},
+    }
+
+
+def _load_motion_profile_document():
+    path = _motion_profile_store_path()
+    if not path.exists():
+        return _empty_motion_profile_document()
+    with path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, dict):
+        return _empty_motion_profile_document()
+    profiles = data.get("profiles", {})
+    if not isinstance(profiles, dict):
+        profiles = {}
+    return {
+        "schemaVersion": 1,
+        "updatedAt": str(data.get("updatedAt", "")),
+        "profiles": profiles,
+    }
+
+
+def _write_motion_profile_document(document):
+    path = _motion_profile_store_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    with tmp_path.open("w", encoding="utf-8", newline="\n") as f:
+        json.dump(document, f, ensure_ascii=False, indent=2, sort_keys=True)
+        f.write("\n")
+    tmp_path.replace(path)
+
+
+def _load_motion_mining_entries():
+    path = _motion_mining_log_store_path()
+    if not path.exists():
+        return []
+    with path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    if isinstance(data, list):
+        return [item for item in data if isinstance(item, dict)]
+    if isinstance(data, dict) and isinstance(data.get("entries"), list):
+        return [item for item in data["entries"] if isinstance(item, dict)]
+    return []
+
+
+def _write_motion_mining_entries(entries):
+    path = _motion_mining_log_store_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    with tmp_path.open("w", encoding="utf-8", newline="\n") as f:
+        json.dump(entries, f, ensure_ascii=False, indent=2, sort_keys=True)
+        f.write("\n")
+    tmp_path.replace(path)
+
+
+def _list_vrma_samples():
+    if not VRMA_SAMPLE_DIR.exists():
+        return []
+
+    samples = []
+    for path in sorted(VRMA_SAMPLE_DIR.rglob("*.vrma")):
+        try:
+            relative_to_sample_dir = path.relative_to(VRMA_SAMPLE_DIR)
+            relative_to_base_dir = path.relative_to(BASE_DIR)
+        except ValueError:
+            continue
+
+        samples.append({
+            "name": path.name,
+            "path": relative_to_sample_dir.as_posix(),
+            "url": relative_to_base_dir.as_posix(),
+            "external": "external" in relative_to_sample_dir.parts,
+            "size": path.stat().st_size,
+        })
+
+    return sorted(samples, key=lambda item: (item["external"], item["name"].lower(), item["path"].lower()))
+
+
+def _normalize_motion_profile(profile):
+    if not isinstance(profile, dict):
+        raise ValueError("profile 必須是物件")
+
+    source = str(profile.get("source", "")).strip()
+    if not source or source != os.path.basename(source) or not source.lower().endswith(".vrma"):
+        raise ValueError("source 必須是單一 .vrma 檔名")
+
+    category = str(profile.get("motionCategory", "")).strip()
+    if category not in MOTION_PROFILE_CATEGORIES:
+        raise ValueError("motionCategory 不在允許清單")
+
+    try:
+        score = int(profile.get("motionScore", 3))
+    except (TypeError, ValueError):
+        score = 3
+    score = max(1, min(5, score))
+    description = str(profile.get("description", profile.get("note", "")))[:2000]
+    usage_description = str(profile.get("usageDescription", ""))[:4000]
+    agent_usage = profile.get("agentUsage", [])
+    if not isinstance(agent_usage, list):
+        agent_usage = []
+    agent_usage = [str(item).strip()[:500] for item in agent_usage if str(item).strip()]
+
+    return {
+        "source": source,
+        "motionCategory": category,
+        "motionScore": score,
+        "description": description,
+        "usageDescription": usage_description,
+        "agentUsage": agent_usage,
+        "note": description,
+        "updatedAt": str(profile.get("updatedAt", ""))[:64] or _now_iso(),
+    }
+
+
+def _normalize_motion_mining_entry(entry):
+    if not isinstance(entry, dict):
+        raise ValueError("entry 必須是物件")
+
+    source = str(entry.get("source", "")).strip()
+    if not source or source != os.path.basename(source) or not source.lower().endswith(".vrma"):
+        raise ValueError("source 必須是單一 .vrma 檔名")
+
+    status = str(entry.get("status", "described")).strip() or "described"
+    if status not in {"described", "classified"}:
+        raise ValueError("status 必須是 described 或 classified")
+
+    try:
+        sample_time = round(float(entry.get("sampleTime", 0)), 3)
+    except (TypeError, ValueError):
+        sample_time = 0.0
+    sample_time = max(0.0, sample_time)
+
+    category = entry.get("category")
+    if category is not None:
+        category = str(category).strip()
+        if category and category not in MOTION_PROFILE_CATEGORIES:
+            raise ValueError("category 不在允許清單")
+        category = category or None
+
+    agent_usage = entry.get("agentUsage", [])
+    if not isinstance(agent_usage, list):
+        agent_usage = []
+    agent_usage = [str(item).strip()[:500] for item in agent_usage if str(item).strip()]
+
+    suggestion = entry.get("suggestion", {})
+    if not isinstance(suggestion, dict):
+        suggestion = {}
+
+    return {
+        "id": str(entry.get("id", "")).strip()[:80],
+        "source": source,
+        "sampleTime": sample_time,
+        "status": status,
+        "motionDescription": str(entry.get("motionDescription", ""))[:4000],
+        "usageDescription": str(entry.get("usageDescription", ""))[:4000],
+        "agentUsage": agent_usage,
+        "category": category,
+        "classificationSource": str(entry.get("classificationSource", "pending_llm"))[:80],
+        "descriptionSource": str(entry.get("descriptionSource", "human"))[:80],
+        "suggestion": suggestion,
+        "createdAt": str(entry.get("createdAt", ""))[:64] or _now_iso(),
+        "updatedAt": _now_iso(),
+    }
+
+
+def _next_mining_entry_id(entries, prefix):
+    marker = f"{prefix}_"
+    used = []
+    for entry in entries:
+        entry_id = str(entry.get("id", ""))
+        if entry_id.startswith(marker):
+            try:
+                used.append(int(entry_id[len(marker):]))
+            except ValueError:
+                pass
+    return f"{prefix}_{max(used, default=0) + 1:03d}"
+
+
+def _upsert_motion_mining_entry(entries, entry):
+    for index, existing in enumerate(entries):
+        same_source_time = (
+            existing.get("source") == entry["source"]
+            and round(float(existing.get("sampleTime", 0)), 3) == entry["sampleTime"]
+            and existing.get("status") == entry["status"]
+        )
+        same_id_and_source = (
+            entry["id"]
+            and existing.get("id") == entry["id"]
+            and existing.get("source") == entry["source"]
+        )
+        if same_source_time or same_id_and_source:
+            merged = {**existing, **entry}
+            if same_source_time and existing.get("id"):
+                merged["id"] = existing["id"]
+            if not merged.get("id"):
+                merged["id"] = _next_mining_entry_id(entries, entry["status"])
+            entries[index] = merged
+            return merged
+
+    if not entry["id"] or any(item.get("id") == entry["id"] for item in entries):
+        entry["id"] = _next_mining_entry_id(entries, entry["status"])
+    entries.append(entry)
+    return entry
+
 @app.route('/')
 def index():
     return app.send_static_file('index.html')
+
+
+@app.route('/api/vrma-samples', methods=['GET'])
+def vrma_samples():
+    return jsonify({
+        "ok": True,
+        "base": "examples/m6_7_vrma_samples",
+        "samples": _list_vrma_samples(),
+    })
+
+
+@app.route('/api/motion-profiles', methods=['GET', 'POST'])
+def motion_profiles():
+    if request.method == 'GET':
+        document = _load_motion_profile_document()
+        return jsonify({
+            "ok": True,
+            "schemaVersion": document["schemaVersion"],
+            "updatedAt": document["updatedAt"],
+            "profiles": document["profiles"],
+        })
+
+    data = request.get_json() or {}
+    try:
+        profile = _normalize_motion_profile(data.get("profile"))
+    except ValueError as exc:
+        return jsonify({ "ok": False, "error": str(exc) }), 400
+
+    document = _load_motion_profile_document()
+    document["schemaVersion"] = 1
+    document["updatedAt"] = _now_iso()
+    document.setdefault("profiles", {})[profile["source"]] = profile
+    _write_motion_profile_document(document)
+
+    return jsonify({
+        "ok": True,
+        "profile": profile,
+        "profiles": document["profiles"],
+        "path": "examples/m6_7_vrma_samples/review/motion_profiles.json",
+    })
+
+
+@app.route('/api/motion-mining-log', methods=['GET', 'POST'])
+def motion_mining_log():
+    if request.method == 'GET':
+        entries = _load_motion_mining_entries()
+        return jsonify({
+            "ok": True,
+            "entries": entries,
+            "path": "examples/m6_7_vrma_samples/review/mining_log.json",
+        })
+
+    data = request.get_json() or {}
+    try:
+        entry = _normalize_motion_mining_entry(data.get("entry"))
+    except ValueError as exc:
+        return jsonify({ "ok": False, "error": str(exc) }), 400
+
+    entries = _load_motion_mining_entries()
+    saved_entry = _upsert_motion_mining_entry(entries, entry)
+    _write_motion_mining_entries(entries)
+
+    return jsonify({
+        "ok": True,
+        "entry": saved_entry,
+        "entries": entries,
+        "path": "examples/m6_7_vrma_samples/review/mining_log.json",
+    })
 
 @app.route('/api/llm', methods=['POST'])
 def llm_proxy():

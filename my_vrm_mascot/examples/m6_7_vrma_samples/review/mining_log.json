@@ -1,0 +1,2959 @@
+[
+  {
+    "agentUsage": [
+      "可能因為使用者犯錯講不聽，羽山娘生氣中",
+      "這是個生氣中的動作",
+      "羽山娘氣噗噗"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T16:53:57+08:00",
+    "descriptionSource": "human",
+    "id": "described_001",
+    "motionDescription": "雙手插腰，頭微微歪一邊晃頭",
+    "sampleTime": 0.0,
+    "source": "Angry.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.68,
+      "matchedRules": [
+        "hand_near_chin_thinking"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": true,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T16:53:57+08:00",
+    "usageDescription": "羽山娘生氣中"
+  },
+  {
+    "agentUsage": [
+      "在想事情，或是不小心犯錯時的不好意思的動作"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T16:55:15+08:00",
+    "descriptionSource": "human_edited_rule",
+    "id": "described_002",
+    "motionDescription": "微微擺頭，左手伸後到後腦摸了二下",
+    "sampleTime": 3.927,
+    "source": "Blush.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": false,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "neutral",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T16:55:16+08:00",
+    "usageDescription": "在想事情，或是不小心犯錯時的不好意思的動作"
+  },
+  {
+    "agentUsage": [
+      "這件事情不對，不是這樣",
+      "這樣不行，很不好",
+      "嚴格禁止，不能這樣"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T16:56:01+08:00",
+    "descriptionSource": "human",
+    "id": "described_003",
+    "motionDescription": "雙面在面前連續交叉數次",
+    "sampleTime": 3.927,
+    "source": "Clapping.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T16:56:01+08:00",
+    "usageDescription": "這件事情不對，不是這樣"
+  },
+  {
+    "agentUsage": [
+      "這件事情不對，不是這樣",
+      "這樣不行，很不好",
+      "嚴格禁止，不能這樣"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T16:56:06+08:00",
+    "descriptionSource": "human",
+    "id": "described_004",
+    "motionDescription": "雙手在面前連續交叉數次",
+    "sampleTime": 3.201,
+    "source": "Clapping.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T16:56:07+08:00",
+    "usageDescription": "這件事情不對，不是這樣"
+  },
+  {
+    "agentUsage": [
+      "打招呼",
+      "我懂了",
+      "微微點頭示意"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T16:56:48+08:00",
+    "descriptionSource": "human",
+    "id": "described_005",
+    "motionDescription": "頭約歪5度左左，向前點頭了一次，像是在打招呼的感覺",
+    "sampleTime": 1.485,
+    "source": "davinci_acknowledging.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "toward_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftHand"
+        ],
+        "repeatCount": 3,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T16:56:49+08:00",
+    "usageDescription": "打招呼，或是我懂了，微微點頭示意"
+  },
+  {
+    "agentUsage": [
+      "整理裙子的小動作"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T16:57:23+08:00",
+    "descriptionSource": "human",
+    "id": "described_006",
+    "motionDescription": "自然下垂的雙手，微微前前擺了一點點後回復",
+    "sampleTime": 2.145,
+    "source": "davinci_angryGesture.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T16:57:24+08:00",
+    "usageDescription": "整理一下裙子"
+  },
+  {
+    "agentUsage": [
+      "頭往左看了一下又回正"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T16:57:42+08:00",
+    "descriptionSource": "human",
+    "id": "described_007",
+    "motionDescription": "頭往左看了一下又回正",
+    "sampleTime": 1.848,
+    "source": "davinci_annoyedHeadShake.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T16:57:43+08:00",
+    "usageDescription": "頭往左看了一下又回正"
+  },
+  {
+    "agentUsage": [
+      "像犯錯的小孩，雙手在背後微微交叉，上半身前傾頭低低的，頭微微左右搖擺墾求道歉的感覺"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T16:58:05+08:00",
+    "descriptionSource": "human",
+    "id": "described_008",
+    "motionDescription": "雙手在背後微微交叉，上半身前傾頭低低的，頭微微左右搖擺墾求道歉的感覺",
+    "sampleTime": 10.989,
+    "source": "davinci_bashful.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T16:58:06+08:00",
+    "usageDescription": "像犯錯的小孩，雙手在背後微微交叉，上半身前傾頭低低的，頭微微左右搖擺墾求道歉的感覺"
+  },
+  {
+    "agentUsage": [
+      "希望讓對方跟過來，有 come on come here 的用途"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T16:58:38+08:00",
+    "descriptionSource": "human",
+    "id": "described_009",
+    "motionDescription": "右手在前方作出往自己靠近擺動數次",
+    "sampleTime": 2.574,
+    "source": "davinci_beckoning.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "toward_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 3,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T16:58:38+08:00",
+    "usageDescription": "希望讓對方跟過來，有 come on come here 的用途"
+  },
+  {
+    "agentUsage": [
+      "表示那又怎樣",
+      "無所謂",
+      "我服了",
+      "這沒什麼"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T16:59:45+08:00",
+    "descriptionSource": "human",
+    "id": "described_010",
+    "motionDescription": "雙手在屁股旁，微微往外張開，又回復原來的動作",
+    "sampleTime": 2.541,
+    "source": "davinci_beingCocky.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T16:59:46+08:00",
+    "usageDescription": "表示那又怎樣，無所謂，我服了"
+  },
+  {
+    "agentUsage": [
+      "道歉或感抱歉時，很有禮貌的低頭",
+      "低頭向下看"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:01:02+08:00",
+    "descriptionSource": "human",
+    "id": "described_011",
+    "motionDescription": "低著頭，微微晃動",
+    "sampleTime": 2.772,
+    "source": "davinci_boredmelancholyIdle_1.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:01:03+08:00",
+    "usageDescription": "道歉或感抱歉時，很有禮貌的低頭，或是低頭向下看"
+  },
+  {
+    "agentUsage": [
+      "拳擊側勾拳的短拳揮擊動作"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:02:03+08:00",
+    "descriptionSource": "human",
+    "id": "described_012",
+    "motionDescription": "左手在面前微彎防御，右手揮出一個勾拳",
+    "sampleTime": 2.244,
+    "source": "davinci_bowing.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.68,
+      "matchedRules": [
+        "hand_near_chin_thinking"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": false,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "neutral",
+        "handMotion": "repeated",
+        "handNearChin": true,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:02:04+08:00",
+    "usageDescription": "拳擊側勾拳的短拳揮擊動作"
+  },
+  {
+    "agentUsage": [
+      "右手往前伸到腹部再前面一些，按了個按鈕的動作"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:02:45+08:00",
+    "descriptionSource": "human",
+    "id": "described_013",
+    "motionDescription": "右手往前伸到腹部再前面一些，按了個按鈕的動作",
+    "sampleTime": 3.201,
+    "source": "davinci_buttonPushing.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "toward_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 3,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:02:45+08:00",
+    "usageDescription": "右手往前伸到腹部再前面一些，按了個按鈕的動作"
+  },
+  {
+    "agentUsage": [
+      "頭往右轉，但視線仍直視前方，頭再轉回來",
+      "注視前方，但仍擺頭的動作"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:04:02+08:00",
+    "descriptionSource": "human",
+    "id": "described_014",
+    "motionDescription": "頭往右轉，但視線仍直視前方，頭再轉回來",
+    "sampleTime": 2.475,
+    "source": "davinci_cockyHeadTurn.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:04:02+08:00",
+    "usageDescription": "頭往右轉，但視線仍直視前方，頭再轉回來"
+  },
+  {
+    "agentUsage": [
+      "雙手打開，然後在前下方叉插擺動，可能是覺得什麼事情可惜"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:04:52+08:00",
+    "descriptionSource": "human",
+    "id": "described_015",
+    "motionDescription": "雙手打開，然後在前下方叉插擺動",
+    "sampleTime": 4.158,
+    "source": "davinci_disappointed.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:04:52+08:00",
+    "usageDescription": "覺得可惜"
+  },
+  {
+    "agentUsage": [
+      "原本是立正舒服的姿勢，上半身往往左傾，右手往前揮了一下，手又回到立正的姿勢"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:06:39+08:00",
+    "descriptionSource": "human",
+    "id": "described_016",
+    "motionDescription": "原本是立正舒服的姿勢，上半身往往左傾，右手往前揮了一下，手又回到立正的姿勢",
+    "sampleTime": 3.234,
+    "source": "davinci_dismissingGesture.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:06:40+08:00",
+    "usageDescription": "右手往前揮了一下"
+  },
+  {
+    "agentUsage": [
+      "原是立正的姿勢，忽然伸出右手向前約腹部高的位置，像是要握手，但忽然又收回"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:07:53+08:00",
+    "descriptionSource": "human",
+    "id": "described_017",
+    "motionDescription": "原是立正的姿勢，忽然伸出右手向前約腹部高的位置，像是要握手，但忽然又收回",
+    "sampleTime": 2.805,
+    "source": "davinci_happyHandGesture.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:07:54+08:00",
+    "usageDescription": "假裝握手"
+  },
+  {
+    "agentUsage": [
+      "開心的張開雙手微微晃動"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:08:34+08:00",
+    "descriptionSource": "human",
+    "id": "described_018",
+    "motionDescription": "左右手張開在身體旁二邊，微微劃圈",
+    "sampleTime": 2.904,
+    "source": "davinci_happyIdle.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 0.92,
+        "armExtendedForward": false,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:08:34+08:00",
+    "usageDescription": "開心的張開雙手微微晃動"
+  },
+  {
+    "agentUsage": [
+      "點頭",
+      "表示知道了",
+      "瞭解"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:08:57+08:00",
+    "descriptionSource": "human",
+    "id": "described_019",
+    "motionDescription": "點頭",
+    "sampleTime": 1.617,
+    "source": "davinci_hardHeadNod.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:08:58+08:00",
+    "usageDescription": "點頭"
+  },
+  {
+    "agentUsage": [
+      "連續點頭，很輕的連點數次"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:09:22+08:00",
+    "descriptionSource": "human",
+    "id": "described_020",
+    "motionDescription": "連續點頭，很輕的連點數次",
+    "sampleTime": 2.574,
+    "source": "davinci_headNod.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:09:23+08:00",
+    "usageDescription": "連續點頭，很輕的連點數次"
+  },
+  {
+    "agentUsage": [
+      "彎下腰，雙手在前方左右揮舞，像是在找東西"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:10:02+08:00",
+    "descriptionSource": "human",
+    "id": "described_021",
+    "motionDescription": "彎下腰，雙手在前方左右揮舞，像是在找東西",
+    "sampleTime": 3.597,
+    "source": "davinci_idle.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.68,
+      "matchedRules": [
+        "hand_near_chin_thinking"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": true,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:10:03+08:00",
+    "usageDescription": "彎下腰，雙手在前方左右揮舞，像是在找東西"
+  },
+  {
+    "agentUsage": [
+      "微微抬頭，停頓一下，然後點了一下頭",
+      "知道了",
+      "遇到比自己高的人，先抬頭，然後點頭一下"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:10:52+08:00",
+    "descriptionSource": "human",
+    "id": "described_022",
+    "motionDescription": "微微抬頭，停頓一下，然後點了一下頭",
+    "sampleTime": 1.683,
+    "source": "davinci_lengthyHeadNod.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:10:53+08:00",
+    "usageDescription": "遇到比自己高的人，先抬頭，然後點頭一下"
+  },
+  {
+    "agentUsage": [
+      "雙手微微張開，擺頭左看看，再擺頭右看看",
+      "看看發生什麼事",
+      "左邊或右邊有什麼事，或是左右二邊有人靠近"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:19:28+08:00",
+    "descriptionSource": "human",
+    "id": "described_023",
+    "motionDescription": "雙手微微張開，擺頭左看看，再擺頭右看看",
+    "sampleTime": 4.455,
+    "source": "davinci_lookAround.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:19:28+08:00",
+    "usageDescription": "雙手微微張開，擺頭左看看，再擺頭右看看\n看看發生什麼事\n左邊或右邊有什麼事，或是左右二邊有人靠近"
+  },
+  {
+    "agentUsage": [
+      "頭往右邊往右看了一下，再轉正回來"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:19:54+08:00",
+    "descriptionSource": "human",
+    "id": "described_024",
+    "motionDescription": "頭往右邊往右看了一下，再轉正回來",
+    "sampleTime": 1.848,
+    "source": "davinci_lookAwayGesture.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:19:54+08:00",
+    "usageDescription": "頭往右邊往右看了一下，再轉正回來"
+  },
+  {
+    "agentUsage": [
+      "要阻止某件事發生，像是有暴王龍在面前",
+      "請不要這樣",
+      "停車，快停車"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:20:40+08:00",
+    "descriptionSource": "human",
+    "id": "described_025",
+    "motionDescription": "雙手張開往前伸",
+    "sampleTime": 6.237,
+    "source": "davinci_nervouslyLookAround.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.68,
+      "matchedRules": [
+        "hand_near_chin_thinking"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": false,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": true,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:20:40+08:00",
+    "usageDescription": "要阻止某件事發生，像是有暴王龍在面前"
+  },
+  {
+    "agentUsage": [
+      "商人有利潤可尋時，磨擦雙手的小動作，像一休和尚裡的何老板"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:21:46+08:00",
+    "descriptionSource": "human",
+    "id": "described_026",
+    "motionDescription": "雙手在前，雙手的掌心互相磨擦",
+    "sampleTime": 3.267,
+    "source": "davinci_plotting.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:21:46+08:00",
+    "usageDescription": "商人有利潤可尋時，磨擦雙手的小動作，像一休和尚裡的何老板"
+  },
+  {
+    "agentUsage": [
+      "右手向前指了一下，再回到立正姿勢",
+      "前方似乎有什麼",
+      "前方那裡有東西"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:22:57+08:00",
+    "descriptionSource": "human",
+    "id": "described_027",
+    "motionDescription": "立正姿勢，然後右手向前指了一下，再回到立正姿勢",
+    "sampleTime": 2.739,
+    "source": "davinci_pointing.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:22:57+08:00",
+    "usageDescription": "右手向前指了一下，再回到立正姿勢\n指示前面有什麼"
+  },
+  {
+    "agentUsage": [
+      "頭微微抬高，然後低頭嘆了一口氣",
+      "表示無奈",
+      "失落"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:35:10+08:00",
+    "descriptionSource": "human",
+    "id": "described_028",
+    "motionDescription": "頭微微抬高，然後低頭嘆了一口氣",
+    "sampleTime": 2.871,
+    "source": "davinci_relievedSigh.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:35:10+08:00",
+    "usageDescription": "頭微微抬高，然後低頭嘆了一口氣\n表示無奈\n失落"
+  },
+  {
+    "agentUsage": [
+      "表示傷心，很失落、失意"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:35:57+08:00",
+    "descriptionSource": "human",
+    "id": "described_029",
+    "motionDescription": "低頭哭泣",
+    "sampleTime": 2.64,
+    "source": "davinci_sadIdle.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:35:57+08:00",
+    "usageDescription": "表示傷心，很失落、失意"
+  },
+  {
+    "agentUsage": [
+      "右手五指併攏，伸到右邊眉前，很標準的童子軍、警察式敬禮",
+      "敬禮、軍人式敬禮"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:37:19+08:00",
+    "descriptionSource": "human",
+    "id": "described_030",
+    "motionDescription": "右手五指併攏，伸到右邊眉前，很標準的童子軍、警察式敬禮",
+    "sampleTime": 2.805,
+    "source": "davinci_salute.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:37:19+08:00",
+    "usageDescription": "敬禮、軍人式敬禮"
+  },
+  {
+    "agentUsage": [
+      "可能在想事情，或忽然理解什麼"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:38:33+08:00",
+    "descriptionSource": "human",
+    "id": "described_031",
+    "motionDescription": "頭往右後微微仰，然後再往前點了一下頭",
+    "sampleTime": 2.178,
+    "source": "davinci_sarcasticHeadNod.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:38:33+08:00",
+    "usageDescription": "可能在想事情，或忽然理解什麼"
+  },
+  {
+    "agentUsage": [
+      "低頭左右擺頭二、三次",
+      "覺得好像哪不太對",
+      "事情不是這樣"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:39:07+08:00",
+    "descriptionSource": "human",
+    "id": "described_032",
+    "motionDescription": "低頭左右擺頭二、三次",
+    "sampleTime": 1.485,
+    "source": "davinci_shakingHeadNo.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:39:07+08:00",
+    "usageDescription": "低頭左右擺頭二、三次，覺得好像哪不太對"
+  },
+  {
+    "agentUsage": [
+      "隨你的便",
+      "那就照你說的算",
+      "都可以"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:39:42+08:00",
+    "descriptionSource": "human",
+    "id": "described_033",
+    "motionDescription": "雙手前伸往前一攤",
+    "sampleTime": 1.98,
+    "source": "davinci_shrugging.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:39:42+08:00",
+    "usageDescription": "隨你的便\n那就照你說的算\n都可以"
+  },
+  {
+    "agentUsage": [
+      "與人爭論時，在講道理，有一種我說了算，然後舉個一些例子，手部的動作很多"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:42:26+08:00",
+    "descriptionSource": "human",
+    "id": "described_034",
+    "motionDescription": "這是一個20秒左右的連續動作，先伸起右手，然後雙手伸起，左手放下後，右手上下揮了幾次，再雙手上仰一起揮了數次",
+    "sampleTime": 20.79,
+    "source": "davinci_standingArguing.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:42:27+08:00",
+    "usageDescription": "與人爭論時，在講道理，有一種我說了算，然後舉個一些例子，手部的動作很多"
+  },
+  {
+    "agentUsage": [
+      "誇張式的拍手",
+      "有點嘲諷或過度拍手的效果",
+      "是不是好棒棒"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:43:37+08:00",
+    "descriptionSource": "human",
+    "id": "described_035",
+    "motionDescription": "雙手在面前拍手，且拍手的角度已大到交叉",
+    "sampleTime": 4.389,
+    "source": "davinci_standingClap.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:43:37+08:00",
+    "usageDescription": "誇張式的拍手"
+  },
+  {
+    "agentUsage": [
+      "立正姿勢，右手往上伸，靠近眉毛的地方揮手了數次，在與人說再見",
+      "朋友離的比較遠，揮手說再見的感覺"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:45:11+08:00",
+    "descriptionSource": "human",
+    "id": "described_036",
+    "motionDescription": "立正姿勢，右手往上伸，靠近眉毛的地方揮手了數次，像是在與人說再見",
+    "sampleTime": 5.082,
+    "source": "davinci_standingGreeting.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.72,
+      "matchedRules": [
+        "right_hand_come_here"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "toward_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 3,
+        "torsoMotion": "stable",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:45:11+08:00",
+    "usageDescription": "與人說再見"
+  },
+  {
+    "agentUsage": [
+      "有一種腦力激蕩的感覺",
+      "要爆了",
+      "壓力很大",
+      "奇怪的知識增加了"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:47:29+08:00",
+    "descriptionSource": "human",
+    "id": "described_037",
+    "motionDescription": "雙手外擴後在左右耳旁約5~10公分處停下抖動",
+    "sampleTime": 1.848,
+    "source": "davinci_strongGesture.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.72,
+      "matchedRules": [
+        "right_hand_come_here"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": false,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "toward_body",
+        "handMotion": "repeated",
+        "handNearChin": true,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 3,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:47:29+08:00",
+    "usageDescription": "有一種腦力激蕩的感覺，要爆了，壓力很大，奇怪的知識增加了"
+  },
+  {
+    "agentUsage": [
+      "拿出東西往前伸要給人的感覺",
+      "這是你的，給你",
+      "你看一下這個，給你"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:48:48+08:00",
+    "descriptionSource": "human",
+    "id": "described_038",
+    "motionDescription": "右手從口袋拿出東西往前伸要給人的感覺",
+    "sampleTime": 3.729,
+    "source": "davinci_talking.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:48:48+08:00",
+    "usageDescription": "右手從口袋拿出東西往前伸要給人的感覺\n拿出東西往前伸要給人的感覺\n這是你的，給你\n你看一下這個，給你"
+  },
+  {
+    "agentUsage": [
+      "右手斜到左臉下巴，手背向上，頭微微往右斜，有一種呵呵呵笑的感覺",
+      "娜卡的特有笑聲招牌動作"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:50:41+08:00",
+    "descriptionSource": "human",
+    "id": "described_039",
+    "motionDescription": "右手斜到左臉下巴，手背向上，頭微微往右斜，有一種呵呵呵笑的感覺，以前秀逗魔導士裡的娜卡很常作這個動作",
+    "sampleTime": 4.191,
+    "source": "davinci_thinking.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:50:41+08:00",
+    "usageDescription": "右手斜到左臉下巴，手背向上，頭微微往右斜，有一種呵呵呵笑的感覺\n娜卡的特有笑聲招牌動作"
+  },
+  {
+    "agentUsage": [
+      "想了一會覺得事情不是這樣，所以搖搖頭"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:51:51+08:00",
+    "descriptionSource": "human",
+    "id": "described_040",
+    "motionDescription": "頭先轉右轉，停一會，再往左轉，然後來回右左右左二次，擺動漸漸變小",
+    "sampleTime": 2.904,
+    "source": "davinci_thoughtfulHeadShake.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:51:51+08:00",
+    "usageDescription": "想了一會覺得事情不是這樣，所以搖搖頭"
+  },
+  {
+    "agentUsage": [
+      "雙手往外舉高，掌心向前，有種投降的感覺",
+      "也可能是成功了，勝利的姿勢"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:52:47+08:00",
+    "descriptionSource": "human",
+    "id": "described_041",
+    "motionDescription": "雙手往外舉高，掌心向前，身體左右微微擺動，有種投降的感覺",
+    "sampleTime": 8.481,
+    "source": "davinci_victory.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:52:47+08:00",
+    "usageDescription": "雙手往外舉高，掌心向前，有種投降的感覺\n也可能是成功了，勝利的姿勢"
+  },
+  {
+    "agentUsage": [
+      "很有自信的指天，且左手插腰",
+      "舞蹈的起始動作"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:54:15+08:00",
+    "descriptionSource": "human",
+    "id": "described_042",
+    "motionDescription": "右手往天上伸直，左手插腰",
+    "sampleTime": 1.782,
+    "source": "davinci_victoryIdle.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.68,
+      "matchedRules": [
+        "hand_near_chin_thinking"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": false,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "neutral",
+        "handMotion": "repeated",
+        "handNearChin": true,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:54:15+08:00",
+    "usageDescription": "很有自信的指天，且左手插腰\n舞蹈的起始動作"
+  },
+  {
+    "agentUsage": [
+      "覺得有臭味，要把臭味揮掉",
+      "也可以用於很誇張的再見姿勢"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T17:55:19+08:00",
+    "descriptionSource": "human",
+    "id": "described_043",
+    "motionDescription": "右手伸起，在面前來回揮動",
+    "sampleTime": 4.686,
+    "source": "davinci_waving.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T17:55:19+08:00",
+    "usageDescription": "可能覺得有臭味，要把臭味揮掉"
+  },
+  {
+    "agentUsage": [
+      "向在牆角偷看有沒有人路過",
+      "或是裝可愛時，上半身斜斜移出一點點那種感覺",
+      "懷疑的感覺"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T20:29:56+08:00",
+    "descriptionSource": "human",
+    "id": "described_044",
+    "motionDescription": "身體直直，上半身往右傾斜",
+    "sampleTime": 9.405,
+    "source": "davinci_weightShift.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T20:29:56+08:00",
+    "usageDescription": "向在牆角偷看有沒有人路過\n懷疑的感覺"
+  },
+  {
+    "agentUsage": [
+      "頭往右擺，再往左擺，右手斜斜舉高，左手橫在嘴前檔住打哈欠，然後左右也往斜上伸展，伸了個懶腰",
+      "伸懶腰",
+      "忙了很久，覺得很累，伸展休息一下"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T20:31:49+08:00",
+    "descriptionSource": "human",
+    "id": "described_045",
+    "motionDescription": "頭往右擺，再往左擺，右手斜斜舉高，左手橫在嘴前檔住打哈欠，然後左右也往斜上伸展，伸了個懶腰",
+    "sampleTime": 8.316,
+    "source": "davinci_yawn.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T20:31:49+08:00",
+    "usageDescription": "頭往右擺，再往左擺，右手斜斜舉高，左手橫在嘴前檔住打哈欠，然後左右也往斜上伸展，伸了個懶腰\n伸懶腰\n忙了很久，覺得很累，伸展休息一下"
+  },
+  {
+    "agentUsage": [
+      "左手先靠近嘴邊，然後往前一伸，送出一個飛吻",
+      "送出飛吻"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T20:33:01+08:00",
+    "descriptionSource": "human",
+    "id": "described_046",
+    "motionDescription": "左手先靠近嘴邊，然後往前一伸，送出一個飛吻",
+    "sampleTime": 4.521,
+    "source": "davinci2_blowAKiss.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T20:33:01+08:00",
+    "usageDescription": "左手先靠近嘴邊，然後往前一伸，送出一個飛吻\n送出飛吻"
+  },
+  {
+    "agentUsage": [
+      "人物左傾，二手檔在面前，像是有個汽球快要爆炸，手在臉前交叉，好像真要報了，然後繼續檔摭檔著",
+      "似乎想阻止什麼事",
+      "前面有個過動兒小朋友也適合用這個，手按著他的頭，但他仍跳來跳去"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T20:35:22+08:00",
+    "descriptionSource": "human",
+    "id": "described_047",
+    "motionDescription": "人物左傾，二手檔在面前，像是有個汽球快要爆炸，手在臉前交叉，好像真要報了，然後繼續檔摭檔著",
+    "sampleTime": 3.399,
+    "source": "davinci2_bodyBlock.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.68,
+      "matchedRules": [
+        "hand_near_chin_thinking"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": false,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "neutral",
+        "handMotion": "repeated",
+        "handNearChin": true,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T20:35:22+08:00",
+    "usageDescription": "人物左傾，二手檔在面前，像是有個汽球快要爆炸，手在臉前交叉，好像真要報了，然後繼續檔摭檔著\n似乎想阻止什麼事"
+  },
+  {
+    "agentUsage": [
+      "雙手合十，求求您",
+      "短暫拜了一下",
+      "吃東西前手掌合十短暫的祈禱"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T20:37:04+08:00",
+    "descriptionSource": "human",
+    "id": "described_048",
+    "motionDescription": "雙手合十，很短暫的拜了一下",
+    "sampleTime": 1.221,
+    "source": "davinci2_catch.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T20:37:04+08:00",
+    "usageDescription": "短暫的雙手合十，求求您"
+  },
+  {
+    "agentUsage": [
+      "也許在問人現在時間幾點幾分",
+      "也可以像是剛打針，右手壓著綿花按著傷口",
+      "或是在思考時間幾點了"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T20:51:31+08:00",
+    "descriptionSource": "human",
+    "id": "described_049",
+    "motionDescription": "左手向前，右手指著左手手腕",
+    "sampleTime": 2.904,
+    "source": "davinci2_crouchToStand.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.68,
+      "matchedRules": [
+        "hand_near_chin_thinking"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": true,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T20:51:31+08:00",
+    "usageDescription": "也許在問人現在時間幾點幾分\n也可以像是剛打針，右手壓著綿花按著傷口\n或是在思考時間幾點了"
+  },
+  {
+    "agentUsage": [
+      "指揮",
+      "用力蓋上東西",
+      "遇到什麼事相當不甘心的動作"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T20:53:15+08:00",
+    "descriptionSource": "human",
+    "id": "described_050",
+    "motionDescription": "雙手在前，像是指揮或是用力的蓋上東西的感覺，連頭都一起低下",
+    "sampleTime": 1.485,
+    "source": "davinci2_defeatIdle.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.68,
+      "matchedRules": [
+        "hand_near_chin_thinking"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": false,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "neutral",
+        "handMotion": "repeated",
+        "handNearChin": true,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T20:53:16+08:00",
+    "usageDescription": "指揮或是用力蓋上東西或是遇到什麼事相當不甘心的動作"
+  },
+  {
+    "agentUsage": [
+      "行進中，右手往上比出敬禮的手勢，然後左看看右看看，也像是登場時大家歡迎她的到來",
+      "登場時",
+      "我們歡迎羽山娘"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T20:59:51+08:00",
+    "descriptionSource": "human",
+    "id": "described_051",
+    "motionDescription": "行進中，右手往上比出敬禮的手勢，然後左看看右看看，也像是登場時大家歡迎她的到來",
+    "sampleTime": 10.329,
+    "source": "davinci2_entry.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T20:59:51+08:00",
+    "usageDescription": "行進中，右手往上比出敬禮的手勢，然後左看看右看看，也像是登場時大家歡迎她的到來\n登場時\n我們歡迎羽山娘"
+  },
+  {
+    "agentUsage": [
+      "左手往外滑一下，右手往外滑一下，是一個往外滑的自由式，用途不明但很可愛",
+      "跟左、右的觀眾打招呼"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:01:07+08:00",
+    "descriptionSource": "human",
+    "id": "described_052",
+    "motionDescription": "左手往外滑一下，右手往外滑一下，是一個往外滑的自由式",
+    "sampleTime": 3.564,
+    "source": "davinci2_floating.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.68,
+      "matchedRules": [
+        "hand_near_chin_thinking"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": true,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:01:07+08:00",
+    "usageDescription": "左手往外滑一下，右手往外滑一下，是一個往外滑的自由式，用途不明但很可愛\n跟左、右的觀眾打招呼"
+  },
+  {
+    "agentUsage": [
+      "90度彎下腰，右手作出順勢炒了一下的動作，用途不明"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:01:53+08:00",
+    "descriptionSource": "human",
+    "id": "described_053",
+    "motionDescription": "90度彎下腰，右手作出順勢炒了一下的動作",
+    "sampleTime": 2.64,
+    "source": "davinci2_gettingUp.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:01:54+08:00",
+    "usageDescription": "90度彎下腰，右手作出順勢炒了一下的動作，用途不明"
+  },
+  {
+    "agentUsage": [
+      "彈吉他",
+      "空氣吉他",
+      "連續演奏吉他的動作"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:02:28+08:00",
+    "descriptionSource": "human",
+    "id": "described_054",
+    "motionDescription": "彈吉他的連續動作",
+    "sampleTime": 4.719,
+    "source": "davinci2_guitarPlaying.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": false,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:02:28+08:00",
+    "usageDescription": "彈吉他\n空氣吉他\n連續演奏吉他的動作"
+  },
+  {
+    "agentUsage": [
+      "上半身前傾，左手檔在腹部前約10公分的靜止畫面"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:03:28+08:00",
+    "descriptionSource": "human",
+    "id": "described_055",
+    "motionDescription": "上半身前傾，左手檔在腹部前約10公分的靜止畫面",
+    "sampleTime": 4.653,
+    "source": "davinci2_kneeling.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.68,
+      "matchedRules": [
+        "hand_near_chin_thinking"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": true,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:03:29+08:00",
+    "usageDescription": "上半身前傾，左手檔在腹部前約10公分的靜止畫面"
+  },
+  {
+    "agentUsage": [
+      "小心翼翼，感覺四週有點危險，雙手在前方，右邊看一下，又被左邊嚇了一下"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:04:54+08:00",
+    "descriptionSource": "human",
+    "id": "described_056",
+    "motionDescription": "雙手在身體前方，先看一下右邊，然後又迅速的看了一下左邊",
+    "sampleTime": 3.729,
+    "source": "davinci2_lookOverShoulder.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.68,
+      "matchedRules": [
+        "hand_near_chin_thinking"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": true,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:04:54+08:00",
+    "usageDescription": "小心翼翼，感覺四週有點危險，雙手在前方，右邊看一下，又被左邊嚇了一下"
+  },
+  {
+    "agentUsage": [
+      "頭往左前下方看，右手作出一個像打籃球，很慢拍了二下的動作，再伸回胸前"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:42:24+08:00",
+    "descriptionSource": "human",
+    "id": "described_057",
+    "motionDescription": "頭往左前下方看，右手作出一個像打籃球，很慢拍了二下的動作，再伸回胸前",
+    "sampleTime": 6.468,
+    "source": "davinci2_militarySignaling.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.68,
+      "matchedRules": [
+        "hand_near_chin_thinking"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": true,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:42:24+08:00",
+    "usageDescription": "頭往左前下方看，右手作出一個像打籃球，很慢拍了二下的動作，再伸回胸前"
+  },
+  {
+    "agentUsage": [
+      "經過一個關上的門，用右手打開，左手再關上門"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:43:24+08:00",
+    "descriptionSource": "human",
+    "id": "described_058",
+    "motionDescription": "右手作出一個打開門把手，左手開門再關上的感覺",
+    "sampleTime": 6.303,
+    "source": "davinci2_openingDoorInwards.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:43:24+08:00",
+    "usageDescription": "經過一個關上的門，用右手打開，左手再關上門"
+  },
+  {
+    "agentUsage": [
+      "一個長達37秒的演示，右手在嘴邊像是對著麥克風唱歌，或是對著人的耳朵講敲敲話"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:44:42+08:00",
+    "descriptionSource": "human",
+    "id": "described_059",
+    "motionDescription": "一個長達37秒的演示，右手在嘴邊像是對著麥克風唱歌，或是對著人的耳朵講敲敲話",
+    "sampleTime": 37.62,
+    "source": "davinci2_pacingAndTalkingOnAPhone.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.72,
+      "matchedRules": [
+        "right_hand_come_here"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "toward_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 3,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:44:42+08:00",
+    "usageDescription": "一個長達37秒的演示，右手在嘴邊像是對著麥克風唱歌，或是對著人的耳朵講敲敲話"
+  },
+  {
+    "agentUsage": [
+      "右手往外伸開，作出一個說掰掰姿勢",
+      "也可能是開門"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:45:32+08:00",
+    "descriptionSource": "human",
+    "id": "described_060",
+    "motionDescription": "右手往外伸開，作出一個說掰掰姿勢",
+    "sampleTime": 3.333,
+    "source": "davinci2_patting.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:45:32+08:00",
+    "usageDescription": "右手往外伸開，作出一個說掰掰姿勢\n也可能是開門"
+  },
+  {
+    "agentUsage": [
+      "如摸馬的頭或是摸狗的頭，進行寵物的感覺"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:46:25+08:00",
+    "descriptionSource": "human",
+    "id": "described_061",
+    "motionDescription": "左手向前伸出，摸了二下",
+    "sampleTime": 5.577,
+    "source": "davinci2_petting.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:46:25+08:00",
+    "usageDescription": "如摸馬的頭或是摸狗的頭，進行寵物的感覺"
+  },
+  {
+    "agentUsage": [
+      "右手伸出順著馬背上的毛撫摸三次",
+      "寵物的動作"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:47:23+08:00",
+    "descriptionSource": "human",
+    "id": "described_062",
+    "motionDescription": "右手伸出順著馬背上的毛撫摸三次",
+    "sampleTime": 14.157,
+    "source": "davinci2_pettingAnimal.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:47:23+08:00",
+    "usageDescription": "右手伸出順著馬背上的毛撫摸三次\n寵物的動作"
+  },
+  {
+    "agentUsage": [
+      "雙手在胸前交叉，像是在說不，然後身體往左下彎了一下"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:48:16+08:00",
+    "descriptionSource": "human",
+    "id": "described_063",
+    "motionDescription": "雙手在胸前交叉，然後身體往左下彎了一下",
+    "sampleTime": 6.831,
+    "source": "davinci2_praying.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.68,
+      "matchedRules": [
+        "hand_near_chin_thinking"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": true,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:48:16+08:00",
+    "usageDescription": "雙手在胸前交叉，像是在說不，然後身體往左下彎了一下"
+  },
+  {
+    "agentUsage": [
+      "雙手在面醹作出隔檔的感覺，從右邊往中間移動一些"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:48:52+08:00",
+    "descriptionSource": "human",
+    "id": "described_064",
+    "motionDescription": "雙手在面醹作出隔檔的感覺，從右邊往中間移動一些",
+    "sampleTime": 1.65,
+    "source": "davinci2_push.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.68,
+      "matchedRules": [
+        "hand_near_chin_thinking"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": false,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": true,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:48:52+08:00",
+    "usageDescription": "雙手在面醹作出隔檔的感覺，從右邊往中間移動一些"
+  },
+  {
+    "agentUsage": [
+      "右手在眼前約20cm處平舉，左手在下巴前10cm左右，這姿勢維持了4秒"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:51:22+08:00",
+    "descriptionSource": "human",
+    "id": "described_065",
+    "motionDescription": "右手在眼前約20cm處平舉，左手在下巴前10cm左右，這姿勢維持了4秒",
+    "sampleTime": 4.818,
+    "source": "davinci2_rummaging.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.68,
+      "matchedRules": [
+        "hand_near_chin_thinking"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": true,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:51:22+08:00",
+    "usageDescription": "右手在眼前約20cm處平舉，左手在下巴前10cm左右，這姿勢維持了4秒"
+  },
+  {
+    "agentUsage": [
+      "雙手在背後的口袋找皮包的感覺，右手好像找到了一個紙屑，發現不對，把紙屑丟掉，然後繼續找"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:52:31+08:00",
+    "descriptionSource": "human",
+    "id": "described_066",
+    "motionDescription": "雙手在背後的口袋找皮包的感覺，右手好像找到了一個紙屑，發現不對，把紙屑丟掉，然後繼續找",
+    "sampleTime": 4.983,
+    "source": "davinci2_searchingPockets.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:52:31+08:00",
+    "usageDescription": "雙手在背後的口袋找皮包的感覺，右手好像找到了一個紙屑，發現不對，把紙屑丟掉，然後繼續找"
+  },
+  {
+    "agentUsage": [
+      "伸出右手與人握手，並把對方往自己拉了一點點距離"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:53:06+08:00",
+    "descriptionSource": "human",
+    "id": "described_067",
+    "motionDescription": "伸出右手與人握手，並把對方往自己拉了一點點距離",
+    "sampleTime": 4.323,
+    "source": "davinci2_shakingHands1.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:53:06+08:00",
+    "usageDescription": "伸出右手與人握手，並把對方往自己拉了一點點距離"
+  },
+  {
+    "agentUsage": [
+      "雙手在前，謹慎的看右邊，再看左邊，可能是稍不信任四週"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:54:02+08:00",
+    "descriptionSource": "human",
+    "id": "described_068",
+    "motionDescription": "雙手在前，謹慎的看右邊，再看左邊",
+    "sampleTime": 6.996,
+    "source": "davinci2_sitting.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:54:02+08:00",
+    "usageDescription": "雙手在前，謹慎的看右邊，再看左邊，可能是稍不信任四週"
+  },
+  {
+    "agentUsage": [
+      "雙手在胸前15公分左右拍手"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:54:30+08:00",
+    "descriptionSource": "human",
+    "id": "described_069",
+    "motionDescription": "雙手在胸前15公分左右拍手",
+    "sampleTime": 3.333,
+    "source": "davinci2_sittingClap.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "right",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "rightHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:54:30+08:00",
+    "usageDescription": "雙手在胸前15公分左右拍手"
+  },
+  {
+    "agentUsage": [
+      "右手伸出，作了手掌左攞右攞揮手的動作，似乎在拒絕什麼",
+      "不想喝酒，已喝太多了"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:55:34+08:00",
+    "descriptionSource": "human",
+    "id": "described_070",
+    "motionDescription": "右手伸出，作了手掌左攞右攞揮手的動作",
+    "sampleTime": 3.894,
+    "source": "davinci2_sittingDisapproval.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "stable",
+        "verticalBias": "neutral"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:55:34+08:00",
+    "usageDescription": "右手伸出，作了手掌左攞右攞揮手的動作，似乎在拒絕什麼\n不想喝酒，已喝太多了"
+  },
+  {
+    "agentUsage": [
+      "這是個40秒左右的連續動畫，先看左，再看右，雙手在前面叉交叉，感覺像是在坐電車或坐火車，過程看著右邊，最後回正",
+      "長時間坐車的感覺"
+    ],
+    "category": null,
+    "classificationSource": "pending_llm",
+    "createdAt": "2026-06-14T21:56:56+08:00",
+    "descriptionSource": "human",
+    "id": "described_071",
+    "motionDescription": "這是個40秒左右的連續動畫，先看左，再看右，雙手在前面叉交叉，感覺像是在坐電車或坐火車，過程看著右邊，最後回正",
+    "sampleTime": 44.022,
+    "source": "davinci2_sittingTalking.vrma",
+    "status": "described",
+    "suggestion": {
+      "confidence": 0.38,
+      "matchedRules": [
+        "fallback_pose_summary"
+      ],
+      "motionSignature": {
+        "activeSide": "left",
+        "amplitude": 1,
+        "armExtendedForward": true,
+        "dominantBone": "leftHand",
+        "forwardBackBias": "away_from_body",
+        "handMotion": "repeated",
+        "handNearChin": false,
+        "headMotion": "stable",
+        "highActivityBones": [
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand"
+        ],
+        "repeatCount": 2,
+        "torsoMotion": "forward_pressure",
+        "verticalBias": "up"
+      },
+      "source": "math_rule"
+    },
+    "updatedAt": "2026-06-14T21:56:56+08:00",
+    "usageDescription": "這是個40秒左右的連續動畫，先看左，再看右，雙手在前面叉交叉，感覺像是在坐電車或坐火車，過程看著右邊，最後回正\n長時間坐車的感覺"
+  }
+]

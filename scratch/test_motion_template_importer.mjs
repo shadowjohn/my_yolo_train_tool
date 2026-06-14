@@ -5,10 +5,11 @@ import { pathToFileURL } from 'node:url';
 const SPEC_PATH = 'docs/superpowers/specs/2026-06-13-m6-7-motion-template-importer-design.md';
 const LAB_PATH = 'my_vrm_mascot/motion_template_lab.html';
 const MODULE_PATH = 'my_vrm_mascot/js/MotionTemplateImporter.js';
-const INDEX_PATH = 'my_vrm_mascot/index.html';
+const RUNTIME_PATH = 'my_vrm_mascot/mascot_runtime.html';
 const EXAMPLE_DIR = 'my_vrm_mascot/examples/m6_7_vrma_samples';
 const REQUIRED_EXAMPLE_VRMA = [
   'Angry.vrma',
+  'Blush.vrma',
   'Clapping.vrma',
   'Goodbye.vrma',
   'Jump.vrma',
@@ -19,6 +20,7 @@ const REQUIRED_EXAMPLE_VRMA = [
   'Surprised.vrma',
   'Thinking.vrma',
 ];
+const MINED_SPRINT_001_VRMA = REQUIRED_EXAMPLE_VRMA.filter((fileName) => fileName !== 'Blush.vrma');
 const MINING_LOG_PATH = 'my_vrm_mascot/examples/m6_7_motion_mining/mining_log.json';
 const MINING_REPORT_PATH = 'my_vrm_mascot/examples/m6_7_motion_mining/mining_report.json';
 
@@ -43,7 +45,7 @@ function testLabHtmlContractExists() {
 
   const html = read(LAB_PATH);
   assert.match(html, /Alicia Motion Mine/);
-  assert.match(html, /先找好姿勢，再分類/);
+  assert.match(html, /先定義動作，再釘選姿勢/);
   assert.match(html, /載入 VRMA/);
   assert.match(html, /取第一幀/);
   assert.match(html, /取目前時間/);
@@ -77,6 +79,9 @@ function testLabIncludesExampleAndPlaybackControls() {
   assert.match(html, /暫停/);
   assert.match(html, /停止/);
   assert.match(html, /examples\/m6_7_vrma_samples\//);
+  assert.match(html, /\/api\/vrma-samples/);
+  assert.match(html, /loadVrmaSamplesFromServer/);
+  assert.match(html, /vrmaSampleCatalog/);
   assert.match(html, /function\s+playMotion\s*\(/);
   assert.match(html, /function\s+pauseMotion\s*\(/);
   assert.match(html, /function\s+stopPlayback\s*\(/);
@@ -87,20 +92,30 @@ function testLabIncludesExampleAndPlaybackControls() {
   assert.match(html, /startTime\s*>=\s*duration\s*-\s*0\.034/);
 }
 
+function testLabDefaultsToFrontFacingPreviewCamera() {
+  const html = read(LAB_PATH);
+
+  assert.match(html, /PREVIEW_CAMERA_POSITION/);
+  assert.match(html, /z:\s*-3\.3/);
+  assert.match(html, /function\s+resetPreviewCamera\s*\(/);
+  assert.match(html, /resetPreviewCamera\(\);[\s\S]*sampleAt\(0\);/);
+  assert.doesNotMatch(html, /camera\.position\.set\(0,\s*1\.35,\s*3\.3\)/);
+}
+
 function testMotionMiningLogHasSprintReviewedSamples() {
   assert.equal(existsSync(MINING_LOG_PATH), true, `${MINING_LOG_PATH} should exist`);
 
   const log = JSON.parse(read(MINING_LOG_PATH));
   assert.ok(log.length >= 50, 'mining log should keep the first sprint above 50 samples');
-  assert.equal(new Set(log.map((entry) => entry.source)).size, 10);
+  assert.deepEqual([...new Set(log.map((entry) => entry.source))].sort(), [...MINED_SPRINT_001_VRMA].sort());
 
-  for (const source of REQUIRED_EXAMPLE_VRMA) {
+  for (const source of MINED_SPRINT_001_VRMA) {
     assert.ok(log.filter((entry) => entry.source === source).length >= 5, `${source} should have at least 5 mined samples`);
   }
 
   for (const entry of log) {
     assert.match(entry.id, /^(present|point|think|warning|success|reject|candidate_future)_\d{3}$/);
-    assert.equal(REQUIRED_EXAMPLE_VRMA.includes(entry.source), true);
+    assert.equal(MINED_SPRINT_001_VRMA.includes(entry.source), true);
     assert.equal(typeof entry.sampleTime, 'number');
     assert.ok(entry.sampleTime >= 0);
     assert.match(entry.createdAt, /^2026-06-(13|14)T\d{2}:\d{2}:\d{2}\+08:00$/);
@@ -144,7 +159,7 @@ function testMotionMiningReportMatchesLog() {
   assert.equal(report.sprint, 'Motion Mining Sprint 001');
   assert.equal(report.generatedFrom, 'mining_log.json');
   assert.equal(report.totalEntries, log.length);
-  assert.equal(report.sourceCount, REQUIRED_EXAMPLE_VRMA.length);
+  assert.equal(report.sourceCount, MINED_SPRINT_001_VRMA.length);
   assert.deepEqual(report.categoryCounts, categoryCounts);
   assert.deepEqual(report.sourceCounts, sourceCounts);
   assert.deepEqual(report.reasonCounts, reasonCounts);
@@ -153,12 +168,12 @@ function testMotionMiningReportMatchesLog() {
 
 function testLabReferencesVrmaCapabilityOnlyInLab() {
   const html = read(LAB_PATH);
-  const index = read(INDEX_PATH);
+  const runtime = read(RUNTIME_PATH);
 
   assert.match(html, /@pixiv\/three-vrm-animation/);
   assert.match(html, /VRMAnimationLoaderPlugin/);
   assert.match(html, /createVRMAnimationClip/);
-  assert.doesNotMatch(index, /motion_template_lab|three-vrm-animation|VRMAnimationLoaderPlugin/);
+  assert.doesNotMatch(runtime, /motion_template_lab|three-vrm-animation|VRMAnimationLoaderPlugin/);
 }
 
 function testLabDoesNotImportAgentRuntime() {
@@ -387,6 +402,82 @@ function testLabIncludesQuickReviewModeControls() {
   assert.match(html, /category:\s*'reject'[\s\S]*rejectReason:\s*'unclear_intent'/);
 }
 
+function testLabUsesMotionFirstCategoryModel() {
+  const html = read(LAB_PATH);
+
+  assert.match(html, /動作主分類|Motion Category/);
+  assert.match(html, /一支 VRMA = 一個 motion intent/);
+  assert.match(html, /motionProfiles/);
+  assert.match(html, /motionCategory/);
+  assert.match(html, /motionScore/);
+  assert.match(html, /setMotionCategory/);
+  assert.match(html, /getCurrentMotionProfile/);
+  assert.match(html, /applyMotionProfileToPinnedMoment/);
+  assert.match(html, /const inheritedItem = applyMotionProfileToPinnedMoment\(item\)/);
+  assert.match(html, /套用主分類/);
+  assert.match(html, /候選片段會先繼承主分類/);
+  assert.doesNotMatch(html, /每個 frame 都/);
+}
+
+function testLabShowsRecommendationForMotionCategory() {
+  const html = read(LAB_PATH);
+
+  assert.match(html, /id="motionCategorySuggestionLabel"/);
+  assert.match(html, /id="motionCategorySuggestionConfidence"/);
+  assert.match(html, /id="motionCategorySuggestionReason"/);
+  assert.match(html, /function\s+suggestMotionCategory\s*\(/);
+  assert.match(html, /renderMotionCategoryRecommendation/);
+  assert.doesNotMatch(html, /button\.classList\.toggle\('is-recommended',\s*button\.dataset\.motionCategory === recommendedCategory\)/);
+}
+
+function testLabUsesCalmMotionCategoryButtonStates() {
+  const html = read(LAB_PATH);
+
+  assert.match(html, /savedMotionProfileSources/);
+  assert.match(html, /savedMotionProfileCategories/);
+  assert.match(html, /is-saved-profile/);
+  assert.match(html, /const isSavedProfileCategory = savedMotionProfileSources\.has\(sourceFileName\)[\s\S]*savedMotionProfileCategories\.get\(sourceFileName\) === category/);
+  assert.match(html, /button\.classList\.toggle\('is-saved-profile',\s*isSavedProfileCategory && button\.dataset\.motionCategory === category\)/);
+  assert.doesNotMatch(html, /\.lab-quick-button\[data-motion-category="present"\]/);
+  assert.doesNotMatch(html, /\.lab-quick-button\[data-motion-category="point"\]/);
+  assert.doesNotMatch(html, /\.lab-quick-button\[data-motion-category="think"\]/);
+  assert.doesNotMatch(html, /\.lab-quick-button\[data-motion-category="warning"\]/);
+  assert.doesNotMatch(html, /\.lab-quick-button\[data-motion-category="success"\]/);
+  assert.doesNotMatch(html, /\.lab-quick-button\[data-motion-category="candidate_future"\]/);
+  assert.doesNotMatch(html, /\.lab-quick-button\[data-motion-category="reject"\]/);
+}
+
+function testLabPersistsMotionProfilesToServer() {
+  const html = read(LAB_PATH);
+
+  assert.match(html, /MOTION_PROFILE_API_URL\s*=\s*'\/api\/motion-profiles'/);
+  assert.match(html, /id="motionProfileSaveState"/);
+  assert.match(html, /id="motionDescription"/);
+  assert.match(html, /id="btnSaveMotionProfile"/);
+  assert.match(html, /人類描述/);
+  assert.match(html, /儲存主分類與描述/);
+  assert.match(html, /async function\s+loadMotionProfilesFromServer\s*\(/);
+  assert.match(html, /async function\s+saveMotionProfileToServer\s*\(/);
+  assert.match(html, /function\s+saveMotionDescription\s*\(/);
+  assert.match(html, /btnSaveMotionProfile\.addEventListener\('click',\s*\(\)\s*=>\s*saveMotionDescription\(\)\)/);
+  assert.match(html, /motionDescription\.addEventListener\('input'[\s\S]*syncMotionDescriptionToProfile\(\)/);
+  assert.match(html, /motionDescription\.addEventListener\('input'[\s\S]*markDescriptionFieldEdited\(\)/);
+  assert.match(html, /motionDescription\.addEventListener\('keydown'/);
+  assert.doesNotMatch(html, /motionDescription\.addEventListener\('change'/);
+  assert.match(html, /description:\s*profile\.description/);
+  assert.match(html, /usageDescription:\s*profile\.usageDescription/);
+  assert.match(html, /agentUsage:\s*Array\.isArray\(profile\.agentUsage\)/);
+  assert.match(html, /profile\.usageDescription\s*=\s*fields\.usageDescription/);
+  assert.match(html, /profile\.agentUsage\s*=\s*parseAgentUsage\(fields\.agentUsageText\)/);
+  assert.match(html, /els\.usageDescription\.value\s*=\s*profile\.usageDescription/);
+  assert.match(html, /els\.agentUsage\.value\s*=\s*Array\.isArray\(profile\.agentUsage\)/);
+  assert.match(html, /motionCategory:\s*profile\.motionCategory/);
+  assert.match(html, /method:\s*'POST'/);
+  assert.match(html, /profile:\s*serializeMotionProfile\(profile\)/);
+  assert.match(html, /saveMotionProfileToServer\(profile\)/);
+  assert.match(html, /motion_profiles\.json/);
+}
+
 function testLabGuardsAccidentalDuplicateMiningEntries() {
   const html = read(LAB_PATH);
 
@@ -430,6 +521,81 @@ function testReviewQueueUsesChineseFirstLabels() {
   assert.doesNotMatch(html, />\s*Classified\s*</);
 }
 
+function testMineListSeparatesSavedAndUnsavedMotionProfiles() {
+  const html = read(LAB_PATH);
+
+  assert.match(html, /id="mineFilterUnclassified"/);
+  assert.match(html, /未分類/);
+  assert.match(html, /id="mineFilterClassified"/);
+  assert.match(html, /已分類/);
+  assert.match(html, /id="mineFilterAll"/);
+  assert.match(html, /function\s+getMineFilterValue\s*\(/);
+  assert.match(html, /function\s+isMotionProfileSaved\s*\(/);
+  assert.match(html, /button\.classList\.toggle\('is-profile-saved',\s*isSaved\)/);
+  assert.match(html, /savedMotionProfileSources\.has\(fileName\)/);
+  assert.match(html, /mineFilterInputs/);
+  assert.match(html, /renderMineList/);
+  assert.match(html, /\.miner-flow-list li::before/);
+  assert.doesNotMatch(html, /\.miner-guide li::before/);
+}
+
+function testMineCardClickLoadsAndAutoplaysMotion() {
+  const html = read(LAB_PATH);
+
+  assert.match(html, /async function\s+loadExampleVrma\s*\(\s*fileName\s*=\s*els\.exampleSelect\.value\s*\|\|\s*'Relax\.vrma',\s*\{\s*autoplay\s*=\s*false\s*\}\s*=\s*\{\}\s*\)/);
+  assert.match(html, /if\s*\(autoplay\)\s*\{[\s\S]*playMotion\(\);[\s\S]*\}/);
+  assert.match(html, /loadExampleVrma\(fileName,\s*\{\s*autoplay:\s*true\s*\}\)/);
+}
+
+function testMotionMineLayoutPreventsSidebarOverlap() {
+  const html = read(LAB_PATH);
+
+  assert.match(html, /\.miner-guide\s*\{[\s\S]*min-width:\s*0;[\s\S]*overflow:\s*hidden;/);
+  assert.match(html, /\.miner-stage,\s*\.miner-classifier,\s*\.miner-sidebar\s*\{[\s\S]*min-width:\s*0;/);
+  assert.match(html, /\.mine-card-button,\s*\.pinned-candidate-button\s*\{[\s\S]*min-width:\s*0;/);
+  assert.match(html, /\.mine-card-button strong,\s*\.pinned-candidate-button strong\s*\{[\s\S]*overflow-wrap:\s*anywhere;/);
+  assert.match(html, /\.mine-card-button\.is-selected,\s*\.pinned-candidate-button\.is-selected\s*\{[\s\S]*border:\s*3px solid/);
+  assert.match(html, /\.mine-card-button\.is-selected\.is-profile-saved/);
+  assert.match(html, /\.lab-quick-button\[data-motion-category\]\.is-selected/);
+}
+
+function testDescriptionFirstMiningUiAndRules() {
+  const html = read(LAB_PATH);
+
+  assert.match(html, /id="descriptionMiningPanel"/);
+  assert.match(html, /描述採礦/);
+  assert.match(html, /id="motionDescription"/);
+  assert.match(html, /id="usageDescription"/);
+  assert.match(html, /id="agentUsage"/);
+  assert.match(html, /id="btnAnalyzeMotionDescription"/);
+  assert.match(html, /分析動作並填入建議/);
+  assert.match(html, /id="btnSaveDescribedEntry"/);
+  assert.match(html, /id="btnSaveDescribedEntryNext"/);
+  assert.match(html, /#quickReviewPanel\s*\{[\s\S]*display:\s*none;/);
+  assert.match(html, /const\s+MOTION_DESCRIPTION_RULES\s*=/);
+  assert.match(html, /right_hand_come_here/);
+  assert.match(html, /hand_near_chin_thinking/);
+  assert.match(html, /arm_forward_pointing/);
+  assert.match(html, /function\s+buildMotionSignature\s*\(/);
+  assert.match(html, /function\s+applyMotionDescriptionSuggestion\s*\(/);
+  assert.match(html, /function\s+saveDescribedMiningEntry\s*\(/);
+  assert.match(html, /motionDescription:\s*fields\.motionDescription/);
+  assert.match(html, /usageDescription:\s*fields\.usageDescription/);
+  assert.match(html, /agentUsage:\s*parseAgentUsage/);
+  assert.match(html, /status:\s*'described'/);
+  assert.match(html, /category:\s*null/);
+  assert.match(html, /classificationSource:\s*'pending_llm'/);
+  assert.match(html, /descriptionSource/);
+  assert.match(html, /entry\.status\s*===\s*'described'/);
+  assert.match(html, /MOTION_MINING_LOG_API_URL\s*=\s*'\/api\/motion-mining-log'/);
+  assert.match(html, /async function\s+saveDescribedMiningEntryToServer\s*\(/);
+  assert.match(html, /await\s+saveMotionProfileToServer\(profile\)/);
+  assert.match(html, /await\s+saveDescribedMiningEntryToServer\(entry\)/);
+  assert.match(html, /function\s+advanceToNextMineSource\s*\(/);
+  assert.match(html, /loadExampleVrma\(nextFileName,\s*\{\s*autoplay:\s*true\s*\}\)/);
+  assert.match(html, /advanceToNextMineSource\(entry\.source\s*\|\|\s*sourceFileName\)/);
+}
+
 function testReviewQueueSchemaAndBehaviorContracts() {
   const html = read(LAB_PATH);
 
@@ -447,7 +613,7 @@ function testLabUsesAliciaMotionMineManagerUi() {
   const html = read(LAB_PATH);
 
   assert.match(html, /Alicia Motion Mine/);
-  assert.match(html, /先找好姿勢，再分類/);
+  assert.match(html, /先定義動作，再釘選姿勢/);
   assert.match(html, /礦區/);
   assert.match(html, /候選片段/);
   assert.match(html, /id="mineList"/);
@@ -629,6 +795,7 @@ async function run() {
     testLabHtmlContractExists,
     testExampleVrmaSamplesExist,
     testLabIncludesExampleAndPlaybackControls,
+    testLabDefaultsToFrontFacingPreviewCamera,
     testLabReferencesVrmaCapabilityOnlyInLab,
     testLabDoesNotImportAgentRuntime,
     testUpperBodyWhitelistIsExplicitAndStable,
@@ -636,9 +803,17 @@ async function run() {
     testMotionMiningSchemaBuildsCandidateAndRejectEntries,
     testLabIncludesMotionMiningWorkbenchControls,
     testLabIncludesQuickReviewModeControls,
+    testLabUsesMotionFirstCategoryModel,
+    testLabShowsRecommendationForMotionCategory,
+    testLabUsesCalmMotionCategoryButtonStates,
+    testLabPersistsMotionProfilesToServer,
     testLabGuardsAccidentalDuplicateMiningEntries,
     testLabIncludesReviewQueueControls,
     testReviewQueueUsesChineseFirstLabels,
+    testMineListSeparatesSavedAndUnsavedMotionProfiles,
+    testMineCardClickLoadsAndAutoplaysMotion,
+    testMotionMineLayoutPreventsSidebarOverlap,
+    testDescriptionFirstMiningUiAndRules,
     testReviewQueueSchemaAndBehaviorContracts,
     testLabUsesAliciaMotionMineManagerUi,
     testLabIncludesRuleBasedMiningSuggestion,

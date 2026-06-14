@@ -1,0 +1,1622 @@
+{
+  "profiles": {
+    "Angry.vrma": {
+      "agentUsage": [
+        "可能因為使用者犯錯講不聽，羽山娘生氣中",
+        "這是個生氣中的動作",
+        "羽山娘氣噗噗"
+      ],
+      "description": "雙手插腰，頭微微歪一邊晃頭",
+      "motionCategory": "warning",
+      "motionScore": 4,
+      "note": "雙手插腰，頭微微歪一邊晃頭",
+      "source": "Angry.vrma",
+      "updatedAt": "2026-06-14T16:53:57+08:00",
+      "usageDescription": "羽山娘生氣中"
+    },
+    "Blush.vrma": {
+      "agentUsage": [
+        "在想事情，或是不小心犯錯時的不好意思的動作"
+      ],
+      "description": "微微擺頭，左手伸後到後腦摸了二下",
+      "motionCategory": "think",
+      "motionScore": 3,
+      "note": "微微擺頭，左手伸後到後腦摸了二下",
+      "source": "Blush.vrma",
+      "updatedAt": "2026-06-14T16:55:15+08:00",
+      "usageDescription": "在想事情，或是不小心犯錯時的不好意思的動作"
+    },
+    "Clapping.vrma": {
+      "agentUsage": [
+        "這件事情不對，不是這樣",
+        "這樣不行，很不好",
+        "嚴格禁止，不能這樣"
+      ],
+      "description": "雙手在面前連續交叉數次",
+      "motionCategory": "success",
+      "motionScore": 4,
+      "note": "雙手在面前連續交叉數次",
+      "source": "Clapping.vrma",
+      "updatedAt": "2026-06-14T16:56:06+08:00",
+      "usageDescription": "這件事情不對，不是這樣"
+    },
+    "Goodbye.vrma": {
+      "motionCategory": "success",
+      "motionScore": 4,
+      "note": "Motion-first：Goodbye.vrma 主分類為 成功 success。",
+      "source": "Goodbye.vrma",
+      "updatedAt": "2026-06-14T03:39:11+08:00"
+    },
+    "Jump.vrma": {
+      "motionCategory": "candidate_future",
+      "motionScore": 3,
+      "note": "Motion-first：Jump.vrma 主分類為 未來候選 candidate_future。",
+      "source": "Jump.vrma",
+      "updatedAt": "2026-06-14T03:39:16+08:00"
+    },
+    "LookAround.vrma": {
+      "motionCategory": "think",
+      "motionScore": 5,
+      "note": "Motion-first：LookAround.vrma 主分類為 思考 think。",
+      "source": "LookAround.vrma",
+      "updatedAt": "2026-06-14T03:39:25+08:00"
+    },
+    "Relax.vrma": {
+      "motionCategory": "present",
+      "motionScore": 4,
+      "note": "Motion-first：Relax.vrma 主分類為 介紹 present。",
+      "source": "Relax.vrma",
+      "updatedAt": "2026-06-14T03:39:28+08:00"
+    },
+    "Sad.vrma": {
+      "motionCategory": "candidate_future",
+      "motionScore": 3,
+      "note": "Motion-first：Sad.vrma 主分類為 未來候選 candidate_future。",
+      "source": "Sad.vrma",
+      "updatedAt": "2026-06-14T03:39:30+08:00"
+    },
+    "Sleepy.vrma": {
+      "motionCategory": "candidate_future",
+      "motionScore": 1,
+      "note": "Motion-first：Sleepy.vrma 主分類為 未來候選 candidate_future。",
+      "source": "Sleepy.vrma",
+      "updatedAt": "2026-06-14T03:39:34+08:00"
+    },
+    "Surprised.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 4,
+      "note": "Motion-first：Surprised.vrma 主分類為 警告 warning。",
+      "source": "Surprised.vrma",
+      "updatedAt": "2026-06-14T03:39:56+08:00"
+    },
+    "Thinking.vrma": {
+      "motionCategory": "think",
+      "motionScore": 5,
+      "note": "Motion-first：Thinking.vrma 主分類為 思考 think。",
+      "source": "Thinking.vrma",
+      "updatedAt": "2026-06-14T03:39:42+08:00"
+    },
+    "davinci2_blowAKiss.vrma": {
+      "agentUsage": [
+        "左手先靠近嘴邊，然後往前一伸，送出一個飛吻",
+        "送出飛吻"
+      ],
+      "description": "左手先靠近嘴邊，然後往前一伸，送出一個飛吻",
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "左手先靠近嘴邊，然後往前一伸，送出一個飛吻",
+      "source": "davinci2_blowAKiss.vrma",
+      "updatedAt": "2026-06-14T20:33:01+08:00",
+      "usageDescription": "左手先靠近嘴邊，然後往前一伸，送出一個飛吻\n送出飛吻"
+    },
+    "davinci2_bodyBlock.vrma": {
+      "agentUsage": [
+        "人物左傾，二手檔在面前，像是有個汽球快要爆炸，手在臉前交叉，好像真要報了，然後繼續檔摭檔著",
+        "似乎想阻止什麼事",
+        "前面有個過動兒小朋友也適合用這個，手按著他的頭，但他仍跳來跳去"
+      ],
+      "description": "人物左傾，二手檔在面前，像是有個汽球快要爆炸，手在臉前交叉，好像真要報了，然後繼續檔摭檔著",
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "人物左傾，二手檔在面前，像是有個汽球快要爆炸，手在臉前交叉，好像真要報了，然後繼續檔摭檔著",
+      "source": "davinci2_bodyBlock.vrma",
+      "updatedAt": "2026-06-14T20:35:22+08:00",
+      "usageDescription": "人物左傾，二手檔在面前，像是有個汽球快要爆炸，手在臉前交叉，好像真要報了，然後繼續檔摭檔著\n似乎想阻止什麼事"
+    },
+    "davinci2_catch.vrma": {
+      "agentUsage": [
+        "雙手合十，求求您",
+        "短暫拜了一下",
+        "吃東西前手掌合十短暫的祈禱"
+      ],
+      "description": "雙手合十，很短暫的拜了一下",
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "雙手合十，很短暫的拜了一下",
+      "source": "davinci2_catch.vrma",
+      "updatedAt": "2026-06-14T20:37:04+08:00",
+      "usageDescription": "短暫的雙手合十，求求您"
+    },
+    "davinci2_crouchToStand.vrma": {
+      "agentUsage": [
+        "也許在問人現在時間幾點幾分",
+        "也可以像是剛打針，右手壓著綿花按著傷口",
+        "或是在思考時間幾點了"
+      ],
+      "description": "左手向前，右手指著左手手腕",
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "左手向前，右手指著左手手腕",
+      "source": "davinci2_crouchToStand.vrma",
+      "updatedAt": "2026-06-14T20:51:31+08:00",
+      "usageDescription": "也許在問人現在時間幾點幾分\n也可以像是剛打針，右手壓著綿花按著傷口\n或是在思考時間幾點了"
+    },
+    "davinci2_defeatIdle.vrma": {
+      "agentUsage": [
+        "指揮",
+        "用力蓋上東西",
+        "遇到什麼事相當不甘心的動作"
+      ],
+      "description": "雙手在前，像是指揮或是用力的蓋上東西的感覺，連頭都一起低下",
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "雙手在前，像是指揮或是用力的蓋上東西的感覺，連頭都一起低下",
+      "source": "davinci2_defeatIdle.vrma",
+      "updatedAt": "2026-06-14T20:53:15+08:00",
+      "usageDescription": "指揮或是用力蓋上東西或是遇到什麼事相當不甘心的動作"
+    },
+    "davinci2_entry.vrma": {
+      "agentUsage": [
+        "行進中，右手往上比出敬禮的手勢，然後左看看右看看，也像是登場時大家歡迎她的到來",
+        "登場時",
+        "我們歡迎羽山娘"
+      ],
+      "description": "行進中，右手往上比出敬禮的手勢，然後左看看右看看，也像是登場時大家歡迎她的到來",
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "行進中，右手往上比出敬禮的手勢，然後左看看右看看，也像是登場時大家歡迎她的到來",
+      "source": "davinci2_entry.vrma",
+      "updatedAt": "2026-06-14T20:59:51+08:00",
+      "usageDescription": "行進中，右手往上比出敬禮的手勢，然後左看看右看看，也像是登場時大家歡迎她的到來\n登場時\n我們歡迎羽山娘"
+    },
+    "davinci2_floating.vrma": {
+      "agentUsage": [
+        "左手往外滑一下，右手往外滑一下，是一個往外滑的自由式，用途不明但很可愛",
+        "跟左、右的觀眾打招呼"
+      ],
+      "description": "左手往外滑一下，右手往外滑一下，是一個往外滑的自由式",
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "左手往外滑一下，右手往外滑一下，是一個往外滑的自由式",
+      "source": "davinci2_floating.vrma",
+      "updatedAt": "2026-06-14T21:01:07+08:00",
+      "usageDescription": "左手往外滑一下，右手往外滑一下，是一個往外滑的自由式，用途不明但很可愛\n跟左、右的觀眾打招呼"
+    },
+    "davinci2_gettingUp.vrma": {
+      "agentUsage": [
+        "90度彎下腰，右手作出順勢炒了一下的動作，用途不明"
+      ],
+      "description": "90度彎下腰，右手作出順勢炒了一下的動作",
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "90度彎下腰，右手作出順勢炒了一下的動作",
+      "source": "davinci2_gettingUp.vrma",
+      "updatedAt": "2026-06-14T21:01:53+08:00",
+      "usageDescription": "90度彎下腰，右手作出順勢炒了一下的動作，用途不明"
+    },
+    "davinci2_guitarPlaying.vrma": {
+      "agentUsage": [
+        "彈吉他",
+        "空氣吉他",
+        "連續演奏吉他的動作"
+      ],
+      "description": "彈吉他的連續動作",
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "彈吉他的連續動作",
+      "source": "davinci2_guitarPlaying.vrma",
+      "updatedAt": "2026-06-14T21:02:28+08:00",
+      "usageDescription": "彈吉他\n空氣吉他\n連續演奏吉他的動作"
+    },
+    "davinci2_kneeling.vrma": {
+      "agentUsage": [
+        "上半身前傾，左手檔在腹部前約10公分的靜止畫面"
+      ],
+      "description": "上半身前傾，左手檔在腹部前約10公分的靜止畫面",
+      "motionCategory": "reject",
+      "motionScore": 3,
+      "note": "上半身前傾，左手檔在腹部前約10公分的靜止畫面",
+      "source": "davinci2_kneeling.vrma",
+      "updatedAt": "2026-06-14T21:03:28+08:00",
+      "usageDescription": "上半身前傾，左手檔在腹部前約10公分的靜止畫面"
+    },
+    "davinci2_lookOverShoulder.vrma": {
+      "agentUsage": [
+        "小心翼翼，感覺四週有點危險，雙手在前方，右邊看一下，又被左邊嚇了一下"
+      ],
+      "description": "雙手在身體前方，先看一下右邊，然後又迅速的看了一下左邊",
+      "motionCategory": "think",
+      "motionScore": 3,
+      "note": "雙手在身體前方，先看一下右邊，然後又迅速的看了一下左邊",
+      "source": "davinci2_lookOverShoulder.vrma",
+      "updatedAt": "2026-06-14T21:04:54+08:00",
+      "usageDescription": "小心翼翼，感覺四週有點危險，雙手在前方，右邊看一下，又被左邊嚇了一下"
+    },
+    "davinci2_militarySignaling.vrma": {
+      "agentUsage": [
+        "頭往左前下方看，右手作出一個像打籃球，很慢拍了二下的動作，再伸回胸前"
+      ],
+      "description": "頭往左前下方看，右手作出一個像打籃球，很慢拍了二下的動作，再伸回胸前",
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "頭往左前下方看，右手作出一個像打籃球，很慢拍了二下的動作，再伸回胸前",
+      "source": "davinci2_militarySignaling.vrma",
+      "updatedAt": "2026-06-14T21:42:24+08:00",
+      "usageDescription": "頭往左前下方看，右手作出一個像打籃球，很慢拍了二下的動作，再伸回胸前"
+    },
+    "davinci2_openingDoorInwards.vrma": {
+      "agentUsage": [
+        "經過一個關上的門，用右手打開，左手再關上門"
+      ],
+      "description": "右手作出一個打開門把手，左手開門再關上的感覺",
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "右手作出一個打開門把手，左手開門再關上的感覺",
+      "source": "davinci2_openingDoorInwards.vrma",
+      "updatedAt": "2026-06-14T21:43:24+08:00",
+      "usageDescription": "經過一個關上的門，用右手打開，左手再關上門"
+    },
+    "davinci2_pacingAndTalkingOnAPhone.vrma": {
+      "agentUsage": [
+        "一個長達37秒的演示，右手在嘴邊像是對著麥克風唱歌，或是對著人的耳朵講敲敲話"
+      ],
+      "description": "一個長達37秒的演示，右手在嘴邊像是對著麥克風唱歌，或是對著人的耳朵講敲敲話",
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "一個長達37秒的演示，右手在嘴邊像是對著麥克風唱歌，或是對著人的耳朵講敲敲話",
+      "source": "davinci2_pacingAndTalkingOnAPhone.vrma",
+      "updatedAt": "2026-06-14T21:44:42+08:00",
+      "usageDescription": "一個長達37秒的演示，右手在嘴邊像是對著麥克風唱歌，或是對著人的耳朵講敲敲話"
+    },
+    "davinci2_patting.vrma": {
+      "agentUsage": [
+        "右手往外伸開，作出一個說掰掰姿勢",
+        "也可能是開門"
+      ],
+      "description": "右手往外伸開，作出一個說掰掰姿勢",
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "右手往外伸開，作出一個說掰掰姿勢",
+      "source": "davinci2_patting.vrma",
+      "updatedAt": "2026-06-14T21:45:32+08:00",
+      "usageDescription": "右手往外伸開，作出一個說掰掰姿勢\n也可能是開門"
+    },
+    "davinci2_petting.vrma": {
+      "agentUsage": [
+        "如摸馬的頭或是摸狗的頭，進行寵物的感覺"
+      ],
+      "description": "左手向前伸出，摸了二下",
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "左手向前伸出，摸了二下",
+      "source": "davinci2_petting.vrma",
+      "updatedAt": "2026-06-14T21:46:25+08:00",
+      "usageDescription": "如摸馬的頭或是摸狗的頭，進行寵物的感覺"
+    },
+    "davinci2_pettingAnimal.vrma": {
+      "agentUsage": [
+        "右手伸出順著馬背上的毛撫摸三次",
+        "寵物的動作"
+      ],
+      "description": "右手伸出順著馬背上的毛撫摸三次",
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "右手伸出順著馬背上的毛撫摸三次",
+      "source": "davinci2_pettingAnimal.vrma",
+      "updatedAt": "2026-06-14T21:47:23+08:00",
+      "usageDescription": "右手伸出順著馬背上的毛撫摸三次\n寵物的動作"
+    },
+    "davinci2_praying.vrma": {
+      "agentUsage": [
+        "雙手在胸前交叉，像是在說不，然後身體往左下彎了一下"
+      ],
+      "description": "雙手在胸前交叉，然後身體往左下彎了一下",
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "雙手在胸前交叉，然後身體往左下彎了一下",
+      "source": "davinci2_praying.vrma",
+      "updatedAt": "2026-06-14T21:48:16+08:00",
+      "usageDescription": "雙手在胸前交叉，像是在說不，然後身體往左下彎了一下"
+    },
+    "davinci2_push.vrma": {
+      "agentUsage": [
+        "雙手在面醹作出隔檔的感覺，從右邊往中間移動一些"
+      ],
+      "description": "雙手在面醹作出隔檔的感覺，從右邊往中間移動一些",
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "雙手在面醹作出隔檔的感覺，從右邊往中間移動一些",
+      "source": "davinci2_push.vrma",
+      "updatedAt": "2026-06-14T21:48:52+08:00",
+      "usageDescription": "雙手在面醹作出隔檔的感覺，從右邊往中間移動一些"
+    },
+    "davinci2_rummaging.vrma": {
+      "agentUsage": [
+        "右手在眼前約20cm處平舉，左手在下巴前10cm左右，這姿勢維持了4秒"
+      ],
+      "description": "右手在眼前約20cm處平舉，左手在下巴前10cm左右，這姿勢維持了4秒",
+      "motionCategory": "think",
+      "motionScore": 3,
+      "note": "右手在眼前約20cm處平舉，左手在下巴前10cm左右，這姿勢維持了4秒",
+      "source": "davinci2_rummaging.vrma",
+      "updatedAt": "2026-06-14T21:51:22+08:00",
+      "usageDescription": "右手在眼前約20cm處平舉，左手在下巴前10cm左右，這姿勢維持了4秒"
+    },
+    "davinci2_searchingPockets.vrma": {
+      "agentUsage": [
+        "雙手在背後的口袋找皮包的感覺，右手好像找到了一個紙屑，發現不對，把紙屑丟掉，然後繼續找"
+      ],
+      "description": "雙手在背後的口袋找皮包的感覺，右手好像找到了一個紙屑，發現不對，把紙屑丟掉，然後繼續找",
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "雙手在背後的口袋找皮包的感覺，右手好像找到了一個紙屑，發現不對，把紙屑丟掉，然後繼續找",
+      "source": "davinci2_searchingPockets.vrma",
+      "updatedAt": "2026-06-14T21:52:31+08:00",
+      "usageDescription": "雙手在背後的口袋找皮包的感覺，右手好像找到了一個紙屑，發現不對，把紙屑丟掉，然後繼續找"
+    },
+    "davinci2_shakingHands1.vrma": {
+      "agentUsage": [
+        "伸出右手與人握手，並把對方往自己拉了一點點距離"
+      ],
+      "description": "伸出右手與人握手，並把對方往自己拉了一點點距離",
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "伸出右手與人握手，並把對方往自己拉了一點點距離",
+      "source": "davinci2_shakingHands1.vrma",
+      "updatedAt": "2026-06-14T21:53:06+08:00",
+      "usageDescription": "伸出右手與人握手，並把對方往自己拉了一點點距離"
+    },
+    "davinci2_sitToStand.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci2_sitToStand.vrma 主分類為 警告 warning。",
+      "source": "davinci2_sitToStand.vrma",
+      "updatedAt": "2026-06-14T11:09:59+08:00"
+    },
+    "davinci2_sitting.vrma": {
+      "agentUsage": [
+        "雙手在前，謹慎的看右邊，再看左邊，可能是稍不信任四週"
+      ],
+      "description": "雙手在前，謹慎的看右邊，再看左邊",
+      "motionCategory": "think",
+      "motionScore": 3,
+      "note": "雙手在前，謹慎的看右邊，再看左邊",
+      "source": "davinci2_sitting.vrma",
+      "updatedAt": "2026-06-14T21:54:02+08:00",
+      "usageDescription": "雙手在前，謹慎的看右邊，再看左邊，可能是稍不信任四週"
+    },
+    "davinci2_sittingClap.vrma": {
+      "agentUsage": [
+        "雙手在胸前15公分左右拍手"
+      ],
+      "description": "雙手在胸前15公分左右拍手",
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "雙手在胸前15公分左右拍手",
+      "source": "davinci2_sittingClap.vrma",
+      "updatedAt": "2026-06-14T21:54:30+08:00",
+      "usageDescription": "雙手在胸前15公分左右拍手"
+    },
+    "davinci2_sittingDisapproval.vrma": {
+      "agentUsage": [
+        "右手伸出，作了手掌左攞右攞揮手的動作，似乎在拒絕什麼",
+        "不想喝酒，已喝太多了"
+      ],
+      "description": "右手伸出，作了手掌左攞右攞揮手的動作",
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "右手伸出，作了手掌左攞右攞揮手的動作",
+      "source": "davinci2_sittingDisapproval.vrma",
+      "updatedAt": "2026-06-14T21:55:34+08:00",
+      "usageDescription": "右手伸出，作了手掌左攞右攞揮手的動作，似乎在拒絕什麼\n不想喝酒，已喝太多了"
+    },
+    "davinci2_sittingTalking.vrma": {
+      "agentUsage": [
+        "這是個40秒左右的連續動畫，先看左，再看右，雙手在前面叉交叉，感覺像是在坐電車或坐火車，過程看著右邊，最後回正",
+        "長時間坐車的感覺"
+      ],
+      "description": "這是個40秒左右的連續動畫，先看左，再看右，雙手在前面叉交叉，感覺像是在坐電車或坐火車，過程看著右邊，最後回正",
+      "motionCategory": "think",
+      "motionScore": 3,
+      "note": "這是個40秒左右的連續動畫，先看左，再看右，雙手在前面叉交叉，感覺像是在坐電車或坐火車，過程看著右邊，最後回正",
+      "source": "davinci2_sittingTalking.vrma",
+      "updatedAt": "2026-06-14T21:56:56+08:00",
+      "usageDescription": "這是個40秒左右的連續動畫，先看左，再看右，雙手在前面叉交叉，感覺像是在坐電車或坐火車，過程看著右邊，最後回正\n長時間坐車的感覺"
+    },
+    "davinci2_standToCover.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci2_standToCover.vrma 主分類為 警告 warning。",
+      "source": "davinci2_standToCover.vrma",
+      "updatedAt": "2026-06-14T11:10:17+08:00"
+    },
+    "davinci2_standToSit.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci2_standToSit.vrma 主分類為 指向 point。",
+      "source": "davinci2_standToSit.vrma",
+      "updatedAt": "2026-06-14T11:10:23+08:00"
+    },
+    "davinci2_standingJump.vrma": {
+      "motionCategory": "success",
+      "motionScore": 3,
+      "note": "Motion-first：davinci2_standingJump.vrma 主分類為 成功 success。",
+      "source": "davinci2_standingJump.vrma",
+      "updatedAt": "2026-06-14T11:10:07+08:00"
+    },
+    "davinci2_startWalking.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci2_startWalking.vrma 主分類為 指向 point。",
+      "source": "davinci2_startWalking.vrma",
+      "updatedAt": "2026-06-14T11:10:29+08:00"
+    },
+    "davinci2_typing.vrma": {
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "Motion-first：davinci2_typing.vrma 主分類為 介紹 present。",
+      "source": "davinci2_typing.vrma",
+      "updatedAt": "2026-06-14T11:10:43+08:00"
+    },
+    "davinci2_unarmedTurnLeft90.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci2_unarmedTurnLeft90.vrma 主分類為 指向 point。",
+      "source": "davinci2_unarmedTurnLeft90.vrma",
+      "updatedAt": "2026-06-14T11:10:52+08:00"
+    },
+    "davinci2_walking.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci2_walking.vrma 主分類為 指向 point。",
+      "source": "davinci2_walking.vrma",
+      "updatedAt": "2026-06-14T11:10:56+08:00"
+    },
+    "davinci2_yelling.vrma": {
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "Motion-first：davinci2_yelling.vrma 主分類為 介紹 present。",
+      "source": "davinci2_yelling.vrma",
+      "updatedAt": "2026-06-14T11:11:03+08:00"
+    },
+    "davinci3_Swagger_Walk.vrma": {
+      "motionCategory": "reject",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_Swagger_Walk.vrma 主分類為 淘汰 reject。",
+      "source": "davinci3_Swagger_Walk.vrma",
+      "updatedAt": "2026-06-14T11:15:42+08:00"
+    },
+    "davinci3_backflip.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_backflip.vrma 主分類為 指向 point。",
+      "source": "davinci3_backflip.vrma",
+      "updatedAt": "2026-06-14T11:11:26+08:00"
+    },
+    "davinci3_ballet.vrma": {
+      "motionCategory": "reject",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_ballet.vrma 主分類為 淘汰 reject。",
+      "source": "davinci3_ballet.vrma",
+      "updatedAt": "2026-06-14T11:21:59+08:00"
+    },
+    "davinci3_balletsplit.vrma": {
+      "motionCategory": "reject",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_balletsplit.vrma 主分類為 淘汰 reject。",
+      "source": "davinci3_balletsplit.vrma",
+      "updatedAt": "2026-06-14T11:21:55+08:00"
+    },
+    "davinci3_breakdance1990.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_breakdance1990.vrma 主分類為 警告 warning。",
+      "source": "davinci3_breakdance1990.vrma",
+      "updatedAt": "2026-06-14T11:21:49+08:00"
+    },
+    "davinci3_breakdanceEnding1.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_breakdanceEnding1.vrma 主分類為 警告 warning。",
+      "source": "davinci3_breakdanceEnding1.vrma",
+      "updatedAt": "2026-06-14T11:21:13+08:00"
+    },
+    "davinci3_breakdanceFootwork1.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_breakdanceFootwork1.vrma 主分類為 警告 warning。",
+      "source": "davinci3_breakdanceFootwork1.vrma",
+      "updatedAt": "2026-06-14T11:20:59+08:00"
+    },
+    "davinci3_breakdanceFreezes.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_breakdanceFreezes.vrma 主分類為 警告 warning。",
+      "source": "davinci3_breakdanceFreezes.vrma",
+      "updatedAt": "2026-06-14T11:20:43+08:00"
+    },
+    "davinci3_breakdanceReady.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_breakdanceReady.vrma 主分類為 警告 warning。",
+      "source": "davinci3_breakdanceReady.vrma",
+      "updatedAt": "2026-06-14T11:20:37+08:00"
+    },
+    "davinci3_breakdanceSwipes.vrma": {
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_breakdanceSwipes.vrma 主分類為 介紹 present。",
+      "source": "davinci3_breakdanceSwipes.vrma",
+      "updatedAt": "2026-06-14T11:20:29+08:00"
+    },
+    "davinci3_breakdanceUprock.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_breakdanceUprock.vrma 主分類為 警告 warning。",
+      "source": "davinci3_breakdanceUprock.vrma",
+      "updatedAt": "2026-06-14T11:12:08+08:00"
+    },
+    "davinci3_brooklynUprock.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_brooklynUprock.vrma 主分類為 警告 warning。",
+      "source": "davinci3_brooklynUprock.vrma",
+      "updatedAt": "2026-06-14T11:11:41+08:00"
+    },
+    "davinci3_cartwheel.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_cartwheel.vrma 主分類為 指向 point。",
+      "source": "davinci3_cartwheel.vrma",
+      "updatedAt": "2026-06-14T11:11:47+08:00"
+    },
+    "davinci3_catwalkWalkForwardHighKnees.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_catwalkWalkForwardHighKnees.vrma 主分類為 指向 point。",
+      "source": "davinci3_catwalkWalkForwardHighKnees.vrma",
+      "updatedAt": "2026-06-14T11:11:51+08:00"
+    },
+    "davinci3_catwalkWalking.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_catwalkWalking.vrma 主分類為 指向 point。",
+      "source": "davinci3_catwalkWalking.vrma",
+      "updatedAt": "2026-06-14T11:11:55+08:00"
+    },
+    "davinci3_climbingToTop.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_climbingToTop.vrma 主分類為 警告 warning。",
+      "source": "davinci3_climbingToTop.vrma",
+      "updatedAt": "2026-06-14T11:12:02+08:00"
+    },
+    "davinci3_dancingTwerk.vrma": {
+      "motionCategory": "candidate_future",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_dancingTwerk.vrma 主分類為 未來候選 candidate_future。",
+      "source": "davinci3_dancingTwerk.vrma",
+      "updatedAt": "2026-06-14T11:14:50+08:00"
+    },
+    "davinci3_dropKick.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_dropKick.vrma 主分類為 警告 warning。",
+      "source": "davinci3_dropKick.vrma",
+      "updatedAt": "2026-06-14T11:12:20+08:00"
+    },
+    "davinci3_flair.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_flair.vrma 主分類為 警告 warning。",
+      "source": "davinci3_flair.vrma",
+      "updatedAt": "2026-06-14T11:12:14+08:00"
+    },
+    "davinci3_golfBadShot.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_golfBadShot.vrma 主分類為 指向 point。",
+      "source": "davinci3_golfBadShot.vrma",
+      "updatedAt": "2026-06-14T11:12:27+08:00"
+    },
+    "davinci3_golfDrive.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_golfDrive.vrma 主分類為 指向 point。",
+      "source": "davinci3_golfDrive.vrma",
+      "updatedAt": "2026-06-14T11:12:33+08:00"
+    },
+    "davinci3_golfPrePutt.vrma": {
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_golfPrePutt.vrma 主分類為 介紹 present。",
+      "source": "davinci3_golfPrePutt.vrma",
+      "updatedAt": "2026-06-14T11:12:54+08:00"
+    },
+    "davinci3_golfPuttVictory.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_golfPuttVictory.vrma 主分類為 警告 warning。",
+      "source": "davinci3_golfPuttVictory.vrma",
+      "updatedAt": "2026-06-14T11:12:44+08:00"
+    },
+    "davinci3_hipHopDance.vrma": {
+      "motionCategory": "candidate_future",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_hipHopDance.vrma 主分類為 未來候選 candidate_future。",
+      "source": "davinci3_hipHopDance.vrma",
+      "updatedAt": "2026-06-14T11:13:16+08:00"
+    },
+    "davinci3_hipHopDancing.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_hipHopDancing.vrma 主分類為 指向 point。",
+      "source": "davinci3_hipHopDancing.vrma",
+      "updatedAt": "2026-06-14T11:13:27+08:00"
+    },
+    "davinci3_jumping.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_jumping.vrma 主分類為 警告 warning。",
+      "source": "davinci3_jumping.vrma",
+      "updatedAt": "2026-06-14T11:13:34+08:00"
+    },
+    "davinci3_jumpingDown.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_jumpingDown.vrma 主分類為 警告 warning。",
+      "source": "davinci3_jumpingDown.vrma",
+      "updatedAt": "2026-06-14T11:13:43+08:00"
+    },
+    "davinci3_jumpingJacks.vrma": {
+      "motionCategory": "success",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_jumpingJacks.vrma 主分類為 成功 success。",
+      "source": "davinci3_jumpingJacks.vrma",
+      "updatedAt": "2026-06-14T11:13:47+08:00"
+    },
+    "davinci3_kipUp.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_kipUp.vrma 主分類為 警告 warning。",
+      "source": "davinci3_kipUp.vrma",
+      "updatedAt": "2026-06-14T11:14:00+08:00"
+    },
+    "davinci3_lowCrawl.vrma": {
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_lowCrawl.vrma 主分類為 介紹 present。",
+      "source": "davinci3_lowCrawl.vrma",
+      "updatedAt": "2026-06-14T11:14:06+08:00"
+    },
+    "davinci3_rumbaDancing.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_rumbaDancing.vrma 主分類為 指向 point。",
+      "source": "davinci3_rumbaDancing.vrma",
+      "updatedAt": "2026-06-14T11:14:12+08:00"
+    },
+    "davinci3_runningUpStairs.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_runningUpStairs.vrma 主分類為 指向 point。",
+      "source": "davinci3_runningUpStairs.vrma",
+      "updatedAt": "2026-06-14T11:14:16+08:00"
+    },
+    "davinci3_sambaDancing.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_sambaDancing.vrma 主分類為 警告 warning。",
+      "source": "davinci3_sambaDancing.vrma",
+      "updatedAt": "2026-06-14T11:14:33+08:00"
+    },
+    "davinci3_sillyDancing.vrma": {
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_sillyDancing.vrma 主分類為 介紹 present。",
+      "source": "davinci3_sillyDancing.vrma",
+      "updatedAt": "2026-06-14T11:20:22+08:00"
+    },
+    "davinci3_skateboarding.vrma": {
+      "motionCategory": "candidate_future",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_skateboarding.vrma 主分類為 未來候選 candidate_future。",
+      "source": "davinci3_skateboarding.vrma",
+      "updatedAt": "2026-06-14T11:15:01+08:00"
+    },
+    "davinci3_slowJogBackwards.vrma": {
+      "motionCategory": "reject",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_slowJogBackwards.vrma 主分類為 淘汰 reject。",
+      "source": "davinci3_slowJogBackwards.vrma",
+      "updatedAt": "2026-06-14T11:15:10+08:00"
+    },
+    "davinci3_sneakingForward.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_sneakingForward.vrma 主分類為 警告 warning。",
+      "source": "davinci3_sneakingForward.vrma",
+      "updatedAt": "2026-06-14T11:15:16+08:00"
+    },
+    "davinci3_sneakyWalking.vrma": {
+      "motionCategory": "think",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_sneakyWalking.vrma 主分類為 思考 think。",
+      "source": "davinci3_sneakyWalking.vrma",
+      "updatedAt": "2026-06-14T11:15:26+08:00"
+    },
+    "davinci3_standardRun.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_standardRun.vrma 主分類為 指向 point。",
+      "source": "davinci3_standardRun.vrma",
+      "updatedAt": "2026-06-14T11:15:30+08:00"
+    },
+    "davinci3_startClimbingLadder.vrma": {
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_startClimbingLadder.vrma 主分類為 介紹 present。",
+      "source": "davinci3_startClimbingLadder.vrma",
+      "updatedAt": "2026-06-14T11:15:36+08:00"
+    },
+    "davinci3_swimming.vrma": {
+      "motionCategory": "success",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_swimming.vrma 主分類為 成功 success。",
+      "source": "davinci3_swimming.vrma",
+      "updatedAt": "2026-06-14T11:15:48+08:00"
+    },
+    "davinci3_twistDance.vrma": {
+      "motionCategory": "candidate_future",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_twistDance.vrma 主分類為 未來候選 candidate_future。",
+      "source": "davinci3_twistDance.vrma",
+      "updatedAt": "2026-06-14T11:15:58+08:00"
+    },
+    "davinci3_vaultOverBox.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_vaultOverBox.vrma 主分類為 警告 warning。",
+      "source": "davinci3_vaultOverBox.vrma",
+      "updatedAt": "2026-06-14T11:16:06+08:00"
+    },
+    "davinci3_zombieStandUp.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci3_zombieStandUp.vrma 主分類為 指向 point。",
+      "source": "davinci3_zombieStandUp.vrma",
+      "updatedAt": "2026-06-14T11:16:16+08:00"
+    },
+    "davinci4_Thriller_Part_2.vrma": {
+      "motionCategory": "candidate_future",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_Thriller_Part_2.vrma 主分類為 未來候選 candidate_future。",
+      "source": "davinci4_Thriller_Part_2.vrma",
+      "updatedAt": "2026-06-14T11:19:47+08:00"
+    },
+    "davinci4_Thriller_Part_3_1_.vrma": {
+      "motionCategory": "candidate_future",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_Thriller_Part_3_1_.vrma 主分類為 未來候選 candidate_future。",
+      "source": "davinci4_Thriller_Part_3_1_.vrma",
+      "updatedAt": "2026-06-14T11:19:56+08:00"
+    },
+    "davinci4_VRMA_02.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_VRMA_02.vrma 主分類為 警告 warning。",
+      "source": "davinci4_VRMA_02.vrma",
+      "updatedAt": "2026-06-14T11:20:08+08:00"
+    },
+    "davinci4_VRMA_03.vrma": {
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_VRMA_03.vrma 主分類為 介紹 present。",
+      "source": "davinci4_VRMA_03.vrma",
+      "updatedAt": "2026-06-14T11:20:15+08:00"
+    },
+    "davinci4_VRMA_04.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_VRMA_04.vrma 主分類為 指向 point。",
+      "source": "davinci4_VRMA_04.vrma",
+      "updatedAt": "2026-06-14T11:20:51+08:00"
+    },
+    "davinci4_VRMA_05.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_VRMA_05.vrma 主分類為 指向 point。",
+      "source": "davinci4_VRMA_05.vrma",
+      "updatedAt": "2026-06-14T11:21:09+08:00"
+    },
+    "davinci4_VRMA_06.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_VRMA_06.vrma 主分類為 指向 point。",
+      "source": "davinci4_VRMA_06.vrma",
+      "updatedAt": "2026-06-14T11:21:25+08:00"
+    },
+    "davinci4_VRMA_07.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_VRMA_07.vrma 主分類為 指向 point。",
+      "source": "davinci4_VRMA_07.vrma",
+      "updatedAt": "2026-06-14T11:21:35+08:00"
+    },
+    "davinci4_aimingGun.vrma": {
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_aimingGun.vrma 主分類為 介紹 present。",
+      "source": "davinci4_aimingGun.vrma",
+      "updatedAt": "2026-06-14T11:16:26+08:00"
+    },
+    "davinci4_backbendsplit.vrma": {
+      "motionCategory": "reject",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_backbendsplit.vrma 主分類為 淘汰 reject。",
+      "source": "davinci4_backbendsplit.vrma",
+      "updatedAt": "2026-06-14T11:16:21+08:00"
+    },
+    "davinci4_bodyBlock.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_bodyBlock.vrma 主分類為 警告 warning。",
+      "source": "davinci4_bodyBlock.vrma",
+      "updatedAt": "2026-06-14T11:16:32+08:00"
+    },
+    "davinci4_centerBlock.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_centerBlock.vrma 主分類為 警告 warning。",
+      "source": "davinci4_centerBlock.vrma",
+      "updatedAt": "2026-06-14T11:16:38+08:00"
+    },
+    "davinci4_crosslegFreeze.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_crosslegFreeze.vrma 主分類為 警告 warning。",
+      "source": "davinci4_crosslegFreeze.vrma",
+      "updatedAt": "2026-06-14T11:16:44+08:00"
+    },
+    "davinci4_doubleDaggerStab.vrma": {
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_doubleDaggerStab.vrma 主分類為 介紹 present。",
+      "source": "davinci4_doubleDaggerStab.vrma",
+      "updatedAt": "2026-06-14T11:16:50+08:00"
+    },
+    "davinci4_fishingCast.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_fishingCast.vrma 主分類為 指向 point。",
+      "source": "davinci4_fishingCast.vrma",
+      "updatedAt": "2026-06-14T11:16:58+08:00"
+    },
+    "davinci4_flyingKneePunchCombo.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_flyingKneePunchCombo.vrma 主分類為 警告 warning。",
+      "source": "davinci4_flyingKneePunchCombo.vrma",
+      "updatedAt": "2026-06-14T11:17:06+08:00"
+    },
+    "davinci4_paddling.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_paddling.vrma 主分類為 警告 warning。",
+      "source": "davinci4_paddling.vrma",
+      "updatedAt": "2026-06-14T11:17:19+08:00"
+    },
+    "davinci4_pianoPlaying.vrma": {
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_pianoPlaying.vrma 主分類為 介紹 present。",
+      "source": "davinci4_pianoPlaying.vrma",
+      "updatedAt": "2026-06-14T11:17:31+08:00"
+    },
+    "davinci4_playingDrums.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_playingDrums.vrma 主分類為 警告 warning。",
+      "source": "davinci4_playingDrums.vrma",
+      "updatedAt": "2026-06-14T11:17:37+08:00"
+    },
+    "davinci4_playingTheViolin.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_playingTheViolin.vrma 主分類為 指向 point。",
+      "source": "davinci4_playingTheViolin.vrma",
+      "updatedAt": "2026-06-14T11:17:56+08:00"
+    },
+    "davinci4_punch.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_punch.vrma 主分類為 指向 point。",
+      "source": "davinci4_punch.vrma",
+      "updatedAt": "2026-06-14T11:18:19+08:00"
+    },
+    "davinci4_pushStart.vrma": {
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_pushStart.vrma 主分類為 介紹 present。",
+      "source": "davinci4_pushStart.vrma",
+      "updatedAt": "2026-06-14T11:18:27+08:00"
+    },
+    "davinci4_reloading.vrma": {
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_reloading.vrma 主分類為 介紹 present。",
+      "source": "davinci4_reloading.vrma",
+      "updatedAt": "2026-06-14T11:18:33+08:00"
+    },
+    "davinci4_roar.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_roar.vrma 主分類為 指向 point。",
+      "source": "davinci4_roar.vrma",
+      "updatedAt": "2026-06-14T11:18:39+08:00"
+    },
+    "davinci4_singing.vrma": {
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_singing.vrma 主分類為 介紹 present。",
+      "source": "davinci4_singing.vrma",
+      "updatedAt": "2026-06-14T11:18:58+08:00"
+    },
+    "davinci4_singing_1.vrma": {
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_singing_1.vrma 主分類為 介紹 present。",
+      "source": "davinci4_singing_1.vrma",
+      "updatedAt": "2026-06-14T11:18:50+08:00"
+    },
+    "davinci4_situps.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_situps.vrma 主分類為 警告 warning。",
+      "source": "davinci4_situps.vrma",
+      "updatedAt": "2026-06-14T11:19:04+08:00"
+    },
+    "davinci4_smoking.vrma": {
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_smoking.vrma 主分類為 介紹 present。",
+      "source": "davinci4_smoking.vrma",
+      "updatedAt": "2026-06-14T11:19:16+08:00"
+    },
+    "davinci4_snatch.vrma": {
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_snatch.vrma 主分類為 介紹 present。",
+      "source": "davinci4_snatch.vrma",
+      "updatedAt": "2026-06-14T11:19:23+08:00"
+    },
+    "davinci4_standing2HMagicAttack01.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_standing2HMagicAttack01.vrma 主分類為 警告 warning。",
+      "source": "davinci4_standing2HMagicAttack01.vrma",
+      "updatedAt": "2026-06-14T11:19:32+08:00"
+    },
+    "davinci4_swinging.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_swinging.vrma 主分類為 指向 point。",
+      "source": "davinci4_swinging.vrma",
+      "updatedAt": "2026-06-14T11:19:42+08:00"
+    },
+    "davinci4_throwing.vrma": {
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "Motion-first：davinci4_throwing.vrma 主分類為 介紹 present。",
+      "source": "davinci4_throwing.vrma",
+      "updatedAt": "2026-06-14T11:20:02+08:00"
+    },
+    "davinci_acknowledging.vrma": {
+      "agentUsage": [
+        "打招呼",
+        "我懂了",
+        "微微點頭示意"
+      ],
+      "description": "頭約歪5度左左，向前點頭了一次，像是在打招呼的感覺",
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "頭約歪5度左左，向前點頭了一次，像是在打招呼的感覺",
+      "source": "davinci_acknowledging.vrma",
+      "updatedAt": "2026-06-14T16:56:48+08:00",
+      "usageDescription": "打招呼，或是我懂了，微微點頭示意"
+    },
+    "davinci_angryGesture.vrma": {
+      "agentUsage": [
+        "整理裙子的小動作"
+      ],
+      "description": "自然下垂的雙手，微微前前擺了一點點後回復",
+      "motionCategory": "warning",
+      "motionScore": 4,
+      "note": "自然下垂的雙手，微微前前擺了一點點後回復",
+      "source": "davinci_angryGesture.vrma",
+      "updatedAt": "2026-06-14T16:57:23+08:00",
+      "usageDescription": "整理一下裙子"
+    },
+    "davinci_annoyedHeadShake.vrma": {
+      "agentUsage": [
+        "頭往左看了一下又回正"
+      ],
+      "description": "頭往左看了一下又回正",
+      "motionCategory": "think",
+      "motionScore": 3,
+      "note": "頭往左看了一下又回正",
+      "source": "davinci_annoyedHeadShake.vrma",
+      "updatedAt": "2026-06-14T16:57:42+08:00",
+      "usageDescription": "頭往左看了一下又回正"
+    },
+    "davinci_bashful.vrma": {
+      "agentUsage": [
+        "像犯錯的小孩，雙手在背後微微交叉，上半身前傾頭低低的，頭微微左右搖擺墾求道歉的感覺"
+      ],
+      "description": "雙手在背後微微交叉，上半身前傾頭低低的，頭微微左右搖擺墾求道歉的感覺",
+      "motionCategory": "think",
+      "motionScore": 3,
+      "note": "雙手在背後微微交叉，上半身前傾頭低低的，頭微微左右搖擺墾求道歉的感覺",
+      "source": "davinci_bashful.vrma",
+      "updatedAt": "2026-06-14T16:58:05+08:00",
+      "usageDescription": "像犯錯的小孩，雙手在背後微微交叉，上半身前傾頭低低的，頭微微左右搖擺墾求道歉的感覺"
+    },
+    "davinci_beckoning.vrma": {
+      "agentUsage": [
+        "希望讓對方跟過來，有 come on come here 的用途"
+      ],
+      "description": "右手在前方作出往自己靠近擺動數次",
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "右手在前方作出往自己靠近擺動數次",
+      "source": "davinci_beckoning.vrma",
+      "updatedAt": "2026-06-14T16:58:38+08:00",
+      "usageDescription": "希望讓對方跟過來，有 come on come here 的用途"
+    },
+    "davinci_beingCocky.vrma": {
+      "agentUsage": [
+        "表示那又怎樣",
+        "無所謂",
+        "我服了",
+        "這沒什麼"
+      ],
+      "description": "雙手在屁股旁，微微往外張開，又回復原來的動作",
+      "motionCategory": "think",
+      "motionScore": 3,
+      "note": "雙手在屁股旁，微微往外張開，又回復原來的動作",
+      "source": "davinci_beingCocky.vrma",
+      "updatedAt": "2026-06-14T16:59:45+08:00",
+      "usageDescription": "表示那又怎樣，無所謂，我服了"
+    },
+    "davinci_boredmelancholyIdle_1.vrma": {
+      "agentUsage": [
+        "道歉或感抱歉時，很有禮貌的低頭",
+        "低頭向下看"
+      ],
+      "description": "低著頭，微微晃動",
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "低著頭，微微晃動",
+      "source": "davinci_boredmelancholyIdle_1.vrma",
+      "updatedAt": "2026-06-14T17:01:02+08:00",
+      "usageDescription": "道歉或感抱歉時，很有禮貌的低頭，或是低頭向下看"
+    },
+    "davinci_bowing.vrma": {
+      "agentUsage": [
+        "拳擊側勾拳的短拳揮擊動作"
+      ],
+      "description": "左手在面前微彎防御，右手揮出一個勾拳",
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "左手在面前微彎防御，右手揮出一個勾拳",
+      "source": "davinci_bowing.vrma",
+      "updatedAt": "2026-06-14T17:02:03+08:00",
+      "usageDescription": "拳擊側勾拳的短拳揮擊動作"
+    },
+    "davinci_buttonPushing.vrma": {
+      "agentUsage": [
+        "右手往前伸到腹部再前面一些，按了個按鈕的動作"
+      ],
+      "description": "右手往前伸到腹部再前面一些，按了個按鈕的動作",
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "右手往前伸到腹部再前面一些，按了個按鈕的動作",
+      "source": "davinci_buttonPushing.vrma",
+      "updatedAt": "2026-06-14T17:02:45+08:00",
+      "usageDescription": "右手往前伸到腹部再前面一些，按了個按鈕的動作"
+    },
+    "davinci_cockyHeadTurn.vrma": {
+      "agentUsage": [
+        "頭往右轉，但視線仍直視前方，頭再轉回來",
+        "注視前方，但仍擺頭的動作"
+      ],
+      "description": "頭往右轉，但視線仍直視前方，頭再轉回來",
+      "motionCategory": "think",
+      "motionScore": 3,
+      "note": "頭往右轉，但視線仍直視前方，頭再轉回來",
+      "source": "davinci_cockyHeadTurn.vrma",
+      "updatedAt": "2026-06-14T17:04:02+08:00",
+      "usageDescription": "頭往右轉，但視線仍直視前方，頭再轉回來"
+    },
+    "davinci_disappointed.vrma": {
+      "agentUsage": [
+        "雙手打開，然後在前下方叉插擺動，可能是覺得什麼事情可惜"
+      ],
+      "description": "雙手打開，然後在前下方叉插擺動",
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "雙手打開，然後在前下方叉插擺動",
+      "source": "davinci_disappointed.vrma",
+      "updatedAt": "2026-06-14T17:04:52+08:00",
+      "usageDescription": "覺得可惜"
+    },
+    "davinci_dismissingGesture.vrma": {
+      "agentUsage": [
+        "原本是立正舒服的姿勢，上半身往往左傾，右手往前揮了一下，手又回到立正的姿勢"
+      ],
+      "description": "原本是立正舒服的姿勢，上半身往往左傾，右手往前揮了一下，手又回到立正的姿勢",
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "原本是立正舒服的姿勢，上半身往往左傾，右手往前揮了一下，手又回到立正的姿勢",
+      "source": "davinci_dismissingGesture.vrma",
+      "updatedAt": "2026-06-14T17:06:39+08:00",
+      "usageDescription": "右手往前揮了一下"
+    },
+    "davinci_happyHandGesture.vrma": {
+      "agentUsage": [
+        "原是立正的姿勢，忽然伸出右手向前約腹部高的位置，像是要握手，但忽然又收回"
+      ],
+      "description": "原是立正的姿勢，忽然伸出右手向前約腹部高的位置，像是要握手，但忽然又收回",
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "原是立正的姿勢，忽然伸出右手向前約腹部高的位置，像是要握手，但忽然又收回",
+      "source": "davinci_happyHandGesture.vrma",
+      "updatedAt": "2026-06-14T17:07:53+08:00",
+      "usageDescription": "假裝握手"
+    },
+    "davinci_happyIdle.vrma": {
+      "agentUsage": [
+        "開心的張開雙手微微晃動"
+      ],
+      "description": "左右手張開在身體旁二邊，微微劃圈",
+      "motionCategory": "candidate_future",
+      "motionScore": 3,
+      "note": "左右手張開在身體旁二邊，微微劃圈",
+      "source": "davinci_happyIdle.vrma",
+      "updatedAt": "2026-06-14T17:08:34+08:00",
+      "usageDescription": "開心的張開雙手微微晃動"
+    },
+    "davinci_hardHeadNod.vrma": {
+      "agentUsage": [
+        "點頭",
+        "表示知道了",
+        "瞭解"
+      ],
+      "description": "點頭",
+      "motionCategory": "think",
+      "motionScore": 3,
+      "note": "點頭",
+      "source": "davinci_hardHeadNod.vrma",
+      "updatedAt": "2026-06-14T17:08:57+08:00",
+      "usageDescription": "點頭"
+    },
+    "davinci_headNod.vrma": {
+      "agentUsage": [
+        "連續點頭，很輕的連點數次"
+      ],
+      "description": "連續點頭，很輕的連點數次",
+      "motionCategory": "think",
+      "motionScore": 3,
+      "note": "連續點頭，很輕的連點數次",
+      "source": "davinci_headNod.vrma",
+      "updatedAt": "2026-06-14T17:09:22+08:00",
+      "usageDescription": "連續點頭，很輕的連點數次"
+    },
+    "davinci_idle.vrma": {
+      "agentUsage": [
+        "彎下腰，雙手在前方左右揮舞，像是在找東西"
+      ],
+      "description": "彎下腰，雙手在前方左右揮舞，像是在找東西",
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "彎下腰，雙手在前方左右揮舞，像是在找東西",
+      "source": "davinci_idle.vrma",
+      "updatedAt": "2026-06-14T17:10:02+08:00",
+      "usageDescription": "彎下腰，雙手在前方左右揮舞，像是在找東西"
+    },
+    "davinci_lengthyHeadNod.vrma": {
+      "agentUsage": [
+        "微微抬頭，停頓一下，然後點了一下頭",
+        "知道了",
+        "遇到比自己高的人，先抬頭，然後點頭一下"
+      ],
+      "description": "微微抬頭，停頓一下，然後點了一下頭",
+      "motionCategory": "think",
+      "motionScore": 3,
+      "note": "微微抬頭，停頓一下，然後點了一下頭",
+      "source": "davinci_lengthyHeadNod.vrma",
+      "updatedAt": "2026-06-14T17:10:52+08:00",
+      "usageDescription": "遇到比自己高的人，先抬頭，然後點頭一下"
+    },
+    "davinci_lookAround.vrma": {
+      "agentUsage": [
+        "雙手微微張開，擺頭左看看，再擺頭右看看",
+        "看看發生什麼事",
+        "左邊或右邊有什麼事，或是左右二邊有人靠近"
+      ],
+      "description": "雙手微微張開，擺頭左看看，再擺頭右看看",
+      "motionCategory": "think",
+      "motionScore": 5,
+      "note": "雙手微微張開，擺頭左看看，再擺頭右看看",
+      "source": "davinci_lookAround.vrma",
+      "updatedAt": "2026-06-14T17:19:28+08:00",
+      "usageDescription": "雙手微微張開，擺頭左看看，再擺頭右看看\n看看發生什麼事\n左邊或右邊有什麼事，或是左右二邊有人靠近"
+    },
+    "davinci_lookAwayGesture.vrma": {
+      "agentUsage": [
+        "頭往右邊往右看了一下，再轉正回來"
+      ],
+      "description": "頭往右邊往右看了一下，再轉正回來",
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "頭往右邊往右看了一下，再轉正回來",
+      "source": "davinci_lookAwayGesture.vrma",
+      "updatedAt": "2026-06-14T17:19:54+08:00",
+      "usageDescription": "頭往右邊往右看了一下，再轉正回來"
+    },
+    "davinci_nervouslyLookAround.vrma": {
+      "agentUsage": [
+        "要阻止某件事發生，像是有暴王龍在面前",
+        "請不要這樣",
+        "停車，快停車"
+      ],
+      "description": "雙手張開往前伸",
+      "motionCategory": "point",
+      "motionScore": 5,
+      "note": "雙手張開往前伸",
+      "source": "davinci_nervouslyLookAround.vrma",
+      "updatedAt": "2026-06-14T17:20:40+08:00",
+      "usageDescription": "要阻止某件事發生，像是有暴王龍在面前"
+    },
+    "davinci_plotting.vrma": {
+      "agentUsage": [
+        "商人有利潤可尋時，磨擦雙手的小動作，像一休和尚裡的何老板"
+      ],
+      "description": "雙手在前，雙手的掌心互相磨擦",
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "雙手在前，雙手的掌心互相磨擦",
+      "source": "davinci_plotting.vrma",
+      "updatedAt": "2026-06-14T17:21:46+08:00",
+      "usageDescription": "商人有利潤可尋時，磨擦雙手的小動作，像一休和尚裡的何老板"
+    },
+    "davinci_pointing.vrma": {
+      "agentUsage": [
+        "右手向前指了一下，再回到立正姿勢",
+        "前方似乎有什麼",
+        "前方那裡有東西"
+      ],
+      "description": "立正姿勢，然後右手向前指了一下，再回到立正姿勢",
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "立正姿勢，然後右手向前指了一下，再回到立正姿勢",
+      "source": "davinci_pointing.vrma",
+      "updatedAt": "2026-06-14T17:22:57+08:00",
+      "usageDescription": "右手向前指了一下，再回到立正姿勢\n指示前面有什麼"
+    },
+    "davinci_relievedSigh.vrma": {
+      "agentUsage": [
+        "頭微微抬高，然後低頭嘆了一口氣",
+        "表示無奈",
+        "失落"
+      ],
+      "description": "頭微微抬高，然後低頭嘆了一口氣",
+      "motionCategory": "think",
+      "motionScore": 3,
+      "note": "頭微微抬高，然後低頭嘆了一口氣",
+      "source": "davinci_relievedSigh.vrma",
+      "updatedAt": "2026-06-14T17:35:10+08:00",
+      "usageDescription": "頭微微抬高，然後低頭嘆了一口氣\n表示無奈\n失落"
+    },
+    "davinci_sadIdle.vrma": {
+      "agentUsage": [
+        "表示傷心，很失落、失意"
+      ],
+      "description": "低頭哭泣",
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "低頭哭泣",
+      "source": "davinci_sadIdle.vrma",
+      "updatedAt": "2026-06-14T17:35:57+08:00",
+      "usageDescription": "表示傷心，很失落、失意"
+    },
+    "davinci_salute.vrma": {
+      "agentUsage": [
+        "右手五指併攏，伸到右邊眉前，很標準的童子軍、警察式敬禮",
+        "敬禮、軍人式敬禮"
+      ],
+      "description": "右手五指併攏，伸到右邊眉前，很標準的童子軍、警察式敬禮",
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "右手五指併攏，伸到右邊眉前，很標準的童子軍、警察式敬禮",
+      "source": "davinci_salute.vrma",
+      "updatedAt": "2026-06-14T17:37:19+08:00",
+      "usageDescription": "敬禮、軍人式敬禮"
+    },
+    "davinci_sarcasticHeadNod.vrma": {
+      "agentUsage": [
+        "可能在想事情，或忽然理解什麼"
+      ],
+      "description": "頭往右後微微仰，然後再往前點了一下頭",
+      "motionCategory": "think",
+      "motionScore": 3,
+      "note": "頭往右後微微仰，然後再往前點了一下頭",
+      "source": "davinci_sarcasticHeadNod.vrma",
+      "updatedAt": "2026-06-14T17:38:33+08:00",
+      "usageDescription": "可能在想事情，或忽然理解什麼"
+    },
+    "davinci_shakingHeadNo.vrma": {
+      "agentUsage": [
+        "低頭左右擺頭二、三次",
+        "覺得好像哪不太對",
+        "事情不是這樣"
+      ],
+      "description": "低頭左右擺頭二、三次",
+      "motionCategory": "think",
+      "motionScore": 3,
+      "note": "低頭左右擺頭二、三次",
+      "source": "davinci_shakingHeadNo.vrma",
+      "updatedAt": "2026-06-14T17:39:07+08:00",
+      "usageDescription": "低頭左右擺頭二、三次，覺得好像哪不太對"
+    },
+    "davinci_shrugging.vrma": {
+      "agentUsage": [
+        "隨你的便",
+        "那就照你說的算",
+        "都可以"
+      ],
+      "description": "雙手前伸往前一攤",
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "雙手前伸往前一攤",
+      "source": "davinci_shrugging.vrma",
+      "updatedAt": "2026-06-14T17:39:42+08:00",
+      "usageDescription": "隨你的便\n那就照你說的算\n都可以"
+    },
+    "davinci_standingArguing.vrma": {
+      "agentUsage": [
+        "與人爭論時，在講道理，有一種我說了算，然後舉個一些例子，手部的動作很多"
+      ],
+      "description": "這是一個20秒左右的連續動作，先伸起右手，然後雙手伸起，左手放下後，右手上下揮了幾次，再雙手上仰一起揮了數次",
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "這是一個20秒左右的連續動作，先伸起右手，然後雙手伸起，左手放下後，右手上下揮了幾次，再雙手上仰一起揮了數次",
+      "source": "davinci_standingArguing.vrma",
+      "updatedAt": "2026-06-14T17:42:26+08:00",
+      "usageDescription": "與人爭論時，在講道理，有一種我說了算，然後舉個一些例子，手部的動作很多"
+    },
+    "davinci_standingClap.vrma": {
+      "agentUsage": [
+        "誇張式的拍手",
+        "有點嘲諷或過度拍手的效果",
+        "是不是好棒棒"
+      ],
+      "description": "雙手在面前拍手，且拍手的角度已大到交叉",
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "雙手在面前拍手，且拍手的角度已大到交叉",
+      "source": "davinci_standingClap.vrma",
+      "updatedAt": "2026-06-14T17:43:37+08:00",
+      "usageDescription": "誇張式的拍手"
+    },
+    "davinci_standingGreeting.vrma": {
+      "agentUsage": [
+        "立正姿勢，右手往上伸，靠近眉毛的地方揮手了數次，在與人說再見",
+        "朋友離的比較遠，揮手說再見的感覺"
+      ],
+      "description": "立正姿勢，右手往上伸，靠近眉毛的地方揮手了數次，像是在與人說再見",
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "立正姿勢，右手往上伸，靠近眉毛的地方揮手了數次，像是在與人說再見",
+      "source": "davinci_standingGreeting.vrma",
+      "updatedAt": "2026-06-14T17:45:11+08:00",
+      "usageDescription": "與人說再見"
+    },
+    "davinci_strongGesture.vrma": {
+      "agentUsage": [
+        "有一種腦力激蕩的感覺",
+        "要爆了",
+        "壓力很大",
+        "奇怪的知識增加了"
+      ],
+      "description": "雙手外擴後在左右耳旁約5~10公分處停下抖動",
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "雙手外擴後在左右耳旁約5~10公分處停下抖動",
+      "source": "davinci_strongGesture.vrma",
+      "updatedAt": "2026-06-14T17:47:29+08:00",
+      "usageDescription": "有一種腦力激蕩的感覺，要爆了，壓力很大，奇怪的知識增加了"
+    },
+    "davinci_talking.vrma": {
+      "agentUsage": [
+        "拿出東西往前伸要給人的感覺",
+        "這是你的，給你",
+        "你看一下這個，給你"
+      ],
+      "description": "右手從口袋拿出東西往前伸要給人的感覺",
+      "motionCategory": "present",
+      "motionScore": 3,
+      "note": "右手從口袋拿出東西往前伸要給人的感覺",
+      "source": "davinci_talking.vrma",
+      "updatedAt": "2026-06-14T17:48:48+08:00",
+      "usageDescription": "右手從口袋拿出東西往前伸要給人的感覺\n拿出東西往前伸要給人的感覺\n這是你的，給你\n你看一下這個，給你"
+    },
+    "davinci_thinking.vrma": {
+      "agentUsage": [
+        "右手斜到左臉下巴，手背向上，頭微微往右斜，有一種呵呵呵笑的感覺",
+        "娜卡的特有笑聲招牌動作"
+      ],
+      "description": "右手斜到左臉下巴，手背向上，頭微微往右斜，有一種呵呵呵笑的感覺，以前秀逗魔導士裡的娜卡很常作這個動作",
+      "motionCategory": "think",
+      "motionScore": 5,
+      "note": "右手斜到左臉下巴，手背向上，頭微微往右斜，有一種呵呵呵笑的感覺，以前秀逗魔導士裡的娜卡很常作這個動作",
+      "source": "davinci_thinking.vrma",
+      "updatedAt": "2026-06-14T17:50:41+08:00",
+      "usageDescription": "右手斜到左臉下巴，手背向上，頭微微往右斜，有一種呵呵呵笑的感覺\n娜卡的特有笑聲招牌動作"
+    },
+    "davinci_thoughtfulHeadShake.vrma": {
+      "agentUsage": [
+        "想了一會覺得事情不是這樣，所以搖搖頭"
+      ],
+      "description": "頭先轉右轉，停一會，再往左轉，然後來回右左右左二次，擺動漸漸變小",
+      "motionCategory": "think",
+      "motionScore": 3,
+      "note": "頭先轉右轉，停一會，再往左轉，然後來回右左右左二次，擺動漸漸變小",
+      "source": "davinci_thoughtfulHeadShake.vrma",
+      "updatedAt": "2026-06-14T17:51:51+08:00",
+      "usageDescription": "想了一會覺得事情不是這樣，所以搖搖頭"
+    },
+    "davinci_victory.vrma": {
+      "agentUsage": [
+        "雙手往外舉高，掌心向前，有種投降的感覺",
+        "也可能是成功了，勝利的姿勢"
+      ],
+      "description": "雙手往外舉高，掌心向前，身體左右微微擺動，有種投降的感覺",
+      "motionCategory": "success",
+      "motionScore": 3,
+      "note": "雙手往外舉高，掌心向前，身體左右微微擺動，有種投降的感覺",
+      "source": "davinci_victory.vrma",
+      "updatedAt": "2026-06-14T17:52:47+08:00",
+      "usageDescription": "雙手往外舉高，掌心向前，有種投降的感覺\n也可能是成功了，勝利的姿勢"
+    },
+    "davinci_victoryIdle.vrma": {
+      "agentUsage": [
+        "很有自信的指天，且左手插腰",
+        "舞蹈的起始動作"
+      ],
+      "description": "右手往天上伸直，左手插腰",
+      "motionCategory": "success",
+      "motionScore": 3,
+      "note": "右手往天上伸直，左手插腰",
+      "source": "davinci_victoryIdle.vrma",
+      "updatedAt": "2026-06-14T17:54:15+08:00",
+      "usageDescription": "很有自信的指天，且左手插腰\n舞蹈的起始動作"
+    },
+    "davinci_waving.vrma": {
+      "agentUsage": [
+        "覺得有臭味，要把臭味揮掉",
+        "也可以用於很誇張的再見姿勢"
+      ],
+      "description": "右手伸起，在面前來回揮動",
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "右手伸起，在面前來回揮動",
+      "source": "davinci_waving.vrma",
+      "updatedAt": "2026-06-14T17:55:19+08:00",
+      "usageDescription": "可能覺得有臭味，要把臭味揮掉"
+    },
+    "davinci_weightShift.vrma": {
+      "agentUsage": [
+        "向在牆角偷看有沒有人路過",
+        "或是裝可愛時，上半身斜斜移出一點點那種感覺",
+        "懷疑的感覺"
+      ],
+      "description": "身體直直，上半身往右傾斜",
+      "motionCategory": "think",
+      "motionScore": 3,
+      "note": "身體直直，上半身往右傾斜",
+      "source": "davinci_weightShift.vrma",
+      "updatedAt": "2026-06-14T20:29:56+08:00",
+      "usageDescription": "向在牆角偷看有沒有人路過\n懷疑的感覺"
+    },
+    "davinci_yawn.vrma": {
+      "agentUsage": [
+        "頭往右擺，再往左擺，右手斜斜舉高，左手橫在嘴前檔住打哈欠，然後左右也往斜上伸展，伸了個懶腰",
+        "伸懶腰",
+        "忙了很久，覺得很累，伸展休息一下"
+      ],
+      "description": "頭往右擺，再往左擺，右手斜斜舉高，左手橫在嘴前檔住打哈欠，然後左右也往斜上伸展，伸了個懶腰",
+      "motionCategory": "candidate_future",
+      "motionScore": 3,
+      "note": "頭往右擺，再往左擺，右手斜斜舉高，左手橫在嘴前檔住打哈欠，然後左右也往斜上伸展，伸了個懶腰",
+      "source": "davinci_yawn.vrma",
+      "updatedAt": "2026-06-14T20:31:49+08:00",
+      "usageDescription": "頭往右擺，再往左擺，右手斜斜舉高，左手橫在嘴前檔住打哈欠，然後左右也往斜上伸展，伸了個懶腰\n伸懶腰\n忙了很久，覺得很累，伸展休息一下"
+    },
+    "test157t_greeting.vrma": {
+      "motionCategory": "warning",
+      "motionScore": 3,
+      "note": "Motion-first：test157t_greeting.vrma 主分類為 警告 warning。",
+      "source": "test157t_greeting.vrma",
+      "updatedAt": "2026-06-14T04:14:52+08:00"
+    },
+    "test157t_greeting2.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：test157t_greeting2.vrma 主分類為 指向 point。",
+      "source": "test157t_greeting2.vrma",
+      "updatedAt": "2026-06-14T04:15:00+08:00"
+    },
+    "test157t_hello.vrma": {
+      "motionCategory": "think",
+      "motionScore": 3,
+      "note": "Motion-first：test157t_hello.vrma 主分類為 思考 think。",
+      "source": "test157t_hello.vrma",
+      "updatedAt": "2026-06-14T04:15:10+08:00"
+    },
+    "test157t_model_pose.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：test157t_model_pose.vrma 主分類為 指向 point。",
+      "source": "test157t_model_pose.vrma",
+      "updatedAt": "2026-06-14T04:15:19+08:00"
+    },
+    "test157t_motion_pose.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：test157t_motion_pose.vrma 主分類為 指向 point。",
+      "source": "test157t_motion_pose.vrma",
+      "updatedAt": "2026-06-14T04:15:24+08:00"
+    },
+    "test157t_peace_sign.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：test157t_peace_sign.vrma 主分類為 指向 point。",
+      "source": "test157t_peace_sign.vrma",
+      "updatedAt": "2026-06-14T04:15:32+08:00"
+    },
+    "test157t_shoot.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：test157t_shoot.vrma 主分類為 指向 point。",
+      "source": "test157t_shoot.vrma",
+      "updatedAt": "2026-06-14T04:15:38+08:00"
+    },
+    "test157t_show_full_body.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：test157t_show_full_body.vrma 主分類為 指向 point。",
+      "source": "test157t_show_full_body.vrma",
+      "updatedAt": "2026-06-14T04:15:45+08:00"
+    },
+    "test157t_spin.vrma": {
+      "motionCategory": "point",
+      "motionScore": 3,
+      "note": "Motion-first：test157t_spin.vrma 主分類為 指向 point。",
+      "source": "test157t_spin.vrma",
+      "updatedAt": "2026-06-14T04:15:52+08:00"
+    }
+  },
+  "schemaVersion": 1,
+  "updatedAt": "2026-06-14T21:56:56+08:00"
+}
