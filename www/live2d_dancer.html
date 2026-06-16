@@ -1,0 +1,1396 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Live2D Dancer</title>
+  <link rel="icon" href="data:,">
+  <script src="/www/js/jquery.min.js"></script>
+  <script src="/www/live2d/assets/live2dcubismcore.min.js"></script>
+  <script src="/www/live2d/assets/pixi.min.js"></script>
+  <script src="/www/live2d/assets/live2d-runtime-shim.js"></script>
+  <script src="/www/live2d/assets/pixi-live2d-display-cubism4.min.js"></script>
+  <script src="/www/live2d/assets/live2d.min.js"></script>
+  <script src="/www/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <link href="/www/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #667085;
+      --line: #d7dde8;
+      --panel: #ffffff;
+      --stage: #eef3f8;
+      --grid: rgba(23, 32, 51, .045);
+      --mint: #18a999;
+      --blue: #1f6feb;
+      --amber: #c47d16;
+      --danger: #d14d72;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #f6f7fb;
+      color: var(--ink);
+      font-family: "Microsoft JhengHei", "Segoe UI", system-ui, sans-serif;
+      letter-spacing: 0;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 300px minmax(720px, 1fr);
+      gap: 14px;
+      min-height: 100vh;
+      padding: 14px;
+    }
+
+    .panel,
+    .stage {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .panel {
+      padding: 14px;
+      overflow: auto;
+    }
+
+    .title {
+      margin: 0 0 10px;
+      font-size: 1.08rem;
+      font-weight: 700;
+    }
+
+    .meta {
+      min-height: 24px;
+      color: var(--muted);
+      font-size: .9rem;
+      word-break: break-all;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .toolbar .btn,
+    .transport .btn {
+      font-size: .86rem;
+      line-height: 1.2;
+    }
+
+    .data-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: .86rem;
+    }
+
+    .notice {
+      margin-top: 12px;
+      padding: 9px 10px;
+      border: 1px solid #f1d48f;
+      border-radius: 8px;
+      background: #fff7df;
+      color: #735111;
+      font-size: .86rem;
+    }
+
+    .stage {
+      display: flex;
+      flex-direction: column;
+      min-height: calc(100vh - 28px);
+      overflow: hidden;
+      background:
+        linear-gradient(0deg, var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+        var(--stage);
+      background-size: 36px 36px;
+      padding: 14px;
+    }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      flex: 0 0 auto;
+      height: min(72vh, 680px);
+      min-height: 420px;
+    }
+
+    .view-panel {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+      background: rgba(255, 255, 255, .86);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .view-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 42px;
+      padding: 9px 11px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, .92);
+      font-weight: 700;
+    }
+
+    .view-head span:last-child {
+      color: var(--muted);
+      font-size: .8rem;
+      font-weight: 500;
+    }
+
+    .view-body {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      aspect-ratio: 10 / 13;
+      overflow: hidden;
+      background: #101827;
+    }
+
+    #sourceVideo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #101827;
+    }
+
+    #sourceVideoMissing,
+    .empty-state {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      color: #d8dee9;
+      text-align: center;
+      font-size: .95rem;
+    }
+
+    #skeletonCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background:
+        radial-gradient(circle at center, rgba(24, 169, 153, .08), transparent 58%),
+        #0f1724;
+    }
+
+    #live2dStage {
+      background:
+        linear-gradient(0deg, rgba(23, 32, 51, .05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23, 32, 51, .05) 1px, transparent 1px),
+        #eef3f8;
+      background-size: 32px 32px;
+    }
+
+    #live2d,
+    #fullbodyCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+    }
+
+    .character {
+      --body-tilt: 0deg;
+      --bounce: 0px;
+      --arm-l: -10deg;
+      --arm-r: 10deg;
+      --leg-l: 0deg;
+      --leg-r: 0deg;
+      position: absolute;
+      left: 50%;
+      bottom: 22px;
+      width: 220px;
+      height: 470px;
+      transform: translateX(-50%) translateY(var(--bounce)) rotate(var(--body-tilt));
+      transform-origin: 50% 78%;
+      transition: transform 60ms linear;
+      z-index: 3;
+      filter: drop-shadow(0 22px 18px rgba(23, 32, 51, .18));
+    }
+
+    .pony {
+      position: absolute;
+      right: -18px;
+      top: 46px;
+      width: 72px;
+      height: 205px;
+      background: #111827;
+      border-radius: 52% 48% 48% 52%;
+      transform: rotate(13deg);
+      box-shadow: inset -10px 0 0 rgba(255, 255, 255, .06);
+    }
+
+    .hair {
+      position: absolute;
+      left: 42px;
+      top: 18px;
+      width: 132px;
+      height: 182px;
+      background: #111827;
+      border-radius: 56% 56% 44% 44%;
+      box-shadow: inset -12px 0 0 rgba(255, 255, 255, .06);
+      z-index: 2;
+    }
+
+    .face {
+      position: absolute;
+      left: 58px;
+      top: 52px;
+      width: 96px;
+      height: 112px;
+      background: #ffd8bd;
+      border-radius: 46% 46% 50% 50%;
+      z-index: 3;
+    }
+
+    .bang {
+      position: absolute;
+      left: 54px;
+      top: 34px;
+      width: 112px;
+      height: 54px;
+      background: #111827;
+      border-radius: 52% 48% 55% 42%;
+      z-index: 4;
+    }
+
+    .bow {
+      position: absolute;
+      left: 148px;
+      top: 34px;
+      width: 42px;
+      height: 28px;
+      background: #2f4772;
+      clip-path: polygon(0 50%, 45% 0, 55% 38%, 100% 0, 100% 100%, 55% 62%, 45% 100%);
+      transform: rotate(18deg);
+      z-index: 6;
+    }
+
+    .eye {
+      position: absolute;
+      top: 80px;
+      width: 10px;
+      height: 15px;
+      background: #2e6cba;
+      border-radius: 999px;
+      z-index: 5;
+      box-shadow: inset 0 -4px 0 #172033, 0 0 0 2px rgba(255, 255, 255, .6);
+    }
+
+    .eye.left { left: 80px; }
+    .eye.right { left: 120px; }
+
+    .mouth {
+      position: absolute;
+      left: 101px;
+      top: 124px;
+      width: 22px;
+      height: 9px;
+      border-bottom: 3px solid #b2455c;
+      border-radius: 0 0 999px 999px;
+      z-index: 5;
+    }
+
+    .torso {
+      position: absolute;
+      left: 58px;
+      top: 168px;
+      width: 104px;
+      height: 136px;
+      background: #f6fbff;
+      border: 5px solid #263957;
+      border-radius: 28px 28px 18px 18px;
+      z-index: 2;
+    }
+
+    .jacket {
+      position: absolute;
+      left: 42px;
+      top: 160px;
+      width: 136px;
+      height: 154px;
+      background: #1f2d46;
+      border-radius: 32px 32px 18px 18px;
+      clip-path: polygon(10% 0, 38% 0, 50% 64%, 62% 0, 90% 0, 100% 100%, 0 100%);
+      z-index: 1;
+    }
+
+    .neckline {
+      position: absolute;
+      left: 86px;
+      top: 172px;
+      width: 48px;
+      height: 36px;
+      background: #dbe7f8;
+      clip-path: polygon(0 0, 100% 0, 50% 100%);
+      z-index: 4;
+    }
+
+    .tie {
+      position: absolute;
+      left: 95px;
+      top: 198px;
+      width: 30px;
+      height: 58px;
+      background: #324c75;
+      clip-path: polygon(50% 0, 100% 26%, 66% 100%, 34% 100%, 0 26%);
+      z-index: 5;
+    }
+
+    .arm,
+    .leg {
+      position: absolute;
+      background: #ffd8bd;
+      border-radius: 999px;
+      z-index: 1;
+    }
+
+    .arm {
+      top: 184px;
+      width: 28px;
+      height: 142px;
+      transform-origin: 50% 12%;
+    }
+
+    .arm.left {
+      left: 40px;
+      transform: rotate(var(--arm-l));
+    }
+
+    .arm.right {
+      left: 152px;
+      transform: rotate(var(--arm-r));
+    }
+
+    .sleeve {
+      position: absolute;
+      top: 180px;
+      width: 42px;
+      height: 92px;
+      background: #1f2d46;
+      border-radius: 999px;
+      transform-origin: 50% 10%;
+      z-index: 2;
+    }
+
+    .sleeve.left {
+      left: 30px;
+      transform: rotate(var(--arm-l));
+    }
+
+    .sleeve.right {
+      left: 148px;
+      transform: rotate(var(--arm-r));
+    }
+
+    .skirt {
+      position: absolute;
+      left: 48px;
+      top: 294px;
+      width: 126px;
+      height: 66px;
+      background:
+        repeating-linear-gradient(90deg, transparent 0 13px, rgba(255, 255, 255, .16) 13px 15px),
+        linear-gradient(#263957, #15233e);
+      clip-path: polygon(15% 0, 85% 0, 100% 100%, 0 100%);
+      z-index: 3;
+    }
+
+    .leg {
+      top: 344px;
+      width: 30px;
+      height: 106px;
+      background: linear-gradient(#ffd8bd 0 45%, #243551 45% 100%);
+      transform-origin: 50% 8%;
+    }
+
+    .leg.left {
+      left: 72px;
+      transform: rotate(var(--leg-l));
+    }
+
+    .leg.right {
+      left: 120px;
+      transform: rotate(var(--leg-r));
+    }
+
+    .shoe {
+      position: absolute;
+      top: 440px;
+      width: 44px;
+      height: 18px;
+      background: #111827;
+      border-radius: 60% 70% 45% 45%;
+      z-index: 2;
+    }
+
+    .shoe.left { left: 60px; }
+    .shoe.right { left: 122px; }
+
+    .transport {
+      display: grid;
+      grid-template-columns: auto auto auto auto 1fr auto;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 0 0;
+    }
+
+    #timeline {
+      width: 100%;
+      accent-color: var(--mint);
+    }
+
+    .timecode {
+      min-width: 110px;
+      color: var(--muted);
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-size: .86rem;
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .compare-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+
+      .view-panel {
+        min-height: 380px;
+        height: 58vh;
+      }
+
+      .transport {
+        grid-template-columns: repeat(4, auto);
+      }
+
+      #timeline,
+      .timecode {
+        grid-column: 1 / -1;
+      }
+    }
+
+    .monitor-row {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px dashed #eee;
+      padding: 3px 0;
+    }
+    .monitor-row:last-child {
+      border-bottom: none;
+    }
+    .monitor-row span:first-child {
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .monitor-row span:last-child {
+      font-weight: bold;
+      color: var(--blue);
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="panel">
+      <h1 class="title">Live2D Dancer</h1>
+      <div id="status" class="meta">未載入舞步</div>
+      <div class="toolbar">
+        <button id="btnChoose" class="btn btn-primary btn-sm" type="button">選舞步</button>
+        <button id="btnPlay" class="btn btn-success btn-sm" type="button" disabled>播放</button>
+        <button id="btnPause" class="btn btn-outline-secondary btn-sm" type="button" disabled>暫停</button>
+      </div>
+      <input id="motionFile" type="file" accept=".json,application/json" hidden>
+      <div class="data-row">
+        <span id="motionName">-</span>
+        <span id="motionDuration">0.00s</span>
+      </div>
+      <div class="data-row" style="margin-top: 10px;">
+        <span>角色模型</span>
+        <select id="modelSelector" class="form-select form-select-sm" style="width: auto; max-width: 170px;">
+          <option value="hiyori">Hiyori Momose (推薦)</option>
+          <option value="ren">Ren Foster</option>
+          <option value="mark">Mark-kun (Q版)</option>
+          <option value="shizuku">Shizuku (Cubism 2)</option>
+        </select>
+      </div>
+      <div class="data-row" style="margin-top: 10px;">
+        <span>動作平滑 (EMA)</span>
+        <div style="display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end;">
+          <input id="emaAlphaSlider" type="range" min="0.05" max="1.0" step="0.05" value="0.35" style="width: 80px;" aria-label="EMA Alpha">
+          <span id="emaAlphaVal">0.35</span>
+        </div>
+      </div>
+      <hr style="margin: 14px 0; border-color: var(--line);">
+      <h2 class="title" style="font-size: 0.95rem; margin-bottom: 6px;">即時參數監視</h2>
+      <div id="paramMonitor" style="max-height: 240px; overflow-y: auto; font-family: monospace; font-size: 0.76rem; border: 1px solid var(--line); border-radius: 6px; padding: 6px; background: #fafafa;">
+        <div class="text-muted text-center py-2">尚未載入參數</div>
+      </div>
+      <div id="capabilityNotice" class="notice" style="margin-top: 10px;">全身模型載入中...</div>
+    </section>
+    <section class="stage">
+      <div class="compare-grid">
+        <article class="view-panel">
+          <div class="view-head"><span>原影片</span><span id="videoState">等待影片</span></div>
+          <div class="view-body">
+            <video id="sourceVideo" muted playsinline preload="metadata"></video>
+            <div id="sourceVideoMissing">沒有原影片。舊的 pose_record 仍可用火柴人與 Live2D 對照。</div>
+          </div>
+        </article>
+        <article class="view-panel">
+          <div class="view-head"><span>火柴人</span><span id="skeletonTime">0.00s</span></div>
+          <div class="view-body">
+            <canvas id="skeletonCanvas"></canvas>
+            <div id="skeletonMissing" class="empty-state">尚未載入 pose_record.json</div>
+          </div>
+        </article>
+        <article class="view-panel">
+          <div class="view-head"><span>Live2D</span><span id="live2dState">載入中</span></div>
+          <div id="live2dStage" class="view-body">
+            <canvas id="fullbodyCanvas"></canvas>
+            <canvas id="live2d" width="360" height="520"></canvas>
+            <div id="fallbackCharacter" class="character" role="button" tabindex="0" aria-label="Live2D dancer placeholder">
+              <div class="pony"></div>
+              <div class="hair"></div>
+              <div class="face"></div>
+              <div class="bang"></div>
+              <div class="bow"></div>
+              <div class="eye left"></div>
+              <div class="eye right"></div>
+              <div class="mouth"></div>
+              <div class="sleeve left"></div>
+              <div class="sleeve right"></div>
+              <div class="arm left"></div>
+              <div class="arm right"></div>
+              <div class="jacket"></div>
+              <div class="torso"></div>
+              <div class="neckline"></div>
+              <div class="tie"></div>
+              <div class="skirt"></div>
+              <div class="leg left"></div>
+              <div class="leg right"></div>
+              <div class="shoe left"></div>
+              <div class="shoe right"></div>
+            </div>
+          </div>
+        </article>
+      </div>
+      <div class="transport">
+        <button id="btnPrevFrame" class="btn btn-outline-secondary btn-sm" type="button">上一格</button>
+        <button id="btnPlayStage" class="btn btn-success btn-sm" type="button" disabled>播放</button>
+        <button id="btnPauseStage" class="btn btn-outline-secondary btn-sm" type="button" disabled>暫停</button>
+        <button id="btnNextFrame" class="btn btn-outline-secondary btn-sm" type="button">下一格</button>
+        <input id="timeline" type="range" min="0" max="1" step="1" value="0" aria-label="同步時間軸">
+        <div id="motionTime" class="timecode">同步時間軸 0.00 / 0.00s</div>
+      </div>
+    </section>
+  </main>
+  <script>
+    (function () {
+      var state = {
+        poseRecord: null,
+        params: null,
+        fileName: "",
+        durationMs: 0,
+        currentTimeMs: 0,
+        playing: false,
+        raf: 0,
+        startedAt: 0,
+        startedFromMs: 0,
+        live2dReady: false,
+        fullbodyModel: null,
+        fullbodyApp: null,
+        activeModelKey: "hiyori",
+        emaAlpha: 0.35,
+        overrides: {}
+      };
+
+      var skeletonLines = [
+        ["left_shoulder", "right_shoulder"],
+        ["left_shoulder", "left_elbow"],
+        ["left_elbow", "left_wrist"],
+        ["right_shoulder", "right_elbow"],
+        ["right_elbow", "right_wrist"],
+        ["left_shoulder", "left_hip"],
+        ["right_shoulder", "right_hip"],
+        ["left_hip", "right_hip"],
+        ["left_hip", "left_knee"],
+        ["left_knee", "left_ankle"],
+        ["right_hip", "right_knee"],
+        ["right_knee", "right_ankle"]
+      ];
+
+      var mapping = [
+        // Head rotations (X, Y, Z)
+        { id: "PARAM_ANGLE_X", source: "head_angle_x_deg", scale: 1.0, offset: 0.0, min: -30, max: 30 },
+        { id: "PARAM_ANGLE_Y", source: "head_angle_y_deg", scale: 1.0, offset: 0.0, min: -30, max: 30 },
+        { id: "PARAM_ANGLE_Z", source: "head_angle_z_deg", scale: 1.0, offset: 0.0, min: -30, max: 30 },
+        
+        // Body rotations (X, Y, Z)
+        { id: "PARAM_BODY_ANGLE_X", source: "torso_angle_deg", scale: 0.25, offset: 22.5, min: -15, max: 15 },
+        { id: "PARAM_BODY_ANGLE_Y", source: "body_center_y", scale: -12.0, offset: 6.0, min: -8, max: 8 },
+        { id: "PARAM_BODY_ANGLE_Z", source: "torso_angle_deg", scale: 0.5, offset: 45.0, min: -30, max: 30 },
+        
+        // Body Base positions
+        { id: "PARAM_BASE_X", source: "body_center_x", scale: 80.0, offset: -40.0, min: -50, max: 50 },
+        { id: "PARAM_BASE_Y", source: "body_center_y", scale: -50.0, offset: 30.0, min: -20, max: 40 },
+        { id: "PARAM_BODY_CENTER", source: "body_center_x", scale: 20.0, offset: -10.0, min: -10, max: 10 },
+        
+        // Arms and Elbows
+        { id: "PARAM_ARM_L", source: "left_arm_angle_deg", scale: 0.5, offset: 0.0, min: -30, max: 30 },
+        { id: "PARAM_ARM_R", source: "right_arm_angle_deg", scale: 0.5, offset: 0.0, min: -30, max: 30 },
+        { id: "PARAM_ARM_L_ELBOW", source: "left_elbow_angle_deg", scale: -0.055, offset: 10.0, min: 0, max: 10 },
+        { id: "PARAM_ARM_R_ELBOW", source: "right_elbow_angle_deg", scale: -0.055, offset: 10.0, min: 0, max: 10 },
+        { id: "PARAM_ARM_L_WRIST", source: "left_arm_angle_deg", scale: 0.3, offset: 0.0, min: -15, max: 15 },
+        { id: "PARAM_ARM_R_WRIST", source: "right_arm_angle_deg", scale: 0.3, offset: 0.0, min: -15, max: 15 },
+        
+        // Shoulders
+        { id: "PARAM_SHOULDER_L", source: "left_shoulder_raise", scale: 50.0, offset: 0.0, min: -10, max: 10 },
+        { id: "PARAM_SHOULDER_R", source: "right_shoulder_raise", scale: 50.0, offset: 0.0, min: -10, max: 10 },
+        
+        // Legs
+        { id: "PARAM_LEG_L", source: "left_leg_angle_deg", scale: 0.4, offset: 0.0, min: -45, max: 45 },
+        { id: "PARAM_LEG_R", source: "right_leg_angle_deg", scale: 0.4, offset: 0.0, min: -45, max: 45 },
+        
+        // Waist / Hip
+        { id: "PARAM_WAIST_ANGLE_Z", source: "hip_angle_deg", scale: 0.5, offset: 0.0, min: -30, max: 30 },
+        
+        // Other / Breath & Face expressions
+        { id: "PARAM_BREATH", source: "body_center_y", scale: -0.8, offset: 0.8, min: 0, max: 1 },
+        { id: "PARAM_EYE_SMILE", source: null, scale: 0.0, offset: 0.7, min: 0, max: 1 }
+      ];
+
+      var live2dAliases = {
+        PARAM_ANGLE_X: ["PARAM_ANGLE_X", "ParamAngleX"],
+        PARAM_ANGLE_Y: ["PARAM_ANGLE_Y", "ParamAngleY"],
+        PARAM_ANGLE_Z: ["PARAM_ANGLE_Z", "ParamAngleZ", "PARAM_BODY_ANGLE_Z"],
+        PARAM_BODY_ANGLE_X: ["PARAM_BODY_ANGLE_X", "ParamBodyAngleX"],
+        PARAM_BODY_ANGLE_Y: ["PARAM_BODY_ANGLE_Y", "ParamBodyY", "ParamBodyBounce"],
+        PARAM_BODY_ANGLE_Z: ["PARAM_BODY_ANGLE_Z", "ParamBodyAngleZ"],
+        PARAM_BASE_X: ["PARAM_BASE_X", "PARAM_BODY_X"],
+        PARAM_BASE_Y: ["PARAM_BASE_Y", "PARAM_BODY_Y"],
+        PARAM_BODY_CENTER: ["PARAM_BODY_CENTER", "ParamBodyCenter"],
+        PARAM_ARM_L: ["PARAM_ARM_L", "PARAM_ARM_L_02", "PARAM_L_ARM", "PARAM_HAND_L", "ParamArmL", "ParamArmL01", "ParamArmLA", "ParamArmLA01", "ParamArmLB01"],
+        PARAM_ARM_R: ["PARAM_ARM_R", "PARAM_ARM_R_02", "PARAM_HAND_R", "ParamArmR", "ParamArmR01", "ParamArmRA", "ParamArmRA01", "ParamArmRB01"],
+        PARAM_ARM_L_ELBOW: ["PARAM_ARM_L_ELBOW", "ParamArmLB", "ParamArmL02"],
+        PARAM_ARM_R_ELBOW: ["PARAM_ARM_R_ELBOW", "ParamArmRB", "ParamArmR02"],
+        PARAM_ARM_L_WRIST: ["PARAM_ARM_L_WRIST", "ParamHandL", "ParamArmL03"],
+        PARAM_ARM_R_WRIST: ["PARAM_ARM_R_WRIST", "ParamHandR", "ParamArmR03"],
+        PARAM_SHOULDER_L: ["PARAM_SHOULDER_L", "ParamShoulder", "ParamLeftShoulderUp", "ParamShoulderL"],
+        PARAM_SHOULDER_R: ["PARAM_SHOULDER_R", "ParamShoulder", "ParamRightShoulderUp", "ParamShoulderR"],
+        PARAM_LEG_L: ["PARAM_LEG_L", "PARAM_LEG_LEFT", "PARAM_LEFT_LEG", "ParamLegL", "ParamLeftLeg", "ParamLeg"],
+        PARAM_LEG_R: ["PARAM_LEG_R", "PARAM_LEG_RIGHT", "PARAM_RIGHT_LEG", "ParamLegR", "ParamRightLeg", "ParamLeg"],
+        PARAM_WAIST_ANGLE_Z: ["PARAM_WAIST_ANGLE_Z", "ParamBodyAngleZ", "ParamWaistAngleZ"],
+        PARAM_BREATH: ["PARAM_BREATH", "ParamBreath"],
+        PARAM_EYE_SMILE: ["PARAM_EYE_SMILE", "ParamEyeLSmile", "ParamEyeRSmile"]
+      };
+
+      var modelMap = {
+        fullbody: {
+          name: "Ren Foster",
+          url: "/www/live2d/models/ren/Ren.model3.json",
+          type: "cubism4",
+          capability: "官方 sample 全身模型：支援身體、手臂、左右腿參數。"
+        },
+        ren: {
+          name: "Ren Foster",
+          url: "/www/live2d/models/ren/Ren.model3.json",
+          type: "cubism4",
+          capability: "官方 sample 全身模型：支援身體、手臂、左右腿參數。"
+        },
+        mark: {
+          name: "Mark-kun",
+          url: "/www/live2d/models/mark/Mark.model3.json",
+          type: "cubism4",
+          capability: "官方 sample Q 版模型：支援手臂與左右腿，適合測試舞步對齊。"
+        },
+        hiyori: {
+          name: "Hiyori Momose",
+          url: "/www/live2d/models/hiyori/Hiyori.model3.json",
+          type: "cubism4",
+          capability: "官方 sample 全身模型：手臂與身體可控，腿部是單一腿部參數，對齊精度有限。"
+        },
+        shizuku: {
+          name: "Shizuku 48",
+          url: "/www/live2d/models/shizuku_48/index.json",
+          type: "cubism2",
+          capability: "此角色只能近似手臂/身體，腿部不保證對齊"
+        },
+        default: {
+          name: "default_model",
+          url: "/www/live2d/default_model/index.json",
+          type: "cubism2",
+          capability: "此角色只能近似手臂/身體，腿部不保證對齊"
+        }
+      };
+
+      function clamp(value, min, max) {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) return 0;
+        return Math.max(min, Math.min(max, Number(value)));
+      }
+
+      function getQuery() {
+        var out = {};
+        window.location.search.replace(/^\?/, "").split("&").forEach(function (part) {
+          if (!part) return;
+          var kv = part.split("=");
+          out[decodeURIComponent(kv[0])] = decodeURIComponent(kv.slice(1).join("=") || "");
+        });
+        return out;
+      }
+
+      function setStatus(text) {
+        $("#status").text(text);
+      }
+
+      function setCapabilityNotice(text) {
+        $("#capabilityNotice").text(text);
+      }
+
+      function setTransportEnabled(enabled) {
+        $("#btnPlay, #btnPlayStage").prop("disabled", !enabled);
+        $("#btnPause, #btnPauseStage").prop("disabled", !enabled);
+      }
+
+      function formatSeconds(ms) {
+        return (Math.max(0, ms) / 1000).toFixed(2) + "s";
+      }
+
+      function updateDuration() {
+        var values = [0];
+        if (state.params) values.push(Number(state.params.duration_ms || 0));
+        if (state.poseRecord && state.poseRecord.frames && state.poseRecord.frames.length) {
+          values.push(Number(state.poseRecord.frames[state.poseRecord.frames.length - 1].time_ms || 0));
+        }
+        var video = document.getElementById("sourceVideo");
+        if (video && Number.isFinite(video.duration) && video.duration > 0) {
+          values.push(video.duration * 1000);
+        }
+        state.durationMs = Math.max.apply(Math, values);
+        $("#timeline").attr("max", Math.max(1, Math.round(state.durationMs)));
+        $("#motionDuration").text(formatSeconds(state.durationMs));
+        setTransportEnabled(state.durationMs > 0);
+      }
+
+      function convertPoseRecord(record, sourceName, emaAlpha) {
+        var frames = record.frames || [];
+        var parameters = mapping.map(function (spec) {
+          var lastVal = null;
+          var keys = frames.map(function (frame) {
+            var raw = (frame.features && spec.source) ? frame.features[spec.source] : null;
+            var val = clamp((raw === null || raw === undefined ? 0 : raw) * spec.scale + spec.offset, spec.min, spec.max);
+            if (emaAlpha !== undefined && emaAlpha !== null && emaAlpha < 1.0 && emaAlpha > 0) {
+              if (lastVal === null) {
+                lastVal = val;
+              } else {
+                lastVal = emaAlpha * val + (1.0 - emaAlpha) * lastVal;
+              }
+              val = lastVal;
+            }
+            return {
+              time_ms: Number(frame.time_ms || 0),
+              value: val
+            };
+          });
+          return {
+            id: spec.id,
+            source: spec.source,
+            scale: spec.scale,
+            offset: spec.offset,
+            clamp: [spec.min, spec.max],
+            keys: keys
+          };
+        });
+        return {
+          version: 1,
+          source_pose_record: sourceName || "pose_record.json",
+          fps: Number((record.source && record.source.fps_target) || 30),
+          duration_ms: frames.length ? Number(frames[frames.length - 1].time_ms || 0) : 0,
+          parameters: parameters
+        };
+      }
+
+      function convertMotion3(motion) {
+        var parameters = (motion.Curves || []).map(function (curve) {
+          var keys = [];
+          var segments = curve.Segments || [];
+          if (segments.length >= 2) {
+            keys.push({ time_ms: Math.round(Number(segments[0]) * 1000), value: Number(segments[1]) });
+            for (var i = 2; i + 2 < segments.length; i += 3) {
+              keys.push({ time_ms: Math.round(Number(segments[i + 1]) * 1000), value: Number(segments[i + 2]) });
+            }
+          }
+          return { id: curve.Id, keys: keys };
+        });
+        return {
+          version: 1,
+          source_pose_record: "motion3.json",
+          fps: Number((motion.Meta && motion.Meta.Fps) || 30),
+          duration_ms: Math.round(Number((motion.Meta && motion.Meta.Duration) || 0) * 1000),
+          parameters: parameters
+        };
+      }
+
+      function normalizeInput(data, sourceName) {
+        if (data.parameters) return data;
+        if (data.Curves) return convertMotion3(data);
+        if (data.frames) return convertPoseRecord(data, sourceName, state.emaAlpha);
+        if (data.bones) {
+          throw new Error("偵測到 VRM 3D 骨骼動畫格式 (vrm_animation.json)。請至 3D 舞者頁面 (vrm_dancer.html) 載入此檔案，或在此頁面載入 pose_record / live2d_params / motion3 格式。");
+        }
+        throw new Error("JSON 格式不是 pose_record / live2d_params / motion3");
+      }
+
+      function valueAt(keys, timeMs) {
+        if (!keys || !keys.length) return 0;
+        if (timeMs <= keys[0].time_ms) return Number(keys[0].value || 0);
+        for (var i = 1; i < keys.length; i++) {
+          if (timeMs <= keys[i].time_ms) {
+            var a = keys[i - 1];
+            var b = keys[i];
+            var span = Math.max(1, Number(b.time_ms) - Number(a.time_ms));
+            var t = (timeMs - Number(a.time_ms)) / span;
+            return Number(a.value || 0) + (Number(b.value || 0) - Number(a.value || 0)) * t;
+          }
+        }
+        return Number(keys[keys.length - 1].value || 0);
+      }
+
+      function pickValue(values, ids, fallback) {
+        for (var i = 0; i < ids.length; i++) {
+          if (values[ids[i]] !== undefined && values[ids[i]] !== null) return Number(values[ids[i]]) || 0;
+        }
+        return fallback || 0;
+      }
+
+      function frameAt(timeMs) {
+        var frames = (state.poseRecord && state.poseRecord.frames) || [];
+        if (!frames.length) return null;
+        var best = frames[0];
+        var bestDiff = Math.abs(Number(best.time_ms || 0) - timeMs);
+        for (var i = 1; i < frames.length; i++) {
+          var diff = Math.abs(Number(frames[i].time_ms || 0) - timeMs);
+          if (diff < bestDiff) {
+            best = frames[i];
+            bestDiff = diff;
+          }
+        }
+        return best;
+      }
+
+      function resizeSkeletonCanvas() {
+        var canvas = document.getElementById("skeletonCanvas");
+        var rect = canvas.getBoundingClientRect();
+        var scale = window.devicePixelRatio || 1;
+        var width = Math.max(1, Math.floor(rect.width * scale));
+        var height = Math.max(1, Math.floor(rect.height * scale));
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+        return { canvas: canvas, scale: scale, width: width, height: height };
+      }
+
+      function drawSkeletonAt(timeMs) {
+        var setup = resizeSkeletonCanvas();
+        var canvas = setup.canvas;
+        var ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#0f1724";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        var frame = frameAt(timeMs);
+        $("#skeletonMissing").toggle(!frame);
+        $("#skeletonTime").text(formatSeconds(timeMs));
+        if (!frame) return;
+
+        var roi = (state.poseRecord && state.poseRecord.source && state.poseRecord.source.roi) || {};
+        var sourceW = Number(roi.width || 1);
+        var sourceH = Number(roi.height || 1);
+        var panelW = canvas.width;
+        var panelH = canvas.height;
+        var fit = Math.min(panelW / sourceW, panelH / sourceH);
+        var offsetX = (panelW - sourceW * fit) / 2;
+        var offsetY = (panelH - sourceH * fit) / 2;
+        var points = {};
+        (frame.keypoints || []).forEach(function (kp) {
+          if (kp.x === null || kp.y === null || Number(kp.confidence || 0) < 0.2) return;
+          points[kp.name] = {
+            x: offsetX + Number(kp.x) * fit,
+            y: offsetY + Number(kp.y) * fit,
+            confidence: Number(kp.confidence || 0)
+          };
+        });
+
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = Math.max(3, 5 * setup.scale);
+        ctx.strokeStyle = "rgba(24, 169, 153, .95)";
+        skeletonLines.forEach(function (line) {
+          var a = points[line[0]];
+          var b = points[line[1]];
+          if (!a || !b) return;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        });
+
+        Object.keys(points).forEach(function (name) {
+          var point = points[name];
+          ctx.beginPath();
+          ctx.fillStyle = "#ffffff";
+          ctx.strokeStyle = "#1f6feb";
+          ctx.lineWidth = Math.max(2, 2 * setup.scale);
+          ctx.arc(point.x, point.y, Math.max(4, 5 * setup.scale), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        });
+      }
+
+      function attachLive2DHook(model) {
+        if (!model || model.__dancerHooked) return;
+        var originalUpdate = model.update;
+        model.update = function () {
+          originalUpdate.call(this);
+          Object.keys(state.overrides).forEach(function (id) {
+            var aliases = live2dAliases[id] || [id];
+            for (var i = 0; i < aliases.length; i++) {
+              this.live2DModel.setParamFloat(aliases[i], state.overrides[id], 1);
+            }
+          }, this);
+          if (Object.keys(state.overrides).length) this.live2DModel.update();
+        };
+        model.__dancerHooked = true;
+      }
+
+      function getCurrentModel() {
+        if (!window.live2dManager || !window.live2dManager.getModel) return null;
+        var model = window.live2dManager.getModel(0);
+        if (model) attachLive2DHook(model);
+        return model;
+      }
+
+      function applyFullbodyValues(values) {
+        if (!state.fullbodyModel || !state.fullbodyModel.internalModel) return;
+        var core = state.fullbodyModel.internalModel.coreModel;
+        Object.keys(values).forEach(function (id) {
+          var aliases = live2dAliases[id] || [id];
+          aliases.forEach(function (alias) {
+            try {
+              core.setParameterValueById(alias, Number(values[id]) || 0);
+            } catch (err) {
+              // Cubism model profiles vary; unsupported params are ignored.
+            }
+          });
+        });
+      }
+
+      function updateParamMonitor(values) {
+        var container = $("#paramMonitor");
+        if (!container.length) return;
+        var keys = Object.keys(values);
+        if (!keys.length) {
+          container.html('<div class="text-muted text-center py-2">尚未載入參數</div>');
+          return;
+        }
+        container.empty();
+        keys.sort().forEach(function (key) {
+          var val = Number(values[key]).toFixed(2);
+          container.append('<div class="monitor-row"><span>' + key + '</span><span>' + val + '</span></div>');
+        });
+      }
+
+      function applyValues(values) {
+        var bodyAngle = clamp(pickValue(values, ["PARAM_BODY_ANGLE_X", "PARAM_ANGLE_Z"], 0), -30, 30);
+        var bounce = clamp(pickValue(values, ["PARAM_BASE_Y", "PARAM_BODY_ANGLE_Y"], 0), -24, 24);
+        var armL = clamp(pickValue(values, ["PARAM_ARM_L"], 0), -45, 45);
+        var armR = clamp(pickValue(values, ["PARAM_ARM_R"], 0), -45, 45);
+        var legL = clamp(pickValue(values, ["PARAM_LEG_L"], 0), -45, 45);
+        var legR = clamp(pickValue(values, ["PARAM_LEG_R"], 0), -45, 45);
+        state.overrides = values;
+        $("#fallbackCharacter").css({
+          "--body-tilt": (bodyAngle * 0.45).toFixed(2) + "deg",
+          "--bounce": (-bounce * 0.45).toFixed(2) + "px",
+          "--arm-l": (-18 + armL * 0.7).toFixed(2) + "deg",
+          "--arm-r": (18 + armR * 0.7).toFixed(2) + "deg",
+          "--leg-l": (legL * 0.45).toFixed(2) + "deg",
+          "--leg-r": (legR * 0.45).toFixed(2) + "deg"
+        });
+        if (modelMap[state.activeModelKey] && modelMap[state.activeModelKey].type === "cubism4") {
+          applyFullbodyValues(values);
+        }
+        getCurrentModel();
+        updateParamMonitor(values);
+      }
+
+      function valuesAt(timeMs) {
+        var values = {};
+        if (!state.params) return values;
+        (state.params.parameters || []).forEach(function (param) {
+          values[param.id] = valueAt(param.keys, timeMs);
+        });
+        return values;
+      }
+
+      function seekTo(timeMs, syncVideo) {
+        state.currentTimeMs = clamp(Math.round(timeMs || 0), 0, Math.max(0, state.durationMs));
+        $("#timeline").val(state.currentTimeMs);
+        $("#motionTime").text("同步時間軸 " + formatSeconds(state.currentTimeMs) + " / " + formatSeconds(state.durationMs));
+        drawSkeletonAt(state.currentTimeMs);
+        applyValues(valuesAt(state.currentTimeMs));
+        if (syncVideo !== false) {
+          var video = document.getElementById("sourceVideo");
+          if (video && video.src) {
+            var target = state.currentTimeMs / 1000;
+            if (Math.abs(video.currentTime - target) > 0.08) {
+              if (!video.seeking) {
+                video.currentTime = target;
+              } else {
+                video.pendingSeekTarget = target;
+              }
+            }
+          }
+        }
+      }
+
+      function tick() {
+        if (!state.playing) return;
+        var elapsed = performance.now() - state.startedAt;
+        var next = state.startedFromMs + elapsed;
+        if (state.durationMs > 0 && next >= state.durationMs) {
+          seekTo(state.durationMs, true);
+          pause();
+          return;
+        }
+        seekTo(next, true);
+        state.raf = requestAnimationFrame(tick);
+      }
+
+      function play() {
+        if (!state.durationMs) return;
+        if (state.currentTimeMs >= state.durationMs) seekTo(0);
+        state.playing = true;
+        state.startedAt = performance.now();
+        state.startedFromMs = state.currentTimeMs;
+        $("#btnPlay, #btnPlayStage").prop("disabled", true);
+        $("#btnPause, #btnPauseStage").prop("disabled", false);
+        var video = document.getElementById("sourceVideo");
+        if (video && video.src) {
+          video.currentTime = state.currentTimeMs / 1000;
+          video.play().catch(function () {});
+        }
+        cancelAnimationFrame(state.raf);
+        tick();
+      }
+
+      function pause() {
+        state.playing = false;
+        cancelAnimationFrame(state.raf);
+        $("#btnPlay, #btnPlayStage").prop("disabled", !state.durationMs);
+        $("#btnPause, #btnPauseStage").prop("disabled", true);
+        var video = document.getElementById("sourceVideo");
+        if (video) video.pause();
+      }
+
+      function stepFrame(direction) {
+        pause();
+        var frames = (state.poseRecord && state.poseRecord.frames) || [];
+        if (!frames.length) {
+          var fps = Number((state.params && state.params.fps) || 30);
+          seekTo(state.currentTimeMs + direction * (1000 / fps));
+          return;
+        }
+        var nearestIndex = 0;
+        var nearestDiff = Infinity;
+        frames.forEach(function (frame, index) {
+          var diff = Math.abs(Number(frame.time_ms || 0) - state.currentTimeMs);
+          if (diff < nearestDiff) {
+            nearestDiff = diff;
+            nearestIndex = index;
+          }
+        });
+        var nextIndex = clamp(nearestIndex + direction, 0, frames.length - 1);
+        seekTo(Number(frames[nextIndex].time_ms || 0));
+      }
+
+      function loadJsonObject(data, sourceName) {
+        if (data.frames) {
+          state.poseRecord = data;
+          state.params = convertPoseRecord(data, sourceName, state.emaAlpha);
+          $("#skeletonMissing").hide();
+        } else {
+          state.params = normalizeInput(data, sourceName);
+        }
+        state.fileName = sourceName || state.params.source_pose_record || "motion.json";
+        $("#motionName").text(state.fileName);
+        setStatus("已載入：" + state.fileName);
+        updateDuration();
+        seekTo(0);
+      }
+
+      function loadFile(file) {
+        var reader = new FileReader();
+        reader.onload = function () {
+          try {
+            loadJsonObject(JSON.parse(reader.result), file.name);
+          } catch (err) {
+            setStatus(err.message || String(err));
+          }
+        };
+        reader.readAsText(file, "utf-8");
+      }
+
+      function loadPoseRecordFromUrl(url) {
+        return $.getJSON(url)
+          .done(function (data) {
+            loadJsonObject(data, url.split("/").pop());
+          })
+          .fail(function () {
+            setStatus("pose_record 載入失敗");
+          });
+      }
+
+      function loadMotionFromUrl(url) {
+        return $.getJSON(url)
+          .done(function (data) {
+            state.params = normalizeInput(data, url.split("/").pop());
+            state.fileName = url.split("/").pop();
+            $("#motionName").text(state.fileName);
+            updateDuration();
+            seekTo(state.currentTimeMs);
+          })
+          .fail(function () {
+            setStatus("Live2D motion 載入失敗");
+          });
+      }
+
+      function loadSourceVideo(url) {
+        if (!url) {
+          $("#sourceVideo").hide();
+          $("#sourceVideoMissing").show();
+          $("#videoState").text("沒有原影片");
+          return;
+        }
+        var video = document.getElementById("sourceVideo");
+        $("#sourceVideoMissing").hide();
+        $("#sourceVideo").show();
+        $("#videoState").text("載入中");
+        video.src = url;
+        
+        if (!video.hasSeekedListener) {
+          video.addEventListener("seeked", function () {
+            if (video.pendingSeekTarget !== undefined) {
+              var target = video.pendingSeekTarget;
+              delete video.pendingSeekTarget;
+              video.currentTime = target;
+            }
+          });
+          video.hasSeekedListener = true;
+        }
+
+        video.addEventListener("loadedmetadata", function () {
+          $("#videoState").text("已載入");
+          updateDuration();
+          seekTo(state.currentTimeMs);
+        }, { once: true });
+        video.addEventListener("error", function () {
+          $("#sourceVideo").hide();
+          $("#sourceVideoMissing").show().text("原影片載入失敗。");
+          $("#videoState").text("載入失敗");
+        }, { once: true });
+      }
+
+      function ensureFullbodyCanvas() {
+        var canvas = document.getElementById("fullbodyCanvas");
+        if (canvas) return canvas;
+        canvas = document.createElement("canvas");
+        canvas.id = "fullbodyCanvas";
+        var stage = document.getElementById("live2dStage");
+        stage.insertBefore(canvas, document.getElementById("live2d"));
+        return canvas;
+      }
+
+      function loadCubism2Model(modelConfig) {
+        return $.getJSON(modelConfig.url).then(function () {
+          $("#fullbodyCanvas").hide();
+          $("#live2d").show();
+          $("#fallbackCharacter").hide();
+          loadlive2d("live2d", modelConfig.url);
+          state.activeModelKey = "shizuku";
+          state.live2dReady = true;
+          $("#modelName").text(modelConfig.name);
+          $("#live2dState").text("Cubism 2");
+          setCapabilityNotice(modelConfig.capability);
+        });
+      }
+
+      function loadFullbodyModel(modelConfig) {
+        $("#modelName").text(modelConfig.name);
+        $("#live2dState").text("嘗試 model3");
+        if (!window.PIXI || !window.PIXI.live2d || !window.PIXI.live2d.Live2DModel) {
+          var missingRuntime = $.Deferred();
+          missingRuntime.reject("Cubism 4 runtime not installed");
+          return missingRuntime.promise();
+        }
+        return $.getJSON(modelConfig.url).then(function () {
+          $("#live2d").hide();
+          $("#fallbackCharacter").hide();
+          if (state.fullbodyApp) {
+            try { state.fullbodyApp.destroy(false, { children: true, texture: false, baseTexture: false }); } catch (err) {}
+          }
+          state.fullbodyApp = null;
+          state.fullbodyModel = null;
+          var canvas = ensureFullbodyCanvas();
+          $("#fullbodyCanvas").show();
+          var app = new PIXI.Application({
+            view: canvas,
+            autoStart: true,
+            transparent: true,
+            backgroundAlpha: 0,
+            resizeTo: document.getElementById("live2dStage")
+          });
+          state.fullbodyApp = app;
+          return PIXI.live2d.Live2DModel.from(modelConfig.url).then(function (model) {
+            state.fullbodyModel = model;
+            app.stage.addChild(model);
+            model.anchor.set(0.5, 0.85);
+            model.x = app.renderer.width / 2;
+            model.y = app.renderer.height * 0.92;
+            model.scale.set(Math.min(app.renderer.width / model.width, app.renderer.height / model.height) * 0.82);
+            state.activeModelKey = Object.keys(modelMap).find(function (key) { return modelMap[key] === modelConfig; }) || "fullbody";
+            
+            if (model.internalModel) {
+              if (model.internalModel.motionManager && model.internalModel.motionManager.state) {
+                model.internalModel.motionManager.state.shouldRequestIdleMotion = function () { return false; };
+              }
+              model.internalModel.updateNaturalMovements = function () {};
+              if (model.internalModel.eyeBlink) {
+                model.internalModel.eyeBlink.updateParameters = function () {};
+              }
+              model.internalModel.updateFocus = function () {};
+
+              var origUpdate = model.internalModel.update.bind(model.internalModel);
+              model.internalModel.update = function (dt, now) {
+                origUpdate(dt, now);
+                applyFullbodyValues(state.overrides);
+              };
+            }
+
+            app.ticker.add(function () {
+              if (state.fullbodyModel === model) applyFullbodyValues(state.overrides);
+            });
+            $("#live2dState").text("Cubism model3");
+            setCapabilityNotice(modelConfig.capability);
+            seekTo(state.currentTimeMs, false);
+          });
+        });
+      }
+
+      function fallbackToShizuku(reason) {
+        $("#live2dState").text("fallback");
+        return loadCubism2Model(modelMap.shizuku).then(function () {
+          setStatus("model3 尚未可用，已改用 Shizuku");
+          setCapabilityNotice("此角色只能近似手臂/身體，腿部不保證對齊");
+          if (window.console && reason) console.warn("model3 fallback:", reason);
+        }).then(null, function () {
+          $("#live2d").hide();
+          $("#fallbackCharacter").show();
+          $("#live2dState").text("placeholder");
+          setCapabilityNotice("此角色只能近似手臂/身體，腿部不保證對齊");
+        });
+      }
+      function tryInitLive2D() {
+        var query = getQuery();
+        var modelKey = (query.model || "hiyori").toLowerCase();
+        $("#modelSelector").val(modelKey);
+        var modelConfig = modelMap[modelKey] || modelMap.hiyori;
+        if (modelConfig.type === "cubism4") {
+          loadFullbodyModel(modelConfig).then(null, function (reason) {
+            if (modelKey !== "mark") {
+              return loadFullbodyModel(modelMap.mark).then(function () {
+                setStatus(modelConfig.name + " 尚未可用，已改用 Mark-kun Q 版");
+                if (window.console && reason) console.warn("model3 fallback to Mark-kun:", reason);
+              }, fallbackToShizuku);
+            }
+            return fallbackToShizuku(reason);
+          });
+        } else {
+          loadCubism2Model(modelConfig).then(null, fallbackToShizuku);
+        }
+      }
+
+      $("#btnChoose, #fallbackCharacter, #live2dStage").on("click", function (event) {
+        if ($(event.target).is("button,input,video,select,option")) return;
+        $("#motionFile").trigger("click");
+      });
+      $("#fallbackCharacter").on("keydown", function (event) {
+        if (event.key === "Enter" || event.key === " ") $("#motionFile").trigger("click");
+      });
+      $("#btnPlay, #btnPlayStage").on("click", play);
+      $("#btnPause, #btnPauseStage").on("click", pause);
+      $("#btnPrevFrame").on("click", function () { stepFrame(-1); });
+      $("#btnNextFrame").on("click", function () { stepFrame(1); });
+      $("#timeline").on("input change", function () {
+        pause();
+        seekTo(Number(this.value || 0));
+      });
+      $("#motionFile").on("change", function () {
+        if (this.files && this.files[0]) loadFile(this.files[0]);
+      });
+      $(window).on("resize", function () { drawSkeletonAt(state.currentTimeMs); });
+
+      $("#modelSelector").on("change", function () {
+        var modelKey = this.value;
+        var modelConfig = modelMap[modelKey] || modelMap.hiyori;
+        if (modelConfig.type === "cubism4") {
+          loadFullbodyModel(modelConfig).then(null, fallbackToShizuku);
+        } else {
+          loadCubism2Model(modelConfig).then(null, fallbackToShizuku);
+        }
+      });
+
+      $("#emaAlphaSlider").on("input", function () {
+        var val = parseFloat(this.value);
+        $("#emaAlphaVal").text(val.toFixed(2));
+        state.emaAlpha = val;
+        if (state.poseRecord) {
+          state.params = convertPoseRecord(state.poseRecord, state.fileName, state.emaAlpha);
+          seekTo(state.currentTimeMs, false);
+        }
+      });
+      var query = getQuery();
+      tryInitLive2D();
+      loadSourceVideo(query.video_url);
+      if (query.pose_url) loadPoseRecordFromUrl(query.pose_url);
+      if (query.motion_url) loadMotionFromUrl(query.motion_url);
+      seekTo(0);
+    })();
+  </script>
+</body>
+</html>

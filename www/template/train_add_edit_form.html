@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>建立或編輯訓練資料</title>
+    <script src="/www/js/jquery.min.js"></script>
+    <script src="/www/js/myphp.js"></script>
+    <script src="/www/js/mybox.js"></script>
+    <script src="/www/js/include.js"></script>
+    <link rel="stylesheet" href="/www/css/reset.css" />
+    <script src="/www/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+    <link href="/www/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/www/css/style.css" />
+    <style nonce="gg">
+        body {
+            padding: 25px;
+            font-size: 24px;
+        }
+
+        .h2titleClass {
+            text-align: left;
+            margin-left: 50px;
+            font-size: 36px;
+        }
+
+        .spanProjectNameClass {
+            font-weight: bold;
+        }
+
+        .big-checkbox {
+            width: 16px;
+            height: 16px;
+            transform: scale(1.8) translateY(-1px); /* 放大 1.8 倍 */ /* 放大 + 向上微調 */
+            transform-origin: top left; /* 可選：避免位置偏移 */
+            margin-right: 8px; /* 增加間距 */
+            transform-origin: center; /* 縮放中心點 */
+        }
+
+        .spanSelectToCheckbox input[type='checkbox'] {
+            width: 16px;
+            height: 16px;
+            transform: scale(1.8) translateY(-1px); /* 放大 1.8 倍 */ /* 放大 + 向上微調 */
+            transform-origin: top left; /* 可選：避免位置偏移 */
+            margin-right: 8px; /* 增加間距 */
+            transform-origin: center; /* 縮放中心點 */
+        }
+
+        p {
+            border: 1px dashed #00f;
+            padding: 10px;
+            border-radius: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h2 reqc="h2title" class="h2titleClass">GG</h2>
+    <hr />
+    <p><span class="bold">專案：</span><span reqc="spanProjectName" class="spanProjectNameClass"></span></p>
+    <p>
+        <span class="bold">類別選擇：</span>
+        <br />
+        <label><input type="checkbox" reqc="chkAll" class="big-checkbox" checked />全選</label>
+        <br />
+        <span reqc="spanKinds">
+            <!--放置哪些分類，預設選擇-->
+            <select reqc="selKinds" multiple="multiple"></select>
+        </span>
+    </p>
+    <p>
+        <span class="bold">訓練與驗證比例(訓練/驗證)：</span>
+        <br />
+        <select reqc="selTrainVal">
+            <option value="100/0">100/0</option>
+            <option value="90/10" selected>90/10</option>
+            <option value="80/20">80/20</option>
+            <option value="70/30">70/30</option>
+        </select>
+    </p>
+    <p>
+        <span class="bold">模型參照</span>
+        <br />
+        <select reqc="selModel">
+            <!--<option value="None">None 無參照</option>-->
+            <option value="yolov8n" selected>yolov8n (6.24mb)</option>
+            <option value="yolo11n">yolo11n (5.35mb)</option>
+            <option value="yolo11x">yolo11x (109mb)</option>
+        </select>
+        <br />
+        <span class="bold">備註：Chatgpt 說建議可以用 yolov8n 就好</span>
+    </p>
+    <p>
+        <span class="bold">圖片大小</span>
+        <br />
+        <select reqc="selImgz">
+            <option value="320">320</option>
+            <option value="480">480</option>
+            <option value="640" selected>640</option>
+            <option value="800">800</option>
+            <option value="1024">1024</option>
+        </select>
+        <br />
+        <span class="bold">備註：如果要識別的物件都偏小，就選大一些</span>
+    </p>
+    <p>
+        <span class="bold">batch (批次大小)</span>
+        <br />
+        <select reqc="selBatch">
+            <option value="8" selected>8</option>
+            <option value="10">10</option>
+            <option value="12">12</option>
+            <option value="14">14</option>
+            <option value="16">16</option>
+            <option value="20">20</option>
+            <option value="24">24</option>
+            <option value="32">32</option>
+        </select>
+        <br />
+        <span class="bold">備註：GPU Ram 多就可以設大些</span>
+    </p>
+    <p>
+        <span class="bold">learning_rate 學習率</span>
+        <select reqc="sel_learning_rate">
+            <option value="0.05">0.05</option>
+            <option value="0.04">0.04</option>
+            <option value="0.03">0.03</option>
+            <option value="0.02">0.02</option>
+            <option value="0.01">0.01</option>
+            <option value="0.005">0.005</option>
+            <option value="0.001" selected>0.001</option>
+        </select>
+        <br />
+        <span class="bold">備註：學習率，建議 0.001~0.01，太大容易不收斂，太小訓練慢</span>
+    </p>
+    <p>
+        <span class="bold">optimizer 優化器</span>
+        <br />
+        <select reqc="sel_optimizer">
+            <option value="auto">Auto</option>
+            <option value="SGD">SGD</option>
+            <option value="Adam" selected>Adam</option>
+            <option value="Adamax">Adamax</option>
+            <option value="NAdam">NAdam</option>
+            <option value="RMSProp">RMSProp</option>
+            <option value="AdamW">AdamW</option>
+            <option value="RAdam">RAdam</option>
+        </select>
+        <br />
+        <span class="bold">備註：建議：Adam（收斂較快，適合大多數情境)</span>
+    </p>
+    <p>
+        <span class="bold">Epoch 訓練次數</span>
+        <br />
+        <span reqc="span_epoch">70</span>
+        <input type="range" min="1" max="300" value="70" reqc="inp_epoch" style="width:500px;">
+        <br />
+        <span class="bold">
+            備註：<br />
+            1. 研討會 Demo：1~10 (數分鐘)<br />
+            2. 小型資料集：30~100 (數小時)<br />
+            3. 中大型資料集：100~300 (電腦慢可能會跑數日)<br />
+            4. 建議：先用 10~30，觀察 loss 曲線再調整<br />
+        </span>
+    </p>
+    <p>
+        <span class="bold">Epoch 早停機制</span>
+        <br />
+        <label>
+            <input type="checkbox" class="big-checkbox" reqc="chk_use_early_stopping" checked /> 是否啟用早停機制
+        </label>
+        <br />
+        <label>早停的耐心次數</label>
+        <br />
+        <span reqc="span_patience">10</span>
+        <input type="range" min="1" max="300" value="10" reqc="inp_patience" style="width:500px;">
+        <br />
+        <span class="bold">備註：需比 Epoch 少</span>
+    </p>
+    <p>
+        <span class="bold">進階訓練優化</span>
+        <br />
+        <label>
+            <input type="checkbox" class="big-checkbox" reqc="chk_cache" checked /> cache（圖片快取到 RAM，小資料集加速明顯）
+        </label>
+        <br />
+        <label>
+            <input type="checkbox" class="big-checkbox" reqc="chk_amp" checked /> AMP 自動混合精度（GPU 速度快 20-30%，顯存省一半）
+        </label>
+        <br />
+        <label>
+            <input type="checkbox" class="big-checkbox" reqc="chk_cos_lr" checked /> Cosine LR schedule（學習率收斂更穩）
+        </label>
+        <br />
+        <label>close_mosaic（最後 N epoch 關閉 mosaic，填 0 代表不關）</label>
+        <input type="number" reqc="inp_close_mosaic" value="10" min="0" max="300" style="width:100px;" />
+        <br />
+        <span class="bold">備註：打地鼠等固定場景可把 close_mosaic 設低（5~10），最後幾輪讓模型收斂真實圖像</span>
+    </p>
+    <hr />
+    <div align="right">
+        <input type="button" value="取消" class="btn btn-danger" reqc="btnCancel" />
+        <input type="button" value="開始訓練" class="btn btn-primary" reqc="btnStart" />
+    </div>
+</body>
+</html>
+<script nonce="gg">
+    var GETS = getGET();
+    var project_name = GETS['project_name'];
+    $("span[reqc='spanProjectName']").text(project_name);
+
+    // 取得分類圖列
+    var o = {
+        "project_name": project_name
+    };
+    myAjax_async_json("/api?mode=getDoMarkKindList", o, function (jd) {
+        var m = [];
+        jd['data'].map(function (v) {
+            var d = `<option value="${v.kind_name}" selected>${v.kind_name} (已訓練數：${v.total_pics - v.need_process_counts} / ${v.total_pics})</option>  `;
+            m.push(d);
+        });
+        $("select[reqc='selKinds']").html(m.join(''));
+        selectToCheckbox($("select[reqc='selKinds']"), {
+            "separate": "<br />",  //分格方式改用斷行
+            "class": "spanSelectToCheckbox"
+        });
+
+        // 按到全選
+        $("input[reqc='chkAll']").off().change(function () {
+            var checked = $(this).prop("checked");
+            $("select[reqc='selKinds'] option").prop("selected", checked).trigger("change");
+        });
+    });
+
+    switch (GETS["domode"]) {
+        case "add":
+            $("h2[reqc='h2title']").text('建立新模型');
+            break;
+    }
+
+    // 操作 inp_epoch
+    $("input[reqc='inp_epoch']").off().bind("input", function () {
+        $("span[reqc='span_epoch']").text($(this).val());
+    });
+
+    // 操作 chk_patience
+    $("input[reqc='chk_patience']").off().bind("change", function () {
+        $("input[reqc='inp_patience']").prop("disabled", !$(this).prop("checked"));
+    });
+    // 操作 inp_patience
+    $("input[reqc='inp_patience']").off().bind("input", function () {
+        $("span[reqc='span_patience']").text($(this).val());
+    });
+
+    // 按下開始訓練
+    $("input[reqc='btnStart']").off().click(function () {
+        var o = {
+            "project_name": project_name,
+            "train_val": $("select[reqc='selTrainVal']").val(),
+            "kinds": $("select[reqc='selKinds']").val().join("|||3WA|||"),
+            "model": $("select[reqc='selModel']").val(),
+            "imgz": $("select[reqc='selImgz']").val(),
+            "batch": $("select[reqc='selBatch']").val(),
+            "learning_rate": $("select[reqc='sel_learning_rate']").val(),
+            "optimizer": $("select[reqc='sel_optimizer']").val(),
+            "epoch": $("input[reqc='inp_epoch']").val(),
+            "use_early_stopping": ($("input[reqc='chk_use_early_stopping']").prop("checked")) ? "1" : "0",
+            "patience": $("input[reqc='inp_patience']").val(),
+            "cache": ($("input[reqc='chk_cache']").prop("checked")) ? "1" : "0",
+            "amp": ($("input[reqc='chk_amp']").prop("checked")) ? "1" : "0",
+            "cos_lr": ($("input[reqc='chk_cos_lr']").prop("checked")) ? "1" : "0",
+            "close_mosaic": $("input[reqc='inp_close_mosaic']").val()
+        };
+        console.log(o);
+        // kinds 不可為空
+        if (o['kinds'] == "") {
+            smallComment("至少選擇一種類別訓練...", 2000, false, {});
+            return;
+        }
+        if (parseInt(o['patience']) > parseInt(o['epoch'])) {
+            smallComment("早停的耐心次數 不能大於 訓練次數...", 2000, false, {});
+            return;
+        }
+        $(this).prop("disabled", true);
+        myAjax_async_json("/api?mode=train_add", o, function (jd) {
+            if (jd['status'] == "OK") {
+                // 關 dialogMyBox
+                smallComment("訓練已建立，請稍候...", 2000, false, {});
+                setTimeout(function () {
+                    // 外層重啟
+                    parent.$("input[reqc='btnRefresh']").trigger("click");
+                    parent.dialogMyBoxOff();
+                }, 500);
+            }
+        });
+
+    });
+
+    // 取消
+    $("input[reqc='btnCancel']").off().click(function () {
+        parent.dialogMyBoxOff();
+    });
+</script>

@@ -1,0 +1,412 @@
+<!--
+    顯示 detail
+-->
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>我的 yolo 訓練機</title>
+    <script src="/www/js/jquery.min.js"></script>
+    <script src="/www/js/myphp.js"></script>
+    <script src="/www/js/mybox.js"></script>
+    <script src="/www/js/include.js"></script>
+    <link rel="stylesheet" href="/www/css/reset.css" />
+    <script src="/www/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+    <link href="/www/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <!-- 引入 ECharts -->
+    <script src="/www/vendor/echarts/echarts.min.js"></script>
+    <link rel="stylesheet" href="/www/css/style.css" />
+    <style nonce="gg">
+        .thetable {
+            width: 100%;
+        }
+
+        .progressClass {
+            width: 80%;
+            height: 35px;
+            line-height: 35px;
+            margin-bottom: -13px;
+        }
+
+        .imgRefreshClass {
+            position: fixed;
+            width: 32px;
+            top: 25px;
+            right: 60px;
+            cursor: pointer;
+            z-index: 99999;
+        }
+
+        .imgXCloseClass {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            cursor: pointer;
+            z-index: 99999;
+        }
+
+        .divShowHideHistoryClass {
+            display: none;
+        }
+
+        .txtHistoryClass {
+            background-color: #000;
+            color: chartreuse;
+            font-family: Consolas, Verdana, 微軟正黑體;
+            font-size: 16px;
+            padding: 5px;
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            height: 325px;
+            overflow: auto;
+        }
+
+        .divImgItem {
+            margin-top: 15px;
+            border: 0px solid #00f;
+            padding: 5px;
+            text-align: center;
+            float: left;
+        }
+
+            .divImgItem img[reqc='imgItem'] {
+                height: 250px;
+                border: 1px solid #f00;
+            }
+
+            .divImgItem .spanFileSpan {
+                font-weight: bold;
+            }
+
+        div[reqc='divKinds_outer'] {
+            font-size: 16px;
+            padding: 5px;
+            border: 1px solid #00f;
+        }
+
+        .spanKindItem {
+            border-bottom: 1px solid #00f;
+            margin-right: 15px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        div[reqc='divMetainfo_outer'] {
+            border: 1px solid #00f;
+            padding: 8px;
+            font-size: 24px;
+        }
+
+        .divChartClass {
+        }
+    </style>
+</head>
+<body class="container mt-5">
+    <img src="/www/pic/refresh.png" reqc="imgRefresh" class="imgRefreshClass" />
+    <img src="/www/pic/x_close_32.png" reqc="imgXClose" class="imgXCloseClass" />
+    <h2 reqc="h2_project_name"></h2>
+    <h3 reqc="h3_task_name"></h3>
+    <div reqc="divMetainfo_outer">
+
+    </div>
+    <hr />
+    <span reqc="progressLog"></span>
+    <progress value="0" min="0" max="100" class="progressClass" reqc="theprogress"></progress>
+    <span reqc="progressPercent"></span>
+    <input type="button" class="btn btn-info" value="轉檔狀況" reqc="btnHistoryToggle" />
+    <br />
+    <div reqc="divShowHideHistory" class="divShowHideHistoryClass">
+        <div align="right" class="marginright25px">
+            <label>
+                <input type="checkbox" reqc="chkAutoScroll" checked /> 自動捲動
+            </label>
+        </div>
+        <textarea reqc="txtHistory" readonly class="txtHistoryClass"></textarea>
+    </div>
+    <br />
+    <!-- 畫布 -->
+    <div class="divChartClass">
+        <div id="chart" style="width: 100%; height: 500px; display:none;border:1px solid #00f;"></div>
+        <pre>
+        ✅ 1. Train box loss（訓練框損失）
+        意思：模型在訓練時預測的邊界框（bounding box）和實際框之間的誤差。
+        評估什麼：位置、大小的精確度。
+        常用損失函數：CIoU、DIoU、GIoU、IoU 等。
+        數值越低越好，代表預測框越接近真實框。
+
+        ✅ 2. Val box loss（驗證框損失）
+        意思：模型在驗證資料集上預測框的誤差（與訓練 box loss 同樣道理，但是在驗證集上算）。
+        用途：判斷是否過擬合。
+        如果訓練 loss ↓ 但 val loss ↑，可能過擬合。
+
+        ✅ 3. mAP@0.5（mean Average Precision @ IoU=0.5）
+        意思：平均精度（AP）的加權平均，判斷模型預測準不準。
+        @0.5 的意思是 IoU ≥ 0.5 才算正確預測
+        IoU（Intersection over Union）是預測框與真實框的交集除以聯集，0.5 代表至少有 50% 重疊。
+        </pre>
+    </div>
+    <br />
+    <!-- 訓練項目 index -->
+    <div reqc="divKinds_outer">
+        <h3>訓練類別</h3>
+        <div reqc="divKinds"></div>
+    </div>
+    <br />
+    <!-- yolo 圖片集 -->
+    <div reqc="divImgs"></div>
+</body>
+</html>
+<script nonce="gg">
+    var app = {
+        "item": {
+            "project_name": "",
+            "task_name": "",
+        },
+        "method": {
+            "ui_init": function () {
+                $("img[reqc='imgXClose']").off().click(function () {
+                    parent.dialogMyBoxOff();
+                });
+                // reload
+                $("img[reqc='imgRefresh']").off().click(function () {
+                    location.reload();
+                });
+                // btnHistoryToggle
+                $("input[reqc='btnHistoryToggle']").off().click(function () {
+                    $("div[reqc='divShowHideHistory']").fadeToggle();
+                });
+            },
+            "drawChart": function (data) {
+                const epochs = data.map(d => d.epoch);
+                const trainBoxLoss = data.map(d => d["train/box_loss"]);
+                const valBoxLoss = data.map(d => d["val/box_loss"]);
+                const map50 = data.map(d => d["metrics/mAP50(B)"]);
+
+                const chart = echarts.init(document.getElementById("chart"));
+
+                const option = {
+                    title: {
+                        text: "YOLO 訓練曲線圖",
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                    },
+                    legend: {
+                        data: ["Train Box Loss", "Val Box Loss", "mAP@0.5"]
+                    },
+                    xAxis: {
+                        type: "category",
+                        name: "Epoch",
+                        data: epochs,
+                    },
+                    yAxis: [
+                        {
+                            type: "value",
+                            name: "Loss",
+                        },
+                        {
+                            type: "value",
+                            name: "mAP@0.5",
+                            min: 0,
+                            max: 1,
+                        },
+                    ],
+                    series: [
+                        {
+                            name: "Train Box Loss",
+                            type: "line",
+                            data: trainBoxLoss,
+                            smooth: true,
+                        },
+                        {
+                            name: "Val Box Loss",
+                            type: "line",
+                            data: valBoxLoss,
+                            smooth: true,
+                        },
+                        {
+                            name: "mAP@0.5",
+                            type: "line",
+                            yAxisIndex: 1,
+                            data: map50,
+                            smooth: true,
+                        },
+                    ],
+                    dataZoom: [
+                        { type: 'inside' },
+                        { type: 'slider' }
+                    ]
+                };
+
+                chart.setOption(option);
+            },
+            "updateStatus": function () {
+                var o = {
+                    "project_name": app.item.project_name,
+                    "task_name": app.item.task_name
+                };
+                myAjax_async_json("/api?mode=train_get_task_status", o, function (jd) {
+                    if (jd['status'] == 'OK') {
+                        var status_progress = parseFloat(jd.data['status_progress']).toFixed(2);
+                        var jd_job = json_decode(jd['data']['job'], true);
+                        if (jd['data']['train_results'] != "") {
+                            // 從 csv 內容解算進度
+                            // 從 jobs 取出 epoch 總數
+
+                            console.log(jd_job);
+                            // 進度為
+                            // 50~95 % 為 epoch 0~結束
+                            var user_defind_epoch = parseFloat(jd_job['epoch'])
+                            var now_epoch_step = 0;
+                            var csv_results = str_replace("\r", "", jd['data']['train_results']).trim();
+                            var m_csv_last = explode(",", end(explode("\n", csv_results))); // 1~10
+                            if (!isNaN(m_csv_last[0])) {
+                                // 進度轉換
+                                now_epoch_step = m_csv_last[0];
+                                if (now_epoch_step != user_defind_epoch) {
+                                    if (jd['data']['status'].toString() == "1") {
+                                        status_progress = arduino_map(parseFloat(m_csv_last[0]), 1.0, user_defind_epoch, 50.0, 95.0);
+                                    }
+                                }
+                                // 一樣代表已最後一筆或完成，照原進度走
+                            }
+                            // result to txt
+                            // 內容移除 train_get_task_status 有關的
+                            //  + "\n" + jd['data']['status_yolo_log']
+                            var _m = explode("\n", jd['data']['status_log']);
+                            var _mm = [];
+                            _m.map(function (v) {
+                                if (is_string_like(v, "%train_get_task_status%")) {
+                                    return;
+                                }
+                                if (is_string_like(v, "%\"POST %")) {
+                                    return;
+                                }
+                                if (is_string_like(v, "%\"GET %")) {
+                                    return;
+                                }
+                                if (is_string_like(v, "%\"[36mGET %")) {
+                                    return;
+                                }
+                                if (is_string_like(v, "%\"[33mGET %")) {
+                                    return;
+                                }
+                                _mm.push(v);
+                            });
+                            var mmstr = str_replace_deep("\n\n", "\n", _mm.join('\n'));
+                            mmstr = str_replace_deep("\t", " ", mmstr);
+                            mmstr = str_replace_deep("  ", " ", mmstr);
+                            mmstr = str_replace_deep("  ", " ", mmstr);
+                            mmstr = str_replace_deep("  ", " ", mmstr);
+                            mmstr = str_replace_deep("  ", " ", mmstr);
+                            $("textarea[reqc='txtHistory']").val(mmstr);
+                            // 是否自動捲動
+                            if ($("input[reqc='chkAutoScroll']").prop("checked")) {
+                                $("textarea[reqc='txtHistory']").scrollTop(99999999999);
+                            }
+
+
+                            // 可以畫圖表
+                            var csvArr = csvtoarray(jd['data']['train_results'], ",", true);
+                            //console.log(csvArr);
+                            $("#chart").fadeIn();
+                            app.method.drawChart(csvArr);
+                        }
+                        jd.data.imgs.map(function (v) {
+                            //console.log(v);
+                            //name : "val_batch2_pred.jpg"
+                            //path : "C:\\Users\\johnho\\Desktop\\my_yolo_train_tool\\data\\projects\\三國迷因\\train_project\\task_1752655939\\runs\\train\\output\\val_batch2_pred.jpg"
+                            v.imgPath = `/data/projects/${app.item.project_name}/train_project/${app.item.task_name}/runs/train/output/${v.name}`;
+                            if ($(`div[reqc='divImgs'] img[req_name='${v.name}']`).length == 0) {
+                                $("div[reqc='divImgs']").append(`
+                                <div class="divImgItem">
+                                    <img req_name="${v.name}" src="${v.imgPath}" reqc="imgItem">
+                                    <br>
+                                    <span class='spanFileSpan'>${v.name}</span>
+                                </div>
+                                `);
+                            }
+                            //$("div[reqc='divImgs']").html();
+                        });
+                        // 滑鼠移到可視
+                        img_mouseover_show($("img[reqc='imgItem"), {
+
+                        });
+
+                        // 訓練項目
+                        if ($("div[reqc='divMetainfo_outer']").text().trim() == "") {
+                            console.log(jd_job);
+                            if (jd_job['use_early_stopping'] == null) {
+                                jd_job['use_early_stopping'] = "1";
+                                jd_job['patience'] = 10;
+                                jd_job['model'] = "None";
+                            }
+                            if (jd_job['use_early_stopping'].toString() == "0") {
+                                jd_job['patience'] = "--";
+                            }
+                            var str = `
+                                <ul>
+                                    <li><span class="spanMetaTitle">模型參照(model)：</span><span class="spanMetaValue">${jd_job['model']}</li>
+                                    <li><span class="spanMetaTitle">圖片大小(imgz)：</span><span class="spanMetaValue">${jd_job['imgz']}</li>
+                                    <li><span class="spanMetaTitle">批次大小(batch)：</span><span class="spanMetaValue">${jd_job['batch']}</li>
+                                    <li><span class="spanMetaTitle">訓練次數(epoch)：</span><span class="spanMetaValue">${jd_job['epoch']}</li>
+                                    <li><span class="spanMetaTitle">優化器(optimizer)：</span><span class="spanMetaValue">${jd_job['optimizer']}</li>
+                                    <li><span class="spanMetaTitle">學習率(learning_rate)：</span><span class="spanMetaValue">${jd_job['learning_rate']}</li>
+                                    <li><span class="spanMetaTitle">訓驗與驗證比例(train/val)：</span><span class="spanMetaValue">${jd_job['train_percent']} / ${jd_job['val_percent']}</li>
+                                    <li><span class="spanMetaTitle">使用早停機制(use_early_stopping)：</span><span class="spanMetaValue">${jd_job['use_early_stopping']}</li>
+                                    <li><span class="spanMetaTitle">早停的耐心次數(patience)：</span><span class="spanMetaValue">${jd_job['patience']}</li>
+                                    <li><span class="spanMetaTitle">開始時間(create_datetime)：</span><span class="spanMetaValue">${jd_job['create_datetime']}</li>
+                                    <li><span class="spanMetaTitle">經過時間(秒)：</span><span class="spanMetaValue" reqc="span_metatitle_during_time">${jd['data']['during_time']}</li>
+                                    <li class="none"><span class="spanMetaTitle">結束時間(end_datetime)：</span><span class="spanMetaValue" reqc="span_metatitle_end_datetime">${jd['data']['end_datetime']}</li>
+                                </ul>
+                            `;
+                            $("div[reqc='divMetainfo_outer']").html(str);
+                        }
+                        if ($("div[reqc='divKinds']").text().trim() == "") {
+                            var mstr = [];
+                            console.log(jd_job);
+                            jd_job.m_kinds.map(function (v, index) {
+                                var d = `<span class="spanKindItem">(${index}) ${v}</span>`;
+                                mstr.push(d);
+                            });
+                            $("div[reqc='divKinds']").html(mstr.join(""));
+                        }
+
+
+                        //console.log(status_progress);
+                        status_progress = sprintf("%.2f", status_progress);
+                        $(`span[reqc='progressPercent']`).text(status_progress + " %");
+                        $("progress[reqc='theprogress']").val(status_progress);
+
+                        // 更新時間
+                        $("span[reqc='span_metatitle_during_time']").text(jd['data']['during_time']);
+
+                        if (status_progress >= 100) {
+                            //return;
+                            // 結束時間才show
+                            $("span[reqc='span_metatitle_end_datetime']").closest("li").removeClass("none");
+                        }
+                        (function (_jd) {
+                            setTimeout(function () {
+                                app.method.updateStatus();
+                            }, 1000);
+                        })(jd);
+                    }
+                });
+            }
+        },
+        "init": function () {
+            app.method.ui_init();
+            app.method.updateStatus();
+
+        }
+    };
+    var GETS = getGET();
+    console.log(GETS);
+    app.item.project_name = GETS["project_name"];
+    app.item.task_name = GETS["task_name"];
+    $("h2[reqc='h2_project_name']").text(app.item.project_name);
+    $("h3[reqc='h3_task_name']").text(app.item.task_name);
+    app.init();
+</script>

@@ -1,0 +1,4320 @@
+from shlex import join
+import cv2
+import numpy as np
+import time
+import tkinter as tk
+from tkinter import ttk
+from tkinter import messagebox
+from tkinter import filedialog
+from tkinter import Menu
+from tkinter import simpledialog
+from tkinter import Label, Tk, StringVar
+import threading
+import torch
+import os
+
+# os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+print("CUDA 是否可用:", torch.cuda.is_available())
+print("可用 GPU 數量:", torch.cuda.device_count())
+print(
+    "GPU 名稱:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "N/A"
+)
+
+import webbrowser
+import sys
+import base64
+import mimetypes
+import portalocker
+import mss
+import php
+import keyboard
+import asyncio
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.gzip import GZipMiddleware
+import uvicorn
+from ctypes import windll, byref, sizeof, c_int, wintypes
+from ctypes.wintypes import HWND, LONG, RECT
+import requests
+import subprocess
+import signal
+from ultralytics import YOLO
+from PIL import Image, ImageDraw, ImageFont, ImageTk
+import tempfile
+import shutil
+import stat
+import zipfile
+import json
+import random
+import logging
+from urllib.parse import quote
+from urllib.parse import parse_qs
+
+from pose_motion_core import (
+    COCO17_KEYPOINTS,
+    COCO17_SKELETON,
+    FrameBuffer,
+    bbox_center,
+    build_pose_record,
+    compute_pose_features,
+    draw_pose_skeleton_image,
+    normalize_keypoints,
+    normalize_roi,
+    select_main_person,
+    write_json_atomic,
+)
+from pose_live2d_mapper import build_live2d_params, build_motion3
+from pose_video_source import (
+    download_authorized_youtube_video,
+    is_probable_youtube_url,
+    iter_video_frames,
+    write_source_video_info,
+)
+
+
+# 讓 canvas 滑鼠事件可以穿透用
+import ctypes
+from ctypes import wintypes
+
+my = php.kit()
+basedir = os.path.dirname(os.path.realpath(sys.argv[0]))  # 取得 exe 檔案的目錄路徑
+
+names_cht_dict = {
+    "person": "人物",
+    "bicycle": "腳踏車",
+    "car": "汽車",
+    "motorcycle": "摩托車",
+    "airplane": "飛機",
+    "bus": "公車",
+    "train": "火車",
+    "truck": "卡車",
+    "boat": "船",
+    "traffic light": "紅綠燈",
+    "fire hydrant": "消防栓",
+    "stop sign": "停止標誌",
+    "parking meter": "停車收費表",
+    "bench": "長椅",
+    "bird": "鳥",
+    "cat": "貓",
+    "dog": "狗",
+    "horse": "馬",
+    "sheep": "羊",
+    "cow": "牛",
+    "elephant": "大象",
+    "bear": "熊",
+    "zebra": "斑馬",
+    "giraffe": "長頸鹿",
+    "backpack": "背包",
+    "umbrella": "雨傘",
+    "handbag": "手提包",
+    "tie": "領帶",
+    "suitcase": "行李箱",
+    "frisbee": "飛盤",
+    "skis": "滑雪板",
+    "snowboard": "滑雪板",
+    "sports ball": "運動球",
+    "kite": "風箏",
+    "baseball bat": "棒球棒",
+    "baseball glove": "棒球手套",
+    "skateboard": "滑板",
+    "surfboard": "衝浪板",
+    "tennis racket": "網球拍",
+    "bottle": "瓶子",
+    "wine glass": "酒杯",
+    "cup": "杯子",
+    "fork": "叉子",
+    "knife": "刀",
+    "spoon": "湯匙",
+    "bowl": "碗",
+    "banana": "香蕉",
+    "apple": "蘋果",
+    "sandwich": "三明治",
+    "orange": "橙子",
+    "broccoli": "西蘭花",
+    "carrot": "胡蘿蔔",
+    "hot dog": "熱狗",
+    "pizza": "披薩",
+    "donut": "甜甜圈",
+    "cake": "蛋糕",
+    "chair": "椅子",
+    "couch": "沙發",
+    "potted plant": "盆栽植物",
+    "bed": "床",
+    "dining table": "餐桌",
+    "toilet": "馬桶",
+    "tv": "電視",
+    "laptop": "筆記型電腦",
+    "mouse": "滑鼠",
+    "remote": "遙控器",
+    "keyboard": "鍵盤",
+    "cell phone": "手機",
+    "microwave": "微波爐",
+    "oven": "烤箱",
+    "toaster": "烤麵包機",
+    "sink": "水槽",
+    "refrigerator": "冰箱",
+    "book": "書",
+    "clock": "時鐘",
+    "vase": "花瓶",
+    "scissors": "剪刀",
+    "teddy bear": "泰迪熊",
+    "hair drier": "吹風機",
+    "toothbrush": "牙刷",
+}
+
+# 測試 Model
+model_file = os.path.join(basedir, "example_pt", "best.pt")
+model = None
+# 信心度
+model_confidence = 0.6
+
+pose_model_file = os.path.join(basedir, "example_pt", "yolo11n-pose.pt")
+pose_model = None
+pose_confidence = 0.35
+
+
+# Windows 專用功能：設置窗口滑鼠穿透
+def set_window_exclude(window_id):
+    return
+    hwnd = wintypes.HWND(window_id)
+    # 獲取當前窗口屬性
+    exstyle = windll.user32.GetWindowLongW(hwnd, -20)  # GWL_EXSTYLE = -20
+    # 添加透明與滑鼠穿透屬性
+    exstyle |= 0x20  # WS_EX_TRANSPARENT
+    exstyle |= 0x80000  # WS_EX_LAYERED
+    windll.user32.SetWindowLongW(hwnd, -20, exstyle)
+    # 設置窗口完全透明 (僅顯示繪製的內容)
+    windll.user32.SetLayeredWindowAttributes(hwnd, 0, 255, 0x2)  # LWA_ALPHA = 0x2
+
+
+# run_desktop_example 執行桌面辨識範例
+def run_desktop_example():
+    # 按鈕名稱變成 - 停止
+    # 再按一次按鈕，就會停止
+    global is_run_keep_screen_predict
+    if (
+        GDATA["UI"]["btn_desktop_example_button"].config("text")[-1]
+        == "桌面辨識範例(運作中)"
+    ):
+        GDATA["UI"]["btn_desktop_example_button"].config(text="桌面辨識範例(已停止)")
+        # os.system("taskkill /F /IM run_desktop_flask_example.bat")
+
+        # 結束 run_keep_screen_predict 裡的 while True
+        is_run_keep_screen_predict = False
+        return
+    if GDATA.get("pose_recording") or GDATA.get("pose_stop_in_progress") or GDATA.get("pose_url_processing"):
+        messagebox.showwarning("警告", "Pose 處理中，請先停止或等待完成後再啟動桌面辨識。")
+        return
+    # 按鈕名稱變成 - 運作中
+    GDATA["UI"]["btn_desktop_example_button"].config(text="桌面辨識範例(運作中)")
+
+    # 取得進程的 PID
+    # pid = process.pid
+    # print(f"進程 PID: {pid}")
+    is_run_keep_screen_predict = True
+
+    # 持續獲取桌面大小，一直辨識
+    # 用 thread 嗎
+    # 用 mss 這個套件
+    # 用 requests 傳到 flask
+    # 程式開始
+    global model
+    global model_file
+    if model == None:
+        model = YOLO(model_file)
+
+    # 使用者需框選螢幕範圍給 YOLO 預測，才不會一直辨識整個螢幕
+    # 用 tkinter 的 Toplevel 來做
+    # 用透明視窗來畫框
+    select_area_for_model()
+
+    threading.Thread(target=run_keep_screen_predict, args=()).start()
+
+
+is_run_keep_screen_predict = False
+run_desktop_flask_example_PID = None
+
+is_auto_click = False
+auto_click_delay_ms = 150  # 每次點擊間隔 ms，避免遊戲來不及回應
+
+click_history = []       # [(abs_x, abs_y, timestamp_ms), ...]
+click_debounce_ms = 800  # 同位置 debounce 時間窗口（ms）
+click_debounce_px = 30   # 判定「同一位置」的像素半徑
+
+
+def do_auto_click(abs_x, abs_y):
+    global click_history
+    now_ms = time.time() * 1000
+    # 清除過期記錄
+    click_history = [(x, y, t) for x, y, t in click_history if now_ms - t < click_debounce_ms]
+    # 30px 內有近期點擊紀錄就跳過，避免對同一隻老鼠重複點擊
+    for cx, cy, _ in click_history:
+        if abs(abs_x - cx) < click_debounce_px and abs(abs_y - cy) < click_debounce_px:
+            return
+    # 記錄 + 點擊
+    click_history.append((abs_x, abs_y, now_ms))
+    ctypes.windll.user32.SetCursorPos(abs_x, abs_y)
+    ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)  # left button down
+    ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)  # left button up
+
+
+def toggle_auto_click():
+    global is_auto_click
+    is_auto_click = not is_auto_click
+    txt = "自動點擊(開)" if is_auto_click else "自動點擊(關)"
+    GDATA["UI"]["btn_auto_click"].config(text=txt)
+
+
+def get_dynamic_imgsz(image_path):
+    with Image.open(image_path) as img:
+        width, height = img.size
+    # 根據圖片大小調整 `imgsz`
+    if max(width, height) > 2000:
+        return 2048  # 適合處理高解析度圖片
+    # elif max(width, height) > 1000:
+    #    return 1280  # 中等大小圖片
+    else:
+        return 640  # 小尺寸圖片或細節為主
+
+
+def run_keep_screen_predict():
+    # 用 conda 背景啟動 yolo-env 環境的 python my_yolo_flask.py
+    # 啟動進程
+    # "conda activate ./yolo-env && python my_yolo_flask.py"
+    global run_desktop_flask_example_PID
+    global overlay_window
+    global GDATA
+    global model_confidence
+    # process = subprocess.Popen("run_desktop_flask_example.bat", shell=False)
+    # _screen_rects = []
+
+    while True:
+        global is_run_keep_screen_predict
+        if is_run_keep_screen_predict == False:
+            # 結束進程
+            # 終止該進程
+            # os.kill(pid, signal.SIGTERM)
+            # 終止子進程
+            # 清除畫框
+            overlay_window.clear()
+
+            # 清除畫框
+            if "overlay_model" in GDATA and GDATA["overlay_model"] != None:
+                GDATA["overlay_model"].destroy()
+                GDATA["overlay_model"] = None
+
+            # for rect in _screen_rects:
+            #    rect.destroy()
+            #    _screen_rects = []
+            """pid = process.pid
+            try:
+                os.kill(pid, signal.SIGTERM)  # CTRL_C_EVENT)
+            except:
+                pass
+            try:
+                os.kill(pid, signal.CTRL_C_EVENT)
+            except:
+                pass
+            try:
+                os.kill(pid, signal.CTRL_BREAK_EVENT)
+            except:
+                pass
+            try:
+                process.terminate()
+                # 等待進程結束
+                process.wait()
+            except:
+                pass
+            # 確認進程已結束
+            if process.returncode is not None:
+                print(f"Process terminated with return code {process.returncode}")
+            else:
+                print("Process is still running.")
+            if run_desktop_flask_example_PID != None:
+                try:
+                    os.kill(run_desktop_flask_example_PID, signal.SIGTERM)
+                except:
+                    pass
+            """
+            break
+        try:
+            # 如果 GDATA["x1_model"] 是 None，就不執行
+            if GDATA["x1_model"] == None:
+                time.sleep(0.1)
+                continue
+            with mss.mss() as sct:
+                monitor = sct.monitors[1]
+                # 改用框的範圍
+
+                rect = (
+                    # monitor["left"],
+                    # monitor["top"],
+                    # monitor["width"],
+                    # monitor["height"],
+                    GDATA["x1_model"],
+                    GDATA["y1_model"],
+                    GDATA["x2_model"],
+                    GDATA["y2_model"],
+                )
+                # print(rect)
+                # 獲取桌面截圖
+                # hide 紅框，這樣截圖就不會有紅框
+                overlay_window.hideAll()
+                sct_img = sct.grab(rect)
+                # 截完圖再顯示紅框
+                overlay_window.showAll()
+                # 顯示截圖
+                img = np.array(sct_img)
+                # 傳到 localhost 5000 flask 進行預測
+                """
+                url = "http://127.0.0.1:5000/predict"
+                files = {
+                    "file": (
+                        "screenshot.png",
+                        cv2.imencode(".png", img)[1].tobytes(),
+                        "image/png",
+                    )
+                }
+                response = requests.post(url, files=files)
+                run_desktop_flask_example_PID = response.json()["pid"]
+                # 如果有預測結果，就顯示在畫面上
+                print(response.json())
+                #print(response.text)"""
+                #  img 存成暫存檔
+
+                # temp_dir = tempfile.mkdtemp()
+                # input_path = os.path.join(temp_dir, "screenshot.jpg")
+                # my.file_put_contents(input_path,cv2.imencode(".jpg", img)[1].tobytes())
+                # my.file_put_contents("C:\\temp\\a.jpg",cv2.imencode(".jpg", img)[1].tobytes())
+
+                # 使用 YOLO 模型進行預測
+                # get_dynamic_imgsz(input_path)
+                # results = model.predict(input_path, imgsz=get_dynamic_imgsz(input_path), conf=0.6)[0]
+                # Class indices (e.g., 0 for 'person', 1 for 'car')
+                # 轉換成模型的輸入格式，通常是 (1, C, H, W)
+                # img = np.moveaxis(img, -1, 0)  # 把維度轉換為 C, H, W
+                # img = np.expand_dims(img, axis=0)  # 加上 batch 维度
+                # 正規化 (如果需要的話)
+                # img = img / 255.0  # 讓像素值在 0 到 1 之間
+                img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
+                # , imgsz=2048
+                # 是否只處理特定的類別
+                desired_classes = [0, 1]
+
+                results = model.predict(
+                    img, imgsz=1024, conf=model_confidence  # , classes=desired_classes
+                )[0]
+
+                # shutil.rmtree(temp_dir)
+
+                # output = {
+                #    "status": "OK",
+                #    #"pid": _PID,
+                #    "data": []
+                # }
+                bboxes = []
+                for i, box in enumerate(results.boxes.xyxy.tolist()):
+                    x1, y1, x2, y2 = map(int, box)
+                    label = int(results.boxes.cls[i])
+                    confidence = results.boxes.conf[i]
+                    label_name = results.names[label]
+                    cht_label_name = names_cht_dict.get(label_name, label_name)
+
+                    # 加回傳自身的 process id
+                    bboxes.append([x1, y1, x2, y2, cht_label_name, confidence])
+
+                    # 效能比較不好，合併再一次繪
+                    """
+                    overlay_window.create_rectangle(
+                        x1 + GDATA["x1_model"],
+                        y1 + GDATA["y1_model"],
+                        x2 + GDATA["x1_model"],
+                        y2 + GDATA["y1_model"],
+                        cht_label_name,
+                    )
+                    """
+                    # output["data"].append({
+                    #    "label": label_name,
+                    #    "label_cht": cht_label_name,
+                    #    "confidence": round(float(confidence), 2),
+                    #    "bbox": [x1, y1, x2, y2],
+                    #    #"pid": _PID
+                    # })
+                # data_list = output["data"]
+                # 清除畫框
+                # for rect in _screen_rects:
+                #    rect.destroy()
+                #    _screen_rects = []
+
+                # for data in data_list:
+                #    x1, y1, x2, y2 = data["bbox"][0], data["bbox"][1], data["bbox"][2], data["bbox"][3]
+                #    #cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                #    # 螢幕畫方框
+                #    #_screen_rects.append(create_overlay_window(x1, y1, x2, y2))
+                #    overlay_window.create_rectangle(x1, y1, x2, y2)
+            # overlay_window.clear()
+            overlay_window.create_multi_rectangle(bboxes)
+
+            # 自動點擊：將 bbox 相對座標轉成螢幕絕對座標後點擊
+            if is_auto_click and bboxes:
+                for box in bboxes:
+                    bx1, by1, bx2, by2 = box[0], box[1], box[2], box[3]
+                    abs_x = GDATA["x1_model"] + (bx1 + bx2) // 2
+                    abs_y = GDATA["y1_model"] + (by1 + by2) // 2
+                    do_auto_click(abs_x, abs_y)
+                    time.sleep(auto_click_delay_ms / 1000.0)
+        except Exception as e:
+            print(e)
+            pass
+    pass
+
+
+class OverlayWindow:
+    def __init__(self, root):
+        # 創建透明的 Toplevel 視窗
+        self.overlay = tk.Toplevel(root)
+        self.overlay.attributes("-fullscreen", True)
+        self.overlay.attributes("-topmost", True)
+        self.overlay.attributes("-alpha", 1)  # 透明度
+        self.overlay.attributes("-transparentcolor", "black")  # 透明背景顏色
+        self.overlay.configure(background="black")
+        self.overlay.overrideredirect(True)  # 移除工作列圖示
+
+        # 創建畫布
+        self.canvas = tk.Canvas(self.overlay, bg="black", highlightthickness=0)
+        self.canvas.pack(fill="both", expand=True)
+
+        # 使窗口忽略滑鼠事件
+        # self.make_window_click_through()
+
+        # 紀錄矩形框的列表
+        self.rectangles = []
+        self.labelLists = []
+
+        # 指向 Windows 系統字體目錄中的 Arial 字體
+        # self.font_path = "C:\\Windows\\Fonts\\simsun.ttc"
+        self.font_path = "C:\\Windows\\Fonts\\msjh.ttc"
+        self.font_size = 24
+        self.font = ImageFont.truetype(self.font_path, self.font_size)
+
+    def make_window_click_through(self):
+        # 取窗口句柄
+        hwnd = ctypes.windll.user32.GetForegroundWindow()
+
+        # 定義參數
+        GWL_EXSTYLE = -20
+        WS_EX_LAYERED = 0x80000
+        WS_EX_TRANSPARENT = 0x20
+
+        # 獲取當前窗口屬性
+        style = ctypes.windll.user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+        # 添加穿透屬性
+        ctypes.windll.user32.SetWindowLongW(
+            hwnd, GWL_EXSTYLE, style | WS_EX_LAYERED | WS_EX_TRANSPARENT
+        )
+
+    def hideAll(self):
+        self.overlay.withdraw()
+
+    def showAll(self):
+        self.overlay.deiconify()
+
+    def create_multi_rectangle(self, bboxes):
+        # 繪製多個矩形框
+        if len(bboxes) == 0:
+            overlay_window.clear()
+            return
+        global GDATA
+        # 創建圖像，最後一次框的大小
+        # RGBA (0,0,0,0) 表示完全透明
+        # (0, 0, 0, 0)
+        image = Image.new(
+            "RGBA",
+            (
+                GDATA["x2_model"] - GDATA["x1_model"],
+                GDATA["y2_model"] - GDATA["y1_model"],
+            ),
+            (0, 0, 0, 0),
+        )
+        draw = ImageDraw.Draw(image)
+
+        # 繪製多個矩形
+
+        for bbox in bboxes:
+            x1, y1, x2, y2, labelName, confidence = bbox
+            # 繪製矩形
+
+            draw.rectangle([x1, y1, x2, y2], outline="red", width=2)
+            if labelName is None:
+                continue
+            # 計算文字位置
+            txt_y = y2 - 35
+            txt_x = (x1 + x2) / 2 - len(labelName) * 12
+
+            # 先繪製白色陰影
+            for i in [-2, -1, 0, 1, 2]:
+                for j in [-2, -1, 0, 1, 2]:
+                    draw.text(
+                        (txt_x + i, txt_y + j),
+                        labelName,
+                        fill="white",
+                        font=self.font,
+                    )
+
+            # 再繪製藍色文字
+            draw.text((txt_x, txt_y), labelName, fill="blue", font=self.font)
+        # 將圖像轉換為 PhotoImage
+        self.photo = ImageTk.PhotoImage(image)  # 儲存到類屬性，防止被回收
+
+        # 最後一刻才清
+        self.clear()
+        # 顯示圖像
+        self.canvas.create_image(
+            GDATA["x1_model"], GDATA["y1_model"], image=self.photo, anchor="nw"
+        )
+
+    def create_pose_skeleton(self, keypoints, roi, lines, confidence_threshold=0.2):
+        image = draw_pose_skeleton_image(keypoints, roi, lines, confidence_threshold)
+        self.pose_photo = ImageTk.PhotoImage(image)
+        self.clear()
+        self.canvas.create_image(roi["left"], roi["top"], image=self.pose_photo, anchor="nw")
+
+    def create_rectangle(self, x1, y1, x2, y2, labelName=None):
+        # 繪製矩形框並儲存矩形對象
+        rect = self.canvas.create_rectangle(x1, y1, x2, y2, outline="red", width=2)
+        self.rectangles.append(rect)
+        if labelName is not None:
+            # 計算文字位置
+            txt_y = y2 + 1
+            txt_x = (x1 + x2) / 2 - len(labelName) * 12
+
+            # 先繪製白色陰影
+            shadow_offset = 2  # 陰影偏移量
+            textObj_shadow = self.canvas.create_text(
+                txt_x + shadow_offset,
+                txt_y + shadow_offset,
+                text=labelName,
+                anchor="nw",
+                fill="white",
+                font=("Arial", 24),
+            )
+            self.labelLists.append(textObj_shadow)
+
+            # 再繪製藍色文字
+            textObj = self.canvas.create_text(
+                txt_x,
+                txt_y,
+                text=labelName,
+                anchor="nw",
+                fill="blue",
+                font=("Arial", 24),
+            )
+            self.labelLists.append(textObj)
+
+        return len(self.rectangles) - 1  # 返回矩形框索引
+
+    def update_rectangle(self, index, x1, y1, x2, y2):
+        # 更新已存在的矩形框位置
+        if 0 <= index < len(self.rectangles):
+            self.canvas.coords(self.rectangles[index], x1, y1, x2, y2)
+
+    def clear(self):
+        # 清除所有矩形框
+        for rect in self.rectangles:
+            self.canvas.delete(rect)
+        self.rectangles.clear()
+        # 清除所有標籤
+        for label in self.labelLists:
+            self.canvas.delete(label)
+        self.labelLists.clear()
+        # 移除圖像
+        self.canvas.delete("all")
+
+
+# 畫框用的透明窗口
+def create_overlay_window(x1, y1, x2, y2):
+    overlay = tk.Toplevel()
+    overlay.attributes("-fullscreen", True)
+    overlay.attributes("-topmost", True)
+    overlay.attributes("-alpha", 0.5)  # 透明度
+    overlay.attributes("-transparentcolor", "black")  # 透明背景顏色
+    overlay.configure(background="black")
+    # 移除工作列圖示
+    overlay.overrideredirect(True)
+    canvas = tk.Canvas(overlay, bg="black", highlightthickness=0)
+    canvas.pack(fill="both", expand=True)
+
+    # 繪製矩形框
+    canvas.create_rectangle(x1, y1, x2, y2, outline="red", width=1)
+    # hwnd = int(overlay.winfo_id())
+    # set_window_exclude(hwnd)  # 設置滑鼠穿透
+    return overlay
+
+
+if my.is_dir(os.path.join(basedir, "data")) == False:
+    my.mkdir(os.path.join(basedir, "data"))
+    os.chmod(os.path.join(basedir, "data"), 0o777)
+if my.is_dir(os.path.join(basedir, "data", "projects")) == False:
+    my.mkdir(os.path.join(basedir, "data", "projects"))
+    os.chmod(os.path.join(basedir, "data", "projects"), 0o777)
+
+GDATA = {
+    "VERSION": "0.01",
+    "UI": {},
+    "THREAD": {},
+    "basedir": basedir,
+    "recording": False,  # 錄製狀態
+    "out": None,
+    "record_area": None,
+    "x1": 0,
+    "xy": 0,
+    "x2": 0,
+    "y2": 0,
+    "rect": None,
+    "frame_list": [],  # 幀列表
+    "run_start_time": None,  # 影片開始轉檔時間
+    "run_end_time": None,  # 影片結束轉檔時間
+    "x1_model": None,  # 模型框選的 x1
+    "y1_model": None,  # 模型框選的 y1
+    "x2_model": None,  # 模型框選的 x2
+    "y2_model": None,  # 模型框選的 y2
+    "pose_recording": False,
+    "pose_stop_in_progress": False,
+    "pose_frame_buffer": None,
+    "pose_frames": [],
+    "pose_record_folder": None,
+    "pose_last_output_file": "",
+    "pose_previous_center": None,
+    "pose_current_roi": None,
+    "pose_fps_target": 15,
+    "pose_capture_total_frames": 0,
+    "pose_missing_frames": 0,
+    "pose_capture_error": None,
+    "pose_url_processing": False,
+    "pose_video_max_duration_seconds": 300,
+}
+
+lock_file = os.path.join(basedir, "lock.txt")
+
+# 檢查是否存在鎖定檔案並創建文件鎖
+# 防程式重複啟動
+check_file_run = open(lock_file, "a+")
+try:
+    portalocker.lock(check_file_run, portalocker.LOCK_EX | portalocker.LOCK_NB)
+except:
+    messagebox.showinfo("說明", "程式已執行了...")
+    sys.exit()
+
+
+MESSAGE = """
+我的 yolo 訓練機
+
+版本: %s
+作者: 羽山 (https://3wa.tw)  
+    
+""" % (
+    GDATA["VERSION"]
+)
+icon_b64 = "AAABAAEAWFgAAAEAIABIfQAAFgAAACgAAABYAAAAsAAAAAEAIAAAAAAAAHkAAMEOAADBDgAAAAAAAAAAAAD/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////vOGs/6TXj/+k14//pNeP/6TXj/+k14//pNeP/7Ddnf//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////0evG/4zMcP+T0Hn//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////4bKaf9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9wwE7//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7zhrP+T0Hn/dMNT/1+5Of9fuTn/a75I///////////////////////R68b/vOGs//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+Gymn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/cMBO/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////9Hrxv9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of/R68b/////////////////pNeP/1+5Of9juz3/cMBO/4bKaf+T0Hn/0evG/////////////////////////////////////////////////6TXj///////////////////////////////////////////////////////hspp/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/3DATv//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////dMNT/1+5Of9fuTn/X7k5/1+5Of9fuTn/nNSF/////////////////6TXj/9fuTn/X7k5/1+5Of9fuTn/X7k5/6TXj////////////////////////////////////////////6TXj/9fuTn/gMdi/////////////////////////////////////////////////4bKaf9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9wwE7/////////////////////////////////////////////////sN2d/4DHYv///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////5PQef9fuTn/X7k5/1+5Of9fuTn/X7k5/4bKaf////////////////+k14//X7k5/1+5Of9fuTn/X7k5/1+5Of/R68b//////////////////////////////////////9Hrxv9nvUP/X7k5/1+5Of9wwE7/0evG//////////////////////////////////////+Gymn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/cMBO////////////////////////////////////////////sN2d/2O7Pf9fuTn/k9B5//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+84az/X7k5/1+5Of9fuTn/X7k5/1+5Of9wwE7/////////////////jMxw/1+5Of9fuTn/X7k5/1+5Of9fuTn///////////+T0Hn/gMdi/6TXj/////////////////96xVr/X7k5/1+5Of9fuTn/X7k5/2u+SP/R68b/////////////////////////////////hspp/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/3DATv//////////////////////////////////////sN2d/2O7Pf9fuTn/X7k5/1+5Of+w3Z3//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////2O7Pf9fuTn/X7k5/1+5Of9fuTn/Y7s9/////////////////4bKaf9fuTn/X7k5/1+5Of9fuTn/X7k5////////////dMNT/1+5Of9fuTn/Y7s9/3rFWv+Gymn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/a75I/9Hrxv///////////////////////////4bKaf9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9wwE7/////////////////////////////////0evG/2u+SP9fuTn/X7k5/1+5Of9fuTn/Y7s9/7Ddnf////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////9wwE7/X7k5/1+5Of9fuTn/X7k5/1+5Of+84az///////////+Gymn/X7k5/1+5Of9fuTn/X7k5/2u+SP///////////3DATv9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9rvkj/0evG//////////////////////+Gymn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/cMBO/////////////////////////////////3DATv9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9juz3/sN2d////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////hspp/1+5Of9fuTn/X7k5/1+5Of9fuTn/pNeP////////////esVa/1+5Of9fuTn/X7k5/1+5Of9wwE7///////////9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/2u+SP/R68b/////////////////hspp/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/3DATv///////////////////////////4DHYv9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/2e9Q//R68b//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////5PQef9fuTn/X7k5/1+5Of9fuTn/X7k5/4zMcP///////////3DATv9fuTn/X7k5/1+5Of9fuTn/dMNT//////+w3Z3/X7k5/1+5Of9fuTn/X7k5/1+5Of+Ax2L/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/cMBO/////////////////4bKaf9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9wwE7//////////////////////5zUhf9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/2u+SP+84az///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+k14//X7k5/1+5Of9fuTn/X7k5/1+5Of+Gymn///////////9wwE7/X7k5/1+5Of9fuTn/X7k5/4bKaf//////k9B5/1+5Of9fuTn/X7k5/1+5Of9juz3//////7Ddnf9juz3/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of96xVr///////////+Gymn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/cMBO/////////////////7zhrP9juz3/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/3TDU//R68b/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////vOGs/1+5Of9fuTn/X7k5/1+5Of9fuTn/cMBO////////////Y7s9/1+5Of9fuTn/X7k5/1+5Of+Gymn//////4DHYv9fuTn/X7k5/1+5Of9fuTn/dMNT////////////0evG/2u+SP9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/5PQef//////hspp/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/3DATv////////////////9rvkj/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/3rFWv////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////9fuTn/X7k5/1+5Of9fuTn/X7k5/3DATv///////////1+5Of9fuTn/X7k5/1+5Of9fuTn/pNeP//////9rvkj/X7k5/1+5Of9fuTn/X7k5/4zMcP/////////////////R68b/a75I/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9juz3/vOGs/4bKaf9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9wwE7///////////+Gymn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/3rFWv//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////a75I/1+5Of9fuTn/X7k5/1+5Of9fuTn//////7zhrP9fuTn/X7k5/1+5Of9fuTn/X7k5/6TXj///////X7k5/1+5Of9fuTn/X7k5/1+5Of+w3Z3//////////////////////9Hrxv9rvkj/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/2u+SP+Gymn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/cMBO//////+w3Z3/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/3rFWv///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////3DATv9fuTn/X7k5/1+5Of9fuTn/X7k5//////+k14//X7k5/1+5Of9fuTn/X7k5/1+5Of//////pNeP/1+5Of9fuTn/X7k5/1+5Of9juz3/////////////////////////////////0evG/2u+SP9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/Y7s9/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/3DATv//////a75I/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/3rFWv////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////9wwE7/X7k5/1+5Of9fuTn/X7k5/1+5Of+84az/nNSF/1+5Of9fuTn/X7k5/1+5Of9fuTn//////4bKaf9fuTn/X7k5/1+5Of9fuTn/dMNT///////////////////////////////////////R68b/Y7s9/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9wwE7/jMxw/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/2u+SP/R68b/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////hspp/1+5Of9fuTn/X7k5/2e9Q/9wwE7/vOGs/5PQef9rvkj/X7k5/1+5Of9fuTn/cMBO//////9wwE7/X7k5/1+5Of9fuTn/X7k5/4zMcP///////////////////////////////////////////7Ddnf9juz3/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/Z71D/2O7Pf9fuTn/X7k5/1+5Of9fuTn/X7k5/2u+SP/R68b//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////6TXj/+c1IX/pNeP//////////////////////////////////////+w3Z3/k9B5/5PQef/R68b/X7k5/1+5Of9fuTn/X7k5/1+5Of+84az/////////////////////////////////////////////////k9B5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/2O7Pf+w3Z3////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////R68b//////////////////////////////////////////////////////////////////////7zhrP+T0Hn/a75I/2O7Pf9nvUP///////////////////////////////////////////////////////////90w1P/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of+k14/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////R68b/X7k5/3TDU/+MzHD/pNeP/////////////////////////////////////////////////////////////////2u+SP9nvUP/cMBO/7Ddnf//////////////////////////////////////////////////////0evG/2O7Pf9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of+Gymn/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////k9B5/1+5Of9fuTn/X7k5/1+5Of9fuTn/a75I/3TDU/+Gymn/pNeP/7Ddnf////////////////////////////////9fuTn/X7k5/1+5Of9fuTn/Z71D/3rFWv////////////////////////////////////////////////+c1IX/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9wwE7//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////3TDU/9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/2u+SP90w1P/hspp/5PQef+c1IX/X7k5/1+5Of9fuTn/X7k5/1+5Of9wwE7/cMBO/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/cMBO/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////9Hrxv9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/esVa/3DATv9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/3DATv////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+T0Hn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/4zMcP9wwE7/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9wwE7/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////a75I/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of+k14//cMBO/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/cMBO/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////3rFWv9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn//////3DATv9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/3DATv//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////sN2d/2O7Pf9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/Z71D/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/cMBO//////9wwE7/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9wwE7///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+w3Z3/Y7s9/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/2u+SP//////0evG/6TXj/+c1IX/hspp/3DATv9fuTn/X7k5/1+5Of9fuTn/X7k5/4bKaf//////cMBO/1+5Of9fuTn/X7k5/1+5Of9fuTn/pNeP////////////sN2d/7zhrP///////////6TXj/9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of////////////////+c1IX/sN2d////////////hspp/1+5Of9fuTn/X7k5/1+5Of9fuTn/cMBO/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7Ddnf9juz3/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/esVa//////////////////////96xVr/X7k5/1+5Of9fuTn/X7k5/1+5Of+w3Z3//////3DATv9fuTn/X7k5/1+5Of9fuTn/X7k5/6TXj////////////4DHYv9fuTn/a75I/4bKaf+T0Hn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/sN2d/3TDU/9fuTn/X7k5/3DATv///////////4bKaf9fuTn/X7k5/1+5Of9fuTn/X7k5/3DATv//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////nNSF/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of+MzHD/////////////////Z71D/1+5Of9fuTn/X7k5/1+5Of9juz3///////////9wwE7/X7k5/1+5Of9fuTn/X7k5/1+5Of+k14////////////9rvkj/X7k5/1+5Of9fuTn/gMdi/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/9Hrxv9juz3/X7k5/1+5Of9fuTn/pNeP//////+Gymn/X7k5/1+5Of9fuTn/X7k5/1+5Of9wwE7///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+Gymn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/7Ddnf//////vOGs/1+5Of9fuTn/X7k5/1+5Of9fuTn/dMNT////////////cMBO/1+5Of9fuTn/X7k5/1+5Of9fuTn/pNeP///////R68b/X7k5/1+5Of9fuTn/X7k5/5zUhf9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of//////esVa/1+5Of9fuTn/X7k5/3rFWv//////hspp/1+5Of9fuTn/X7k5/1+5Of9fuTn/cMBO/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////3TDU/9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9nvUP/0evG/4zMcP9fuTn/X7k5/1+5Of9fuTn/X7k5/5PQef///////////3DATv9fuTn/X7k5/1+5Of9fuTn/X7k5/6TXj///////k9B5/1+5Of9fuTn/X7k5/2u+SP+k14//X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn//////5zUhf9fuTn/X7k5/1+5Of9fuTn/vOGs/4bKaf9fuTn/X7k5/1+5Of9fuTn/X7k5/3DATv/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////R68b/Y7s9/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/3TDU/+MzHD/Y7s9/1+5Of9fuTn/X7k5/1+5Of/R68b///////////9wwE7/X7k5/1+5Of9fuTn/X7k5/1+5Of+k14///////3TDU/9fuTn/X7k5/1+5Of+MzHD/pNeP/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5////////////Z71D/1+5Of9fuTn/X7k5/4bKaf+Gymn/X7k5/1+5Of9fuTn/X7k5/1+5Of9wwE7//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7Ddnf/R68b//////////////////////6TXj/9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/k9B5//////+w3Z3/jMxw/3TDU/96xVr/////////////////cMBO/1+5Of9fuTn/X7k5/1+5Of9fuTn/pNeP/9Hrxv9fuTn/X7k5/1+5Of9fuTn/vOGs/6TXj/9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of///////////3rFWv9fuTn/X7k5/1+5Of9juz3/gMdi/1+5Of9fuTn/X7k5/1+5Of9fuTn/cMBO//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+Ax2L/X7k5/2u+SP+Ax2L/jMxw/6TXj/+w3Z3/gMdi/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/2O7Pf+84az//////////////////////////////////////3DATv9fuTn/X7k5/1+5Of9fuTn/X7k5/6TXj/+MzHD/X7k5/1+5Of9fuTn/cMBO//////+k14//X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn///////////+c1IX/X7k5/1+5Of9fuTn/X7k5/2e9Q/9fuTn/X7k5/1+5Of9fuTn/X7k5/3DATv//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////Z71D/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/a75I//////////////////////////////////////9wwE7/X7k5/1+5Of9fuTn/X7k5/1+5Of+k14//hspp/2e9Q/9fuTn/X7k5/6TXj///////pNeP/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/////////////////1+5Of9fuTn/a75I/4bKaf96xVr/X7k5/1+5Of9fuTn/X7k5/1+5Of9wwE7/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////pNeP/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of+Gymn/////////////////////////////////cMBO/1+5Of9fuTn/X7k5/1+5Of9fuTn/pNeP////////////vOGs/4zMcP///////////6TXj/9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of////////////////+k14//0evG////////////hspp/1+5Of9fuTn/X7k5/1+5Of9fuTn/cMBO/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////3rFWv9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/7Ddnf///////////////////////////3DATv9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/3DATv///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////9Hrxv9juz3/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9rvkj///////////////////////////9wwE7/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9wwE7///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+T0Hn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/4zMcP//////////////////////cMBO/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/cMBO/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////4zMcP9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9juz3/0evG/////////////////3DATv9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/3DATv//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////k9B5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/2O7Pf+c1IX/k9B5/4bKaf+Ax2L/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/3rFWv////////////////9wwE7/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9wwE7///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////90w1P/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/gMdi/////////////////3rFWv9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/pNeP////////////cMBO/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/cMBO////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////0evG/2O7Pf9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of+k14////////////+84az/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/3DATv////////////////////////////////////////////////////////////////////////////////9wwE7/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/hspp//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+T0Hn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/a75I/////////////////4bKaf9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/nNSF////////////////////////////////////////////////////////////////////////////cMBO/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/4bKaf///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////3DATv9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of+MzHD////////////R68b/Y7s9/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/2e9Q////////////////////////////////////////////////////////////////////////////3DATv9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of+Gymn///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+w3Z3/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/Y7s9/9Hrxv///////////4bKaf9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9nvUP/a75I/3DATv9wwE7/cMBO/3DATv9wwE7/cMBO/3DATv9wwE7/cMBO/3DATv9wwE7/cMBO/3DATv9juz3/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/Z71D/3DATv9wwE7/cMBO/3DATv9wwE7/cMBO/3DATv9wwE7/cMBO/3DATv9wwE7/cMBO/3DATv+Ax2L//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////3rFWv9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of96xVr////////////R68b/Y7s9/1+5Of9fuTn/X7k5/1+5Of+Gymn/0evG/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/cMBO//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+84az/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/7zhrP///////////4bKaf9fuTn/X7k5/3DATv+84az///////////9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/3DATv///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////3rFWv9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of96xVr////////////R68b/a75I/5zUhf//////////////////////X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9wwE7///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+84az/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/6TXj////////////////////////////////////////////1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/cMBO/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////3rFWv9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9wwE7///////////////////////////////////////////9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/3DATv////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+k14//X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/7Ddnf//////////////////////////////////////X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of9wwE7//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////2u+SP9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of96xVr/////////////////////////////////////////////////////////////////////////////////////////////////////////////////cMBO/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/4bKaf////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+T0Hn/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/7zhrP///////////////////////////////////////////////////////////////////////////////////////////////////////////3DATv9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of+Gymn/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////0evG/2O7Pf9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of+Gymn///////////////////////////////////////////////////////////////////////////////////////////////////////////9wwE7/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/hspp//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////96xVr/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/a75I////////////////////////////////////////////////////////////////////////////////////////////////////////////cMBO/1+5Of9fuTn/X7k5/1+5Of9fuTn/X7k5/4bKaf//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////sN2d/1+5Of9fuTn/X7k5/1+5Of90w1P/nNSF/////////////////////////////////////////////////////////////////////////////////////////////////////////////////3DATv9fuTn/X7k5/1+5Of9fuTn/X7k5/1+5Of+Gymn///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////9nvUP/Z71D/4bKaf+84az///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////9wwE7/X7k5/1+5Of9fuTn/X7k5/1+5Of9fuTn/hspp////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////sN2d////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+
+def select_area_for_model():
+    # 選擇訓練畫面範圍
+    global GDATA
+    # 框的時候先清空之前的框
+    GDATA["x1_model"] = None
+    GDATA["y1_model"] = None
+    GDATA["x2_model"] = None
+    GDATA["y2_model"] = None
+
+    if "overlay_model" in GDATA and GDATA["overlay_model"] != None:
+        GDATA["overlay_model"].destroy()
+        GDATA["overlay_model"] = None
+    GDATA["record_area_model"] = tk.Toplevel()
+    GDATA["record_area_model"].attributes("-fullscreen", True)
+    GDATA["record_area_model"].attributes("-topmost", True)  # 確保在最上層
+    GDATA["record_area_model"].configure(background="black")
+    GDATA["record_area_model"].attributes("-alpha", 0.3)
+
+    instruction = tk.Label(
+        GDATA["record_area_model"], text="用滑鼠框選畫面範圍", bg="white"
+    )
+    instruction.pack()
+
+    canvas = tk.Canvas(GDATA["record_area_model"], cursor="cross", bg="black")
+    canvas.pack(fill="both", expand=True)
+
+    GDATA["rect_model"] = None
+
+    def on_button_press(event):
+        global GDATA
+        GDATA["x1_model"], GDATA["y1_model"] = event.x, event.y
+        GDATA["rect_model"] = canvas.create_rectangle(
+            event.x, event.y, event.x, event.y, outline="red"
+        )
+
+    def on_move_press(event):
+        global GDATA
+        GDATA["x2_model"], GDATA["y2_model"] = event.x, event.y
+        canvas.coords(
+            GDATA["rect_model"],
+            GDATA["x1_model"],
+            GDATA["y1_model"],
+            GDATA["x2_model"],
+            GDATA["y2_model"],
+        )
+
+    def on_button_release(event):
+        GDATA["record_area_model"].grab_release()  # 釋放滑鼠事件
+        GDATA["record_area_model"].destroy()
+        # hwnd = int(GDATA["record_area"].winfo_id())  # 獲取窗口句柄
+        # set_window_exclude(hwnd)  # 設置穿透
+        # GDATA["record_area"].attributes("-alpha", 0.1)  # 隱藏背景
+        # canvas.unbind("<ButtonPress-1>")
+        # canvas.unbind("<B1-Motion>")
+        # canvas.unbind("<ButtonRelease-1>")
+        # 儲存框選範圍
+        x1, y1, x2, y2 = (
+            GDATA["x1_model"],
+            GDATA["y1_model"] + 22,
+            event.x,
+            event.y + 22,
+        )
+
+        GDATA["x1_model"], GDATA["y1_model"], GDATA["x2_model"], GDATA["y2_model"] = (
+            x1,
+            y1,
+            x2,
+            y2,
+        )
+
+        # 建立透明窗口繪製細框
+        GDATA["overlay_model"] = create_overlay_window(x1, y1, x2, y2)
+
+    canvas.bind("<ButtonPress-1>", on_button_press)
+    canvas.bind("<B1-Motion>", on_move_press)
+    canvas.bind("<ButtonRelease-1>", on_button_release)
+
+    # GDATA["record_area_model"].grab_set_global()  # 捕獲滑鼠事件
+
+
+def select_area():
+    global GDATA
+    if "overlay" in GDATA and GDATA["overlay"] != None:
+        GDATA["overlay"].destroy()
+        GDATA["overlay"] = None
+    GDATA["record_area"] = tk.Toplevel()
+    GDATA["record_area"].attributes("-fullscreen", True)
+    GDATA["record_area"].attributes("-topmost", True)  # 確保在最上層
+    GDATA["record_area"].configure(background="black")
+    GDATA["record_area"].attributes("-alpha", 0.3)
+
+    instruction = tk.Label(
+        GDATA["record_area"], text="用滑鼠框選訓練畫面範圍", bg="white"
+    )
+    instruction.pack()
+
+    canvas = tk.Canvas(GDATA["record_area"], cursor="cross", bg="black")
+    canvas.pack(fill="both", expand=True)
+
+    GDATA["rect"] = None
+
+    def on_button_press(event):
+        global GDATA
+        GDATA["x1"], GDATA["y1"] = event.x, event.y
+        GDATA["rect"] = canvas.create_rectangle(
+            event.x, event.y, event.x, event.y, outline="red"
+        )
+
+    def on_move_press(event):
+        global GDATA
+        GDATA["x2"], GDATA["y2"] = event.x, event.y
+        canvas.coords(GDATA["rect"], GDATA["x1"], GDATA["y1"], GDATA["x2"], GDATA["y2"])
+
+    def on_button_release(event):
+        GDATA["record_area"].grab_release()  # 釋放滑鼠事件
+        GDATA["record_area"].destroy()
+        # hwnd = int(GDATA["record_area"].winfo_id())  # 獲取窗口句柄
+        # set_window_exclude(hwnd)  # 設置穿透
+        # GDATA["record_area"].attributes("-alpha", 0.1)  # 隱藏背景
+        # canvas.unbind("<ButtonPress-1>")
+        # canvas.unbind("<B1-Motion>")
+        # canvas.unbind("<ButtonRelease-1>")
+        # 儲存框選範圍
+        x1, y1, x2, y2 = GDATA["x1"], GDATA["y1"] + 22, event.x, event.y + 22
+
+        GDATA["x1"], GDATA["y1"], GDATA["x2"], GDATA["y2"] = x1, y1, x2, y2
+
+        # 建立透明窗口繪製細框
+        GDATA["overlay"] = create_overlay_window(x1, y1, x2, y2)
+
+        # 儲存框選範圍到專案檔 rect.txt
+        _OUTPUT_RECT_FILE = os.path.join(GDATA["project_folder"], "rect.txt")
+        my.file_put_contents(
+            _OUTPUT_RECT_FILE,
+            my.json_encode({"x1": x1, "y1": y1, "x2": x2, "y2": y2}),
+        )
+
+        GDATA["UI"]["start_button"].config(state=tk.NORMAL)  # 啟用開始按鈕
+        GDATA["UI"]["show_hide_rect_button"].config(state=tk.NORMAL)  # 啟用開始按鈕
+        # 按鈕加紅邊框
+        if GDATA["UI"]["show_hide_rect_button"].cget("text") == "隱藏圖框":
+            GDATA["UI"]["show_hide_rect_button"].config(highlightcolor="red")
+
+    canvas.bind("<ButtonPress-1>", on_button_press)
+    canvas.bind("<B1-Motion>", on_move_press)
+    canvas.bind("<ButtonRelease-1>", on_button_release)
+
+    GDATA["record_area"].grab_set_global()  # 捕獲滑鼠事件
+
+
+def method_count_wait_process_files():
+    # 計算有多少待處理的檔案
+    global GDATA
+    GDATA["wait_process_files"] = 0
+    fp = my.glob(os.path.join(GDATA["project_folder"], "*.jpg"))
+    GDATA["wait_process_files"] = len(fp)
+    GDATA["UI"]["status_label"].config(
+        text="待處理檔案數：%s" % GDATA["wait_process_files"]
+    )
+
+
+def start_cut_screen():
+    # 用 mss 截一張圖，放到 project_folder，檔名是 {t}.jpg
+    global GDATA
+
+    # 檢查是否有選擇範圍
+    # 原本可能是 0 or None
+    if GDATA["x1"] == GDATA["x2"] or GDATA["y1"] == GDATA["y2"]:
+        # messagebox.showwarning("警告", "請先選擇拍照範圍！")
+        print("請先選擇專案，或先選擇拍照範圍！")
+        return
+
+    # Lock UI
+    t = str(int(my.microtime(True) * 1000.0))
+    # print(my.microtime())
+    GDATA["cut_screen_file"] = os.path.join(GDATA["project_folder"], t + ".jpg")
+    sct = mss.mss(with_cursor=False)
+    # monitor 為 GDATA 的 x1 ,x2, y1, y2
+
+    monitor = {
+        "left": GDATA["x1"],
+        "top": GDATA["y1"],
+        "width": GDATA["x2"] - GDATA["x1"],
+        "height": GDATA["y2"] - GDATA["y1"],
+    }
+
+    # 藏掉細框
+    # 有label == "隱藏圖框"，就是要隱藏，截完再後顯示
+    NEED_SWITCH_RECT = False
+    if (
+        GDATA["UI"]["show_hide_rect_button"].cget("text") == "隱藏圖框"
+        and "overlay" in GDATA
+        and GDATA["overlay"] != None
+    ):
+        NEED_SWITCH_RECT = True
+
+    if NEED_SWITCH_RECT == True:  # 截之前先隱藏
+        do_show_hide_rect_button(False)
+
+    frame = sct.grab(monitor)  # 截圖
+
+    if NEED_SWITCH_RECT == True:  # 截完再後顯示
+        do_show_hide_rect_button(True)
+    mss.tools.to_png(frame.rgb, frame.size, output=GDATA["cut_screen_file"])
+    # sct.shot(output=GDATA["cut_screen_file"])
+
+    method_count_wait_process_files()
+
+
+"""
+def start_recording():
+    global GDATA
+    # Lock UI
+    ui_enable_disable(False)
+
+    t = str(int(time.time()))
+
+    print("x1, y1: %s, %s" % (GDATA["x1"], GDATA["y1"]))
+    print("x2, y2: %s, %s" % (GDATA["x2"], GDATA["y2"]))
+    if GDATA["recording"]:
+        messagebox.showwarning("警告", "錄影已經在進行中！")
+        return
+    if GDATA["x1"] == GDATA["x2"] or GDATA["y1"] == GDATA["y2"]:
+        messagebox.showwarning("警告", "請先選擇拍照範圍！")
+        return
+    GDATA["UI"]["progress_label"].config(text="影像截取中...")
+    GDATA["recording"] = True
+
+    w = GDATA["x2"] - GDATA["x1"]
+    h = GDATA["y2"] - GDATA["y1"]
+    # GDATA["out"] = cv2.VideoWriter(GDATA["video_file"], cv2.VideoWriter_fourcc(*"MP4V"), GDATA["fps"], (w, h))
+    GDATA["frame_list"] = []
+    GDATA["THREAD"]["video_thread"] = threading.Thread(target=record_video)
+    GDATA["THREAD"]["process_thread"] = threading.Thread(target=process_frames)
+
+    GDATA["THREAD"]["video_thread"].start()
+    GDATA["THREAD"]["process_thread"].start()
+
+    GDATA["UI"]["start_button"].config(state=tk.DISABLED)
+    GDATA["UI"]["stop_button"].config(state=tk.NORMAL)
+"""
+
+
+def ui_enable_disable(bool_val):
+    global GDATA
+    if bool_val == True:
+        GDATA["UI"]["select_area_button"].config(state=tk.NORMAL)
+        GDATA["UI"]["compression_level_selected_menu"].config(state=tk.NORMAL)
+        GDATA["UI"]["exit_button"].config(state=tk.NORMAL)
+    else:
+        GDATA["UI"]["select_area_button"].config(state=tk.DISABLED)
+        GDATA["UI"]["compression_level_selected_menu"].config(state=tk.DISABLED)
+        GDATA["UI"]["exit_button"].config(state=tk.DISABLED)
+
+
+def process_frames():
+    global GDATA
+    w = GDATA["x2"] - GDATA["x1"]
+    h = GDATA["y2"] - GDATA["y1"]
+    GDATA["out"] = cv2.VideoWriter(
+        GDATA["video_file"], cv2.VideoWriter_fourcc(*"MP4V"), GDATA["fps"], (w, h)
+    )
+    last_frame_time = None
+
+    # 每一幀間隔時間
+    frame_step_time = 1 / GDATA["fps"]
+
+    while GDATA["recording"] or len(GDATA["frame_list"]) > 0:
+        if len(GDATA["frame_list"]) > 0:
+            current_frame_data = GDATA["frame_list"].pop(0)
+            current_time = current_frame_data["timestamp"]
+            current_frame = current_frame_data["frame"]
+
+            if last_frame_time is None:
+                # 第一幀
+                last_frame_time = current_time
+                frame_rgb = cv2.cvtColor(np.array(current_frame), cv2.COLOR_RGBA2RGB)
+                GDATA["out"].write(frame_rgb)
+            else:
+                # 計算時間差
+                time_diff = current_time - last_frame_time
+                if time_diff < frame_step_time:
+                    # 超速了 這張多截的，不要
+                    continue
+                else:
+                    # 按照時間差計算需要插入的幀數
+                    # 用 int 取代 math.floor
+                    frame_times = int(time_diff / frame_step_time)
+                    for _ in range(frame_times):
+                        frame_rgb = cv2.cvtColor(
+                            np.array(current_frame), cv2.COLOR_RGBA2RGB
+                        )
+                        GDATA["out"].write(frame_rgb)
+                    last_frame_time += (
+                        frame_times * frame_step_time
+                    )  # 更新最後一幀的時間
+        time.sleep(0.001)  # 避免空循環佔用太多 CPU
+
+    GDATA["out"].release()
+    cv2.destroyAllWindows()
+
+
+def record_video():
+    global GDATA
+    w = GDATA["x2"] - GDATA["x1"]
+    h = GDATA["y2"] - GDATA["y1"]
+    # 設置屏幕捕獲
+    monitor = {"top": GDATA["y1"], "left": GDATA["x1"], "width": w, "height": h}
+    # 幀時間間隔
+    frame_time = 1 / GDATA["fps"]
+
+    # 畫質
+    _compression_level = GDATA["UI"]["compression_level_selected"].get()
+
+    GDATA["frame_count"] = 0
+    GDATA["run_start_time"] = time.time()
+    GDATA["start_time"] = time.time()
+
+    sct = mss.mss(compression_level=_compression_level, with_cursor=False)
+    while GDATA["recording"]:
+        # if is_need_cursor == True:
+        #    # 這樣才會一直更新滑鼠位置
+        #    # 後來直接改 mss/windows.py #328 與 #329 #367 的地方
+        #    # mss/base.py #240~#243 回收 ram
+        #    # 一直重新宣告 sct 造成記憶體肥大 crash
+        #    sct = mss.mss(compression_level=_compression_level,with_cursor=is_need_cursor)
+        # 記錄當前時間
+        GDATA["frame_count"] += 1
+        ct = time.time()
+        elapsed_time = ct - GDATA["start_time"]
+
+        # 截取指定區域的圖像
+        try:
+            GDATA["frame_list"].append({"timestamp": ct, "frame": sct.grab(monitor)})
+        except:
+            pass
+        if elapsed_time >= 1.0:
+            current_fps = GDATA["frame_count"] / elapsed_time
+            GDATA["frame_count"] = 0
+            GDATA["start_time"] = time.time()
+
+    # out.release()
+    # cv2.destroyAllWindows()
+
+
+"""
+def stop_recording():
+    global GDATA
+
+    if not GDATA["recording"]:
+        messagebox.showwarning("警告", "錄影未開始！")
+        return
+    # Hide fps
+    GDATA["UI"]["fps_label"].set("")
+    GDATA["recording"] = False
+    ui_enable_disable(True)
+
+    # 影片最後才結束
+    # time.sleep(3);
+    GDATA["THREAD"]["video_thread"].join()
+    GDATA["THREAD"]["process_thread"].join()
+    GDATA["UI"]["start_button"].config(state=tk.NORMAL)
+    GDATA["UI"]["stop_button"].config(state=tk.DISABLED)
+    messagebox.showinfo("提示", "錄影已停止")
+"""
+
+
+def open_folder():
+    global GDATA
+    # 進到 projects 的專案裡
+    if "project_folder" not in GDATA:
+        # alert 請先選擇專案
+        messagebox.showwarning("警告", "請先選擇專案檔！")
+        return
+    folder_path = GDATA["project_folder"]
+    print(folder_path)
+    webbrowser.open(folder_path)
+
+
+def browser_folder():
+    # 用瀏覽器開啟 http://127.0.0.1:9487
+    global GDATA
+    webbrowser.open(
+        "http://127.0.0.1:9487/?project_name=" + my.urlencode(GDATA["project"])
+    )
+
+
+def run_choice_zip_pt():
+    # 開啟檔案選擇器
+    global GDATA
+    global model_file
+    global basedir
+    global model
+    global names_cht_dict
+    file_path = filedialog.askopenfilename(
+        title="選擇壓縮檔 或 pt 檔",
+        filetypes=(("zip files", "*.zip"), ("pt files", "*.pt")),
+    )
+    if file_path:
+        # 取得檔名
+        file_name = os.path.basename(file_path)
+        # 取得檔名不含副檔名
+        print("file_path: %s" % file_path)
+        # file_path: C:/Users/johnho/Desktop/model_1.zip
+        # 如果是 zip 解壓縮檔
+        if file_name.endswith(".pt"):
+            # 載入模型
+            model_file = file_path
+            model = YOLO(model_file)
+        elif file_name.endswith(".zip"):
+            # 將 zip copy 到 example_pt 資料夾
+            example_pt_path = os.path.join(basedir, "example_pt")
+            if not os.path.exists(example_pt_path):
+                os.makedirs(example_pt_path)
+            # 然後建立 example_pt 暫存目錄區
+            tmp_path = os.path.join(basedir, "example_pt", str(int(time.time())))
+            if not os.path.exists(tmp_path):
+                os.makedirs(tmp_path)
+            # 複製 zip 檔到 tmp_path 資料夾
+            bn = os.path.basename(file_path)
+            op = os.path.join(tmp_path, bn)
+            shutil.copy(file_path, op)
+
+            # 解壓縮 zip 檔
+            with zipfile.ZipFile(file_path, "r") as zip_ref:
+                zip_ref.extractall(tmp_path)
+                # 取得解壓縮後的檔案名稱
+                for file in os.listdir(tmp_path):
+                    print("file: %s" % (file))
+                    if file.endswith(".pt"):
+                        model_file = os.path.join(tmp_path, file)
+                        model = YOLO(model_file)
+                    if os.path.basename(file) == "data_dict.json":
+                        # 讀取 data_dict.json
+                        with open(
+                            os.path.join(tmp_path, file), "r", encoding="utf-8"
+                        ) as f:
+                            _cht_dict = json.load(f)
+                            names_cht_dict = {}
+                            for key in _cht_dict.keys():
+                                print("%s: %s" % (key, _cht_dict[key]["Chinese_Name"]))
+                                names_cht_dict[key] = _cht_dict[key]["Chinese_Name"]
+
+
+def run_update_confidence(input):
+    # 更新信心值
+    global model_confidence
+    global GDATA
+    # 取得信心值
+    confidence = float(GDATA["UI"]["confidence_scale"].get())
+    # 更新信心值
+    model_confidence = confidence
+    # label
+    GDATA["UI"]["confidence_label"].config(text="信心值: %.1f" % confidence)
+
+
+def get_pose_model_candidates():
+    candidates = []
+    for candidate in [
+        pose_model_file,
+        os.path.join(basedir, "yolo11n-pose.pt"),
+        os.path.join(basedir, "example_pt", "yolo11n-pose.pt"),
+        "yolo11n-pose.pt",
+        os.path.join(basedir, "yolov8n-pose.pt"),
+        os.path.join(basedir, "example_pt", "yolov8n-pose.pt"),
+        "yolov8n-pose.pt",
+    ]:
+        if candidate and candidate not in candidates:
+            candidates.append(candidate)
+    return candidates
+
+
+def ensure_pose_model():
+    global pose_model
+    global pose_model_file
+    if pose_model is None:
+        last_error = None
+        tried = []
+        for candidate in get_pose_model_candidates():
+            needs_local_file = os.path.isabs(candidate) or os.sep in candidate or "/" in candidate
+            if needs_local_file and not os.path.isfile(candidate):
+                tried.append(candidate)
+                continue
+            try:
+                pose_model = YOLO(candidate)
+                pose_model_file = candidate
+                return pose_model
+            except Exception as e:
+                last_error = e
+                tried.append(candidate)
+        reason = "找不到可用 pose model，請按「選Pose模型」指定 *-pose.pt"
+        if last_error:
+            reason += "\n最後錯誤：%s" % last_error
+        reason += "\n已嘗試：\n%s" % "\n".join(tried)
+        raise RuntimeError(reason)
+    return pose_model
+
+
+def run_choice_pose_pt():
+    global pose_model_file
+    global pose_model
+    file_path = filedialog.askopenfilename(
+        title="選擇 YOLO Pose 模型檔",
+        filetypes=(("pose pt files", "*-pose.pt"), ("pt files", "*.pt")),
+    )
+    if not file_path:
+        return
+    try:
+        pose_model_file = file_path
+        pose_model = YOLO(pose_model_file)
+        set_pose_status("Pose 模型：%s" % os.path.basename(pose_model_file))
+        messagebox.showinfo("提示", "Pose 模型已載入：\n%s" % pose_model_file)
+    except Exception as e:
+        pose_model = None
+        messagebox.showerror("錯誤", "Pose 模型載入失敗：\n%s" % e)
+
+
+def get_current_project_folder():
+    if "project_folder" in GDATA and GDATA.get("project_folder") and os.path.isdir(GDATA["project_folder"]):
+        return GDATA["project_folder"]
+    raise RuntimeError("請先選擇專案")
+
+
+def create_pose_record_folder(project_folder):
+    folder = os.path.join(project_folder, "pose_record", "record_%s" % int(time.time()))
+    os.makedirs(folder, exist_ok=True)
+    os.chmod(folder, 0o777)
+    return folder
+
+
+def yolo_pose_result_to_people(result, roi):
+    people = []
+    if result.keypoints is None or result.boxes is None:
+        return people
+    kpt_data = result.keypoints.data.cpu().numpy()
+    boxes = result.boxes
+    xyxy = boxes.xyxy.cpu().numpy()
+    confs = boxes.conf.cpu().numpy() if boxes.conf is not None else []
+    for person_index, points in enumerate(kpt_data):
+        if person_index >= len(xyxy):
+            break
+        keypoints = []
+        confidences = []
+        for idx, name in enumerate(COCO17_KEYPOINTS):
+            if idx < len(points):
+                row = points[idx]
+                conf = float(row[2]) if len(row) > 2 else 1.0
+                x = float(row[0]) if len(row) > 0 else None
+                y = float(row[1]) if len(row) > 1 else None
+            else:
+                conf = 0.0
+                x = None
+                y = None
+            keypoints.append({"name": name, "x": x, "y": y, "confidence": conf})
+            confidences.append(conf)
+        box = xyxy[person_index]
+        people.append({
+            "bbox": {"x1": float(box[0]), "y1": float(box[1]), "x2": float(box[2]), "y2": float(box[3]), "confidence": float(confs[person_index]) if person_index < len(confs) else 0.0},
+            "keypoints": keypoints,
+            "mean_keypoint_confidence": sum(confidences) / max(1, len(confidences)),
+        })
+    return people
+
+
+def build_pose_frame(frame_index, time_ms, person, roi):
+    keypoints = person["keypoints"]
+    center_x, center_y = bbox_center(person["bbox"])
+    return {
+        "frame_index": int(frame_index),
+        "time_ms": int(time_ms),
+        "bbox": person["bbox"],
+        "center": {"x": center_x, "y": center_y},
+        "scale": 1.0,
+        "quality": {
+            "mean_keypoint_confidence": float(person.get("mean_keypoint_confidence", 0.0)),
+            "visible_keypoints": len([p for p in keypoints if p.get("confidence", 0.0) >= pose_confidence]),
+            "is_interpolated": False,
+        },
+        "keypoints": keypoints,
+        "normalized_keypoints": normalize_keypoints(keypoints, roi),
+        "features": compute_pose_features(keypoints, roi),
+    }
+
+
+def convert_pose_record_to_live2d_files(pose_record_path):
+    with open(pose_record_path, "r", encoding="utf-8") as f:
+        pose_record = json.load(f)
+    folder = os.path.dirname(pose_record_path)
+    live2d_params = build_live2d_params(
+        pose_record,
+        source_pose_record=os.path.basename(pose_record_path),
+        ema_alpha=0.35,
+    )
+    motion3 = build_motion3(live2d_params)
+    live2d_params_path = os.path.join(folder, "live2d_params.json")
+    motion3_path = os.path.join(folder, "motion3.json")
+    write_json_atomic(live2d_params_path, live2d_params)
+    write_json_atomic(motion3_path, motion3)
+    try:
+        import pose_vrm_mapper
+        vrm_anim = pose_vrm_mapper.build_vrm_bones_animation(pose_record)
+        vrm_anim_path = os.path.join(folder, "vrm_animation.json")
+        write_json_atomic(vrm_anim_path, vrm_anim)
+    except Exception:
+        vrm_anim_path = None
+    return {"live2d_params": live2d_params_path, "motion3": motion3_path, "vrm_animation": vrm_anim_path}
+
+
+def path_to_data_url(file_path):
+    data_root = os.path.abspath(os.path.join(basedir, "data"))
+    abs_path = os.path.abspath(file_path)
+    if not abs_path.startswith(data_root + os.sep):
+        return None
+    rel_path = os.path.relpath(abs_path, data_root).replace("\\", "/")
+    return "/data/" + quote(rel_path, safe="/")
+
+
+def get_current_pose_roi():
+    return normalize_roi(GDATA["x1"], GDATA["y1"], GDATA["x2"], GDATA["y2"])
+
+
+def preflight_pose_capture(roi):
+    monitor = {"left": roi["left"], "top": roi["top"], "width": roi["width"], "height": roi["height"]}
+    with mss.mss(with_cursor=False) as sct:
+        sct.grab(monitor)
+    return True
+
+
+def set_pose_status(message):
+    if "pose_status_label" in GDATA["UI"]:
+        GDATA["UI"]["pose_status_label"].config(text=message)
+    elif "status_label" in GDATA["UI"]:
+        GDATA["UI"]["status_label"].config(text=message)
+
+
+def set_pose_recording_buttons(is_recording):
+    if "btn_screen_pose_record" not in GDATA["UI"]:
+        return
+    button_text = "骨架錄製(停止)" if is_recording else "骨架錄製(開始)"
+    GDATA["UI"]["btn_screen_pose_record"].config(text=button_text, state=tk.NORMAL)
+    if "btn_youtube_pose" in GDATA["UI"]:
+        GDATA["UI"]["btn_youtube_pose"].config(state=tk.DISABLED if is_recording else tk.NORMAL)
+    if "btn_live2d_dancer" in GDATA["UI"]:
+        GDATA["UI"]["btn_live2d_dancer"].config(state=tk.DISABLED if is_recording else tk.NORMAL)
+    if "btn_desktop_example_button" in GDATA["UI"]:
+        GDATA["UI"]["btn_desktop_example_button"].config(state=tk.DISABLED if is_recording else tk.NORMAL)
+    if "btn_pose_model" in GDATA["UI"]:
+        GDATA["UI"]["btn_pose_model"].config(state=tk.DISABLED if is_recording else tk.NORMAL)
+
+
+def set_capture_overlays_visible(visible):
+    alpha = 0.5 if visible else 0.0
+    if "overlay" in GDATA and GDATA["overlay"] is not None:
+        GDATA["overlay"].attributes("-alpha", alpha)
+    if "overlay_model" in GDATA and GDATA["overlay_model"] is not None:
+        GDATA["overlay_model"].attributes("-alpha", alpha)
+    if "overlay_window" in globals():
+        if visible:
+            overlay_window.showAll()
+        else:
+            overlay_window.hideAll()
+
+
+def run_on_ui_thread_and_wait(callback, timeout=0.3):
+    done = threading.Event()
+
+    def wrapper():
+        try:
+            callback()
+        finally:
+            done.set()
+
+    root.after(0, wrapper)
+    done.wait(timeout)
+
+
+def schedule_pose_overlay(person, roi):
+    keypoints = [dict(item) for item in person["keypoints"]]
+    roi_copy = dict(roi)
+    root.after(
+        0,
+        lambda: overlay_window.create_pose_skeleton(keypoints, roi_copy, COCO17_SKELETON, pose_confidence),
+    )
+
+
+def schedule_pose_overlay_clear():
+    root.after(0, overlay_window.clear)
+
+
+def process_pose_capture_item(item, roi, model_instance):
+    image = cv2.cvtColor(item["frame"], cv2.COLOR_BGRA2BGR)
+    result = model_instance.predict(image, imgsz=1024, conf=pose_confidence, verbose=False)[0]
+    people = yolo_pose_result_to_people(result, roi)
+    person = select_main_person(
+        people,
+        roi_center=(roi["width"] / 2.0, roi["height"] / 2.0),
+        previous_center=GDATA["pose_previous_center"],
+    )
+    if person is None:
+        GDATA["pose_missing_frames"] += 1
+        schedule_pose_overlay_clear()
+        return False
+
+    GDATA["pose_previous_center"] = bbox_center(person["bbox"])
+    GDATA["pose_frames"].append(build_pose_frame(item["frame_index"], item["time_ms"], person, roi))
+    schedule_pose_overlay(person, roi)
+    return True
+
+
+def finalize_screen_pose_record(error_message=None):
+    GDATA["pose_recording"] = False
+    GDATA["pose_stop_in_progress"] = False
+    set_pose_recording_buttons(False)
+    set_capture_overlays_visible(True)
+
+    record_folder = GDATA.get("pose_record_folder")
+    if not record_folder:
+        set_pose_status("骨架錄製未產生資料夾")
+        return
+
+    try:
+        output_path = os.path.join(record_folder, "pose_record.json")
+        roi = GDATA.get("pose_current_roi") or get_current_pose_roi()
+        source = {
+            "type": "screen_roi",
+            "input_mode": "screen_roi",
+            "total_frame_count": GDATA["pose_capture_total_frames"],
+            "detected_frame_count": len(GDATA["pose_frames"]),
+            "missing_frame_count": GDATA["pose_missing_frames"],
+            "capture_error": error_message,
+        }
+        record = build_pose_record(
+            project_name=GDATA.get("project", ""),
+            source=source,
+            roi=roi,
+            fps_target=GDATA["pose_fps_target"],
+            model_name=os.path.basename(pose_model_file),
+            frames=GDATA["pose_frames"],
+        )
+        write_json_atomic(output_path, record)
+        GDATA["pose_last_output_file"] = output_path
+        live2d_error = None
+        try:
+            convert_pose_record_to_live2d_files(output_path)
+        except Exception as e:
+            live2d_error = str(e)
+            logging.exception("convert pose record to live2d failed")
+        set_pose_status("骨架錄製完成：%s" % output_path)
+        if error_message:
+            messagebox.showwarning("提示", "骨架錄製已停止並輸出部分資料：\n%s\n\n%s" % (output_path, error_message))
+        elif live2d_error:
+            messagebox.showwarning("提示", "骨架錄製完成，但 Live2D motion 轉換失敗：\n%s\n\n%s" % (output_path, live2d_error))
+        else:
+            messagebox.showinfo("提示", "骨架錄製完成：\n%s" % output_path)
+    except Exception as e:
+        set_pose_status("骨架錄製輸出失敗：%s" % e)
+        messagebox.showerror("錯誤", "骨架錄製輸出失敗：\n%s" % e)
+
+
+def screen_pose_record_worker(roi, record_folder):
+    monitor = {"left": roi["left"], "top": roi["top"], "width": roi["width"], "height": roi["height"]}
+    frame_interval = 1.0 / max(1, int(GDATA["pose_fps_target"]))
+    start_time = time.monotonic()
+    next_frame_time = start_time
+    frame_index = 0
+    consecutive_errors = 0
+    model_instance = ensure_pose_model()
+
+    try:
+        with mss.mss(with_cursor=False) as sct:
+            while GDATA["pose_recording"]:
+                now = time.monotonic()
+                if now < next_frame_time:
+                    time.sleep(min(0.01, next_frame_time - now))
+                    continue
+
+                try:
+                    run_on_ui_thread_and_wait(lambda: set_capture_overlays_visible(False))
+                    sct_img = sct.grab(monitor)
+                    run_on_ui_thread_and_wait(lambda: set_capture_overlays_visible(True))
+                    frame_time_ms = int((now - start_time) * 1000)
+                    GDATA["pose_capture_total_frames"] += 1
+                    GDATA["pose_frame_buffer"].put(
+                        now,
+                        np.array(sct_img),
+                        frame_index=frame_index,
+                        time_ms=frame_time_ms,
+                    )
+                    frame_index += 1
+                    next_frame_time += frame_interval
+                    consecutive_errors = 0
+                except Exception as e:
+                    consecutive_errors += 1
+                    GDATA["pose_capture_error"] = str(e)
+                    run_on_ui_thread_and_wait(lambda: set_capture_overlays_visible(True))
+                    if consecutive_errors >= 5:
+                        GDATA["pose_recording"] = False
+                        break
+                    time.sleep(0.05)
+                    continue
+
+                item = GDATA["pose_frame_buffer"].get(timeout=0.0)
+                if item is None:
+                    continue
+                try:
+                    process_pose_capture_item(item, roi, model_instance)
+                except Exception as e:
+                    GDATA["pose_capture_error"] = str(e)
+                    logging.exception("pose capture inference failed")
+                    GDATA["pose_missing_frames"] += 1
+
+        while GDATA["pose_frame_buffer"] is not None and not GDATA["pose_frame_buffer"].empty():
+            item = GDATA["pose_frame_buffer"].get(timeout=0.0)
+            if item is None:
+                break
+            try:
+                process_pose_capture_item(item, roi, model_instance)
+            except Exception as e:
+                GDATA["pose_capture_error"] = str(e)
+                logging.exception("pose capture drain failed")
+                GDATA["pose_missing_frames"] += 1
+    finally:
+        root.after(0, lambda: finalize_screen_pose_record(GDATA.get("pose_capture_error")))
+
+
+def start_screen_pose_recording():
+    global is_run_keep_screen_predict
+    if GDATA["pose_recording"]:
+        messagebox.showwarning("警告", "骨架錄製已經在進行中！")
+        return
+    if is_run_keep_screen_predict:
+        messagebox.showwarning("警告", "請先停止桌面辨識範例，再開始骨架錄製。")
+        return
+
+    try:
+        project_folder = get_current_project_folder()
+        roi = get_current_pose_roi()
+        preflight_pose_capture(roi)
+        ensure_pose_model()
+        record_folder = create_pose_record_folder(project_folder)
+    except Exception as e:
+        messagebox.showerror("錯誤", str(e))
+        return
+
+    GDATA["pose_recording"] = True
+    GDATA["pose_stop_in_progress"] = False
+    GDATA["pose_frame_buffer"] = FrameBuffer(max_frames=max(5, int(GDATA["pose_fps_target"]) * 5))
+    GDATA["pose_frames"] = []
+    GDATA["pose_record_folder"] = record_folder
+    GDATA["pose_last_output_file"] = ""
+    GDATA["pose_previous_center"] = None
+    GDATA["pose_current_roi"] = dict(roi)
+    GDATA["pose_capture_total_frames"] = 0
+    GDATA["pose_missing_frames"] = 0
+    GDATA["pose_capture_error"] = None
+    set_pose_recording_buttons(True)
+    set_pose_status("骨架錄製中...")
+    GDATA["THREAD"]["pose_record_thread"] = threading.Thread(
+        target=screen_pose_record_worker,
+        args=(roi, record_folder),
+        daemon=True,
+    )
+    GDATA["THREAD"]["pose_record_thread"].start()
+
+
+def stop_screen_pose_recording():
+    if not GDATA["pose_recording"]:
+        messagebox.showwarning("警告", "骨架錄製未開始！")
+        return
+    GDATA["pose_stop_in_progress"] = True
+    GDATA["pose_recording"] = False
+    if "btn_screen_pose_record" in GDATA["UI"]:
+        GDATA["UI"]["btn_screen_pose_record"].config(text="骨架錄製(停止中)", state=tk.DISABLED)
+    set_pose_status("骨架錄製停止中，正在輸出 JSON...")
+
+
+def toggle_screen_pose_recording():
+    if GDATA["pose_recording"]:
+        stop_screen_pose_recording()
+    else:
+        start_screen_pose_recording()
+
+
+def set_youtube_pose_processing_buttons(is_processing):
+    state = tk.DISABLED if is_processing else tk.NORMAL
+    if "btn_youtube_pose" in GDATA["UI"]:
+        GDATA["UI"]["btn_youtube_pose"].config(state=state)
+    if "btn_screen_pose_record" in GDATA["UI"]:
+        GDATA["UI"]["btn_screen_pose_record"].config(state=state, text="骨架錄製(開始)")
+    if "btn_live2d_dancer" in GDATA["UI"]:
+        GDATA["UI"]["btn_live2d_dancer"].config(state=state)
+    if "btn_desktop_example_button" in GDATA["UI"]:
+        GDATA["UI"]["btn_desktop_example_button"].config(state=state)
+    if "btn_pose_model" in GDATA["UI"]:
+        GDATA["UI"]["btn_pose_model"].config(state=state)
+
+
+def start_youtube_pose_recording():
+    if GDATA["pose_recording"] or GDATA.get("pose_url_processing"):
+        messagebox.showwarning("警告", "Pose 處理已經在進行中！")
+        return
+    if is_run_keep_screen_predict:
+        messagebox.showwarning("警告", "請先停止桌面辨識範例，再開始 YouTube Pose。")
+        return
+    try:
+        project_folder = get_current_project_folder()
+        url = simpledialog.askstring("YouTube URL Pose", "請貼上已授權可處理的 YouTube URL：")
+        if not url:
+            return
+        url = url.strip()
+        if not is_probable_youtube_url(url):
+            messagebox.showwarning("URL 格式不正確", "請輸入 YouTube URL，或改用螢幕框選模式。")
+            return
+        if not messagebox.askokcancel("授權確認", "請只處理你擁有、已授權或可合法使用的影片。\n\n確定要繼續？"):
+            return
+
+        cached_pose_record = find_youtube_pose_cache_record(
+            project_folder,
+            url,
+            pose_model_file,
+            pose_confidence,
+            GDATA["pose_fps_target"],
+            GDATA["pose_video_max_duration_seconds"]
+        )
+        if cached_pose_record:
+            cache_choice = messagebox.askyesnocancel(
+                "YouTube Pose 快取",
+                "這個 YouTube 連結已經轉過。\n\n"
+                "是：使用既有快取，不重新下載或分析。\n"
+                "否：重新轉換，建立新的 record_* 紀錄。\n"
+                "取消：不處理。"
+            )
+            if cache_choice is None:
+                return
+            if cache_choice is False:
+                cached_pose_record = None
+
+        if cached_pose_record:
+            live2d_error = None
+            try:
+                convert_pose_record_to_live2d_files(cached_pose_record)
+            except Exception as e:
+                live2d_error = str(e)
+                logging.exception("convert cached youtube pose record to live2d failed")
+            finish_youtube_pose_recording(cached_pose_record, None, live2d_error)
+            set_pose_status("YouTube Pose 使用快取：%s" % cached_pose_record)
+            return
+
+        record_folder = create_pose_record_folder(project_folder)
+        GDATA["pose_url_processing"] = True
+        set_youtube_pose_processing_buttons(True)
+        set_pose_status("YouTube Pose 處理中...")
+        GDATA["THREAD"]["youtube_pose_thread"] = threading.Thread(
+            target=run_youtube_pose_worker,
+            args=(url, record_folder),
+            daemon=True,
+        )
+        GDATA["THREAD"]["youtube_pose_thread"].start()
+    except Exception as ex:
+        GDATA["pose_url_processing"] = False
+        set_youtube_pose_processing_buttons(False)
+        messagebox.showerror("YouTube Pose 啟動失敗", str(ex))
+
+
+def finish_youtube_pose_recording(output_path=None, error_message=None, live2d_error=None):
+    GDATA["pose_url_processing"] = False
+    set_youtube_pose_processing_buttons(False)
+    if error_message:
+        set_pose_status("YouTube Pose 失敗：%s" % error_message)
+        messagebox.showerror("YouTube Pose 失敗", str(error_message))
+        return
+    GDATA["pose_last_output_file"] = output_path or ""
+    set_pose_status("YouTube Pose 完成：%s" % output_path)
+    if live2d_error:
+        messagebox.showwarning("提示", "YouTube Pose 完成，但 Live2D motion 轉換失敗：\n%s\n\n%s" % (output_path, live2d_error))
+        return
+    messagebox.showinfo("提示", "YouTube Pose 完成：\n%s" % output_path)
+
+
+def schedule_pose_status(message):
+    print(message, flush=True)
+    root.after(0, lambda message=message: set_pose_status(message))
+
+
+def report_youtube_pose_progress(total_frame_count, detected_frame_count):
+    if total_frame_count == 1 or total_frame_count % 5 == 0:
+        schedule_pose_status("YouTube Pose 分析中：已處理 %s 張影格，偵測到 %s 張" % (total_frame_count, detected_frame_count))
+
+
+def run_youtube_pose_worker(url, record_folder):
+    tmp_dir = tempfile.mkdtemp(prefix="youtube_pose_")
+    output_path = None
+    source_video_file = None
+    cache_key = build_youtube_pose_cache_key(
+        url,
+        pose_model_file,
+        pose_confidence,
+        GDATA["pose_fps_target"],
+        GDATA["pose_video_max_duration_seconds"]
+    )
+    source_info = {
+        "url": url,
+        "status": "started",
+        "rights_note": "請只處理你擁有、已授權或可合法使用的影片。",
+        "cache_key": cache_key,
+        "pose_model": cache_key["pose_model"],
+        "pose_confidence": cache_key["pose_confidence"],
+        "fps_target": cache_key["fps_target"],
+        "max_duration_seconds": GDATA["pose_video_max_duration_seconds"],
+    }
+    try:
+        write_source_video_info(record_folder, source_info)
+        model_instance = ensure_pose_model()
+        video_path, video_info = download_authorized_youtube_video(
+            url,
+            tmp_dir,
+            max_duration_seconds=GDATA["pose_video_max_duration_seconds"],
+        )
+        source_info.update({
+            "status": "downloaded",
+            "title": video_info.get("title"),
+            "duration": video_info.get("duration"),
+            "extractor": video_info.get("extractor"),
+        })
+        write_source_video_info(record_folder, source_info)
+
+        saved_video_path = os.path.join(record_folder, "source.mp4")
+        shutil.copy2(video_path, saved_video_path)
+        source_video_file = os.path.basename(saved_video_path)
+        source_info.update({
+            "source_video_file": source_video_file,
+            "source_video_saved": True
+        })
+        write_source_video_info(record_folder, source_info)
+        schedule_pose_status("YouTube Pose 下載完成，開始分析影格...")
+
+        frames = []
+        roi = None
+        previous_center = None
+        total_frame_count = 0
+        missing_frame_count = 0
+
+        for frame_index, time_ms, frame in iter_video_frames(
+            video_path,
+            fps_target=GDATA["pose_fps_target"],
+            max_duration_seconds=GDATA["pose_video_max_duration_seconds"],
+        ):
+            total_frame_count += 1
+            roi = {"left": 0, "top": 0, "width": int(frame.shape[1]), "height": int(frame.shape[0])}
+            result = model_instance.predict(frame, imgsz=1024, conf=pose_confidence, verbose=False)[0]
+            people = yolo_pose_result_to_people(result, roi)
+            person = select_main_person(
+                people,
+                roi_center=(roi["width"] / 2.0, roi["height"] / 2.0),
+                previous_center=previous_center,
+            )
+            if person is None:
+                missing_frame_count += 1
+                report_youtube_pose_progress(total_frame_count, len(frames))
+                continue
+            previous_center = bbox_center(person["bbox"])
+            frames.append(build_pose_frame(frame_index, time_ms, person, roi))
+            report_youtube_pose_progress(total_frame_count, len(frames))
+
+        if roi is None:
+            raise RuntimeError("影片沒有可處理的影格，請改用螢幕框選模式。")
+
+        output_path = os.path.join(record_folder, "pose_record.json")
+        source = {
+            "type": "youtube_url",
+            "input_mode": "youtube_url",
+            "url": url,
+            "title": source_info.get("title"),
+            "duration": source_info.get("duration"),
+            "total_frame_count": total_frame_count,
+            "detected_frame_count": len(frames),
+            "missing_frame_count": missing_frame_count,
+            "pose_confidence": cache_key["pose_confidence"],
+            "max_duration_seconds": cache_key["max_duration_seconds"],
+        }
+        if source_video_file:
+            source["source_video_file"] = source_video_file
+
+        record = build_pose_record(
+            project_name=GDATA.get("project", ""),
+            source=source,
+            roi=roi,
+            fps_target=GDATA["pose_fps_target"],
+            model_name=os.path.basename(pose_model_file),
+            frames=frames,
+        )
+        write_json_atomic(output_path, record)
+        motion_files = None
+        live2d_error = None
+        try:
+            motion_files = convert_pose_record_to_live2d_files(output_path)
+        except Exception as e:
+            live2d_error = str(e)
+            logging.exception("convert youtube pose record to live2d failed")
+        source_info.update({
+            "status": "complete",
+            "pose_record": output_path,
+            "total_frame_count": total_frame_count,
+            "detected_frame_count": len(frames),
+            "missing_frame_count": missing_frame_count,
+        })
+        if motion_files:
+            source_info.update({
+                "live2d_params": motion_files["live2d_params"],
+                "motion3": motion_files["motion3"],
+            })
+        if live2d_error:
+            source_info["live2d_error"] = live2d_error
+        write_source_video_info(record_folder, source_info)
+        root.after(0, lambda path=output_path, warning=live2d_error: finish_youtube_pose_recording(path, None, warning))
+    except Exception as ex:
+        error_message = str(ex)
+        source_info.update({"status": "error", "error": error_message})
+        try:
+            write_source_video_info(record_folder, source_info)
+        except Exception:
+            logging.exception("write source_video_info failed")
+        root.after(0, lambda path=output_path, message=error_message: finish_youtube_pose_recording(path, message))
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+def open_live2d_dancer(mode="live2d"):
+    if mode == "live2d":
+        url = "http://127.0.0.1:9487/www/live2d_dancer.html"
+    elif mode == "vrm":
+        url = "http://127.0.0.1:9487/www/vrm_dancer.html"
+    elif mode == "cesium":
+        url = "http://127.0.0.1:9487/www/cesium_world.html"
+    else:
+        url = "http://127.0.0.1:9487/www/live2d_dancer.html"
+    params = []
+    pose_record_path = GDATA.get("pose_last_output_file")
+    if pose_record_path and os.path.isfile(pose_record_path):
+        try:
+            motion_files = convert_pose_record_to_live2d_files(pose_record_path)
+            pose_url = path_to_data_url(pose_record_path)
+            motion_url = path_to_data_url(motion_files["live2d_params"])
+            if pose_url:
+                params.append("pose_url=%s" % quote(pose_url, safe="/"))
+            if motion_url:
+                params.append("motion_url=%s" % quote(motion_url, safe="/"))
+            
+            # Read source video from pose record if it exists
+            try:
+                import json
+                if os.path.isfile(pose_record_path):
+                    with open(pose_record_path, "r", encoding="utf-8") as f:
+                        rec_data = json.load(f)
+                    src_info = rec_data.get("source", {})
+                    video_filename = src_info.get("source_video_file")
+                    if video_filename:
+                        video_full_path = os.path.join(os.path.dirname(pose_record_path), video_filename)
+                        if os.path.isfile(video_full_path):
+                            video_url = path_to_data_url(video_full_path)
+                            if video_url:
+                                params.append("video_url=%s" % quote(video_url, safe="/"))
+            except Exception:
+                logging.exception("Failed to parse source_video_file from pose_record")
+        except Exception as e:
+            messagebox.showwarning("提示", "Live2D motion 轉換失敗，仍會開啟人物頁：\n%s" % e)
+    if params:
+        url += "?" + "&".join(params)
+    webbrowser.open(url)
+
+
+def on_message():
+    global MESSAGE
+    messagebox.showinfo("說明", MESSAGE)
+
+
+def on_closing():
+    global GDATA
+    if GDATA["recording"]:
+        if messagebox.askokcancel("離開", "錄影正在進行，確定要離開嗎？"):
+            stop_recording()
+            root.destroy()
+            os._exit(1)
+    else:
+        root.destroy()
+        os._exit(1)
+
+
+# 函數：鼠標按下時的位置
+def win_start_move(event):
+    widget_type = event.widget.winfo_class()
+    if widget_type != "Scale":
+        root.x = event.x
+        root.y = event.y
+
+
+def win_stop_move(event):
+    widget_type = event.widget.winfo_class()
+    if widget_type != "Scale":
+        root.x = None
+        root.y = None
+
+
+def win_do_move(event):
+    widget_type = event.widget.winfo_class()
+    if widget_type != "Scale":
+        if root.x is None or root.y is None:
+            return
+        deltax = event.x - root.x
+        deltay = event.y - root.y
+        x = root.winfo_x() + deltax
+        y = root.winfo_y() + deltay
+        root.geometry(f"+{x}+{y}")
+
+
+def project_get_list_all():
+    # 取得所有專案檔
+    global GDATA
+    project_list = []
+    for project in os.listdir(GDATA["basedir"] + "\\data\\projects"):
+        if os.path.isdir(GDATA["basedir"] + "\\data\\projects\\" + project):
+            project_list.append(project)
+    return project_list
+
+
+def new_project():
+    # 新增專案檔
+    # 會出現 prompt 讓使用者輸入專案檔名稱
+    global GDATA
+    project_name = simpledialog.askstring("新增專案檔", "請輸入專案檔名稱")
+    if project_name is None:
+        return
+    if project_name == "":
+        messagebox.showwarning("警告", "專案檔名稱不可為空！")
+        return
+    if project_name in project_get_list_all():
+        messagebox.showwarning("警告", "專案檔名稱已存在！")
+        return
+    # 定義目錄路徑
+    project_dir = os.path.join(GDATA["basedir"], "data", "projects", project_name)
+
+    # 建立目錄
+    os.makedirs(project_dir, exist_ok=True)
+    os.chmod(project_dir, 0o777)  # 0o777
+    # 繼續建立 dataset 與 my_dataset
+    my.mkdir(
+        os.path.join(GDATA["basedir"], "data", "projects", project_name, "dataset"),
+        recursive=True,
+    )
+    os.chmod(
+        os.path.join(GDATA["basedir"], "data", "projects", project_name, "dataset"),
+        0o777,
+    )
+    my.mkdir(
+        os.path.join(GDATA["basedir"], "data", "projects", project_name, "my_dataset"),
+        recursive=True,
+    )
+    os.chmod(
+        os.path.join(GDATA["basedir"], "data", "projects", project_name, "my_dataset"),
+        0o777,
+    )
+    messagebox.showinfo("提示", "新增專案檔成功！")
+
+    reload_projects(project_name)
+
+
+def reload_projects(project_name=None):
+    # 重新載入專案列表
+    # 會清空目前選擇的專案檔，並且重新載入專案列表
+    # 如果有選擇專案檔，則選擇該專案檔
+    global GDATA
+
+    GDATA["UI"]["select_project_selected_menu"]["menu"].delete(0, "end")
+    GDATA["UI"]["select_project_selected"].set("選擇專案檔")
+    for project in project_get_list_all():
+        GDATA["UI"]["select_project_selected_menu"]["menu"].add_command(
+            label=project,
+            command=tk._setit(GDATA["UI"]["select_project_selected"], project),
+        )
+    GDATA["UI"]["select_project_selected_menu"].pack(side=tk.LEFT, padx=5)
+
+    if project_name is not None:
+        GDATA["UI"]["select_project_selected"].set(project_name)
+        GDATA["project_folder"] = os.path.join(
+            GDATA["basedir"], "data", "projects", project_name
+        )
+        GDATA["UI"]["select_area_button"].config(state=tk.NORMAL)
+        method_count_wait_process_files()  # 計算有多少待處理的檔案
+
+
+def do_show_hide_rect_button(b):
+    # 顯示或隱藏細框
+    global GDATA
+    if GDATA["overlay"] == None:
+        return
+    if b == True:
+        # GDATA["overlay"] 顯示
+        # GDATA["overlay"].deiconify()
+        GDATA["overlay"].attributes("-alpha", 0.5)
+    else:
+        # GDATA["overlay"].withdraw()
+        GDATA["overlay"].attributes("-alpha", 0.0)
+
+
+def method_show_hide_rect_button():
+    # 顯示或隱藏細框
+    global GDATA
+    if GDATA["overlay"] == None:
+        return
+    if GDATA["overlay"].winfo_viewable():
+        GDATA["overlay"].withdraw()
+        # 調整 show_hide_rect_button 文字
+        GDATA["UI"]["show_hide_rect_button"].config(text="顯示圖框")
+        # 按鈕取消紅邊框
+        GDATA["UI"]["show_hide_rect_button"].config(highlightcolor="SystemButtonFace")
+    else:
+        GDATA["overlay"].deiconify()
+        # 調整 show_hide_rect_button 文字
+        GDATA["UI"]["show_hide_rect_button"].config(text="隱藏圖框")
+        # 按鈕加紅邊框
+        GDATA["UI"]["show_hide_rect_button"].config(highlightcolor="red")
+
+
+def project_selected(self, a, b):
+    # 選到專案檔後，才能選擇拍照範圍
+    global GDATA
+    project = GDATA["UI"]["select_project_selected"].get()
+    if project == "選擇專案檔":
+        GDATA["UI"]["select_area_button"].config(state=tk.DISABLED)
+        GDATA["UI"]["execute_folder_button"].config(state=tk.DISABLED)
+        return
+    GDATA["project"] = project  # 設定選擇的專案檔名稱
+    GDATA["UI"]["select_area_button"].config(
+        state=tk.NORMAL
+    )  # 選到專案檔後，才能選擇拍照範圍
+    GDATA["UI"]["execute_folder_button"].config(
+        state=tk.NORMAL
+    )  # 選到專案檔後，才能選擇 編輯訓練檔
+    GDATA["project_folder"] = os.path.join(
+        GDATA["basedir"], "data", "projects", project
+    )
+    # 檢查是否有 rect.txt
+    _OUTPUT_RECT_FILE = os.path.join(GDATA["project_folder"], "rect.txt")
+
+    # 有選就重置
+    if "overlay" in GDATA and GDATA["overlay"] != None:
+        GDATA["overlay"].destroy()
+        GDATA["overlay"] = None
+
+    if my.is_file(_OUTPUT_RECT_FILE):
+        jd = my.json_decode(my.file_get_contents(_OUTPUT_RECT_FILE))
+        GDATA["x1"], GDATA["y1"], GDATA["x2"], GDATA["y2"] = (
+            int(jd["x1"]),
+            int(jd["y1"]),
+            int(jd["x2"]),
+            int(jd["y2"]),
+        )
+        # 建立透明窗口繪製細框
+        GDATA["overlay"] = create_overlay_window(
+            GDATA["x1"], GDATA["y1"], GDATA["x2"], GDATA["y2"]
+        )
+        GDATA["UI"]["start_button"].config(state=tk.NORMAL)  # 啟用開始按鈕
+        GDATA["UI"]["show_hide_rect_button"].config(state=tk.NORMAL)  # 啟用開始按鈕
+        # 按鈕加紅邊框
+        if GDATA["UI"]["show_hide_rect_button"].cget("text") == "隱藏圖框":
+            GDATA["UI"]["show_hide_rect_button"].config(highlightcolor="red")
+    # 計算有多少待處理的檔案
+    method_count_wait_process_files()
+
+
+# =====================================================================
+# RESTORED LOST FUNCTIONS (Byte Range Streaming & YouTube Cache)
+# =====================================================================
+
+from urllib.parse import urlparse, parse_qs
+
+def normalize_youtube_pose_cache_url(url):
+    url = url.strip() if url else ''
+    if not url:
+        return ''
+    parsed = urlparse(url)
+    host = parsed.netloc.lower() if parsed.netloc else ''
+    if host.startswith('www.'):
+        host = host[4:]
+        
+    path_parts = [part for part in parsed.path.split('/') if part]
+    video_id = None
+    
+    if host == 'youtu.be':
+        if path_parts:
+            video_id = path_parts[0]
+    elif host.endswith('youtube.com'):
+        query = parse_qs(parsed.query) if parsed.query else {}
+        if query.get('v'):
+            video_id = query['v'][0]
+        elif len(path_parts) >= 2 and path_parts[0] in ('shorts', 'embed', 'live'):
+            video_id = path_parts[1]
+            
+    if video_id:
+        return 'youtube:%s' % video_id
+    return url
+
+
+def youtube_pose_cache_key_matches(expected, candidate):
+    if not isinstance(candidate, dict):
+        return False
+    for key, expected_value in expected.items():
+        if key not in candidate:
+            return False
+        if candidate.get(key) != expected_value:
+            return False
+    return True
+
+
+def build_youtube_pose_cache_key(url, model_file, confidence, fps_target, max_duration_seconds):
+    return {
+        "url": normalize_youtube_pose_cache_url(url),
+        "pose_model": os.path.basename(model_file) if model_file else '',
+        "pose_confidence": round(float(confidence), 4),
+        "fps_target": int(float(fps_target)),
+        "max_duration_seconds": int(float(max_duration_seconds))
+    }
+
+
+def find_youtube_pose_cache_record(project_folder, url, model_file, confidence, fps_target, max_duration_seconds):
+    expected = build_youtube_pose_cache_key(url, model_file, confidence, fps_target, max_duration_seconds)
+    pose_record_root = os.path.join(project_folder, 'pose_record')
+    if not os.path.isdir(pose_record_root):
+        return None
+        
+    record_folders = []
+    for name in os.listdir(pose_record_root):
+        folder = os.path.join(pose_record_root, name)
+        if os.path.isdir(folder):
+            record_folders.append(folder)
+            
+    record_folders.sort(key=lambda folder: os.path.getmtime(folder) if hasattr(os.path, 'getmtime') else os.path.getmtime(folder), reverse=True)
+    
+    for folder in record_folders:
+        pose_record_path = os.path.join(folder, 'pose_record.json')
+        if not os.path.isfile(pose_record_path):
+            continue
+            
+        source_info = {}
+        source_info_path = os.path.join(folder, 'source_video_info.json')
+        if os.path.isfile(source_info_path):
+            try:
+                with open(source_info_path, 'r', encoding='utf-8') as f:
+                    source_info = json.load(f)
+            except Exception:
+                source_info = {}
+                
+        try:
+            with open(pose_record_path, 'r', encoding='utf-8') as f:
+                pose_record = json.load(f)
+        except Exception:
+            continue
+            
+        source = pose_record.get('source', {})
+        source_video_file = source_info.get('source_video_file') or source.get('source_video_file') or 'source.mp4'
+        
+        if not os.path.isfile(os.path.join(folder, source_video_file)):
+            continue
+            
+        candidate_key = source_info.get('cache_key')
+        if not isinstance(candidate_key, dict):
+            candidate_key = build_youtube_pose_cache_key(
+                source_info.get('url') or source.get('url') or '',
+                source_info.get('pose_model') or source.get('model') or expected['pose_model'],
+                source_info.get('pose_confidence', expected['pose_confidence']),
+                source_info.get('fps_target') or source.get('fps_target') or expected['fps_target'],
+                source_info.get('max_duration_seconds') or source.get('max_duration_seconds') or expected['max_duration_seconds']
+            )
+            
+        if youtube_pose_cache_key_matches(expected, candidate_key):
+            return pose_record_path
+            
+    return None
+
+
+def parse_range_header(range_header, file_size):
+    if not range_header or not range_header.startswith('bytes='):
+        return None
+    spec = range_header.replace('bytes=', '', 1).strip()
+    if ',' in spec or '-' not in spec:
+        return None
+    start_text, end_text = spec.split('-', 1)
+    if not start_text and not end_text:
+        return None
+    try:
+        if start_text:
+            start = int(start_text)
+            if end_text:
+                end = int(end_text)
+            else:
+                end = file_size - 1
+        else:
+            suffix_length = int(end_text)
+            if suffix_length <= 0:
+                return None
+            start = max(file_size - suffix_length, 0)
+            end = file_size - 1
+    except ValueError:
+        return None
+    if start < 0 or start >= file_size or end < start:
+        return None
+    return (start, min(end, file_size - 1))
+
+
+def iter_file_range(filepath, start, end, chunk_size=65536):
+    with open(filepath, 'rb') as fp:
+        fp.seek(start)
+        remaining = end - start + 1
+        while remaining > 0:
+            chunk = fp.read(min(chunk_size, remaining))
+            if not chunk:
+                break
+            remaining -= len(chunk)
+            yield chunk
+
+
+def data_file_response(filepath, media_type, range_header):
+    file_size = os.path.getsize(filepath) if hasattr(os.path, 'getsize') else os.path.getsize(filepath)
+    headers = {
+        'Accept-Ranges': 'bytes',
+        'Content-Encoding': 'identity'
+    }
+    if not range_header:
+        return FileResponse(filepath, media_type=media_type, headers=headers)
+        
+    byte_range = parse_range_header(range_header, file_size)
+    if not byte_range:
+        invalid_headers = dict(headers)
+        invalid_headers['Content-Range'] = 'bytes */{}'.format(file_size)
+        return Response(status_code=416, headers=invalid_headers)
+        
+    start, end = byte_range
+    partial_headers = dict(headers)
+    partial_headers.update({
+        'Content-Range': 'bytes {}-{}/{}'.format(start, end, file_size),
+        'Content-Length': str(end - start + 1)
+    })
+    
+    return StreamingResponse(
+        iter_file_range(filepath, start, end),
+        status_code=206,
+        media_type=media_type,
+        headers=partial_headers
+    )
+
+
+root = tk.Tk()
+
+# 將 base64 字符串解碼為二進制數據
+binary_data = base64.b64decode(icon_b64)
+
+# 釋放 ram
+icon_b64 = None
+
+# 將二進制數據寫入文件
+with open(GDATA["basedir"] + "\\tmp_icon.ico", "wb") as f:
+    f.write(binary_data)
+binary_data = None
+
+
+# 設置窗口圖標
+root.iconbitmap(GDATA["basedir"] + "\\tmp_icon.ico")
+if os.path.isfile(GDATA["basedir"] + "\\tmp_icon.ico"):
+    os.remove(GDATA["basedir"] + "\\tmp_icon.ico")
+
+# 計算窗口位置
+screen_width = root.winfo_screenwidth()
+screen_height = root.winfo_screenheight()
+window_width = 560  # 增加 Pose / Live2D 控制按鈕寬度
+window_height = 310  # 增加骨架錄製控制列
+
+# 計算窗口位置: 右下角150px，距離底部30%
+x = screen_width - window_width - 150
+y = int(screen_height * 0.7)
+
+# 設置窗口位置和大小
+root.geometry(f"{window_width}x{window_height}+{x}+{y}")
+
+# 設置窗口不可縮放
+root.resizable(False, False)
+
+root.title(f"我的 yolo 訓練機 - V%s By 羽山秋人 (https://3wa.tw)" % (GDATA["VERSION"]))
+
+# 使用Frame將按鈕排成一行
+# 第一列
+GDATA["UI"]["first_frame"] = tk.Frame(root)
+GDATA["UI"]["first_frame"].pack(padx=5, pady=10, fill=tk.X)
+
+GDATA["UI"]["exit_button"] = tk.Button(
+    GDATA["UI"]["first_frame"], text="離開程式", command=on_closing
+)
+GDATA["UI"]["exit_button"].pack(side=tk.RIGHT, padx=5)
+
+GDATA["UI"]["info_button"] = tk.Button(
+    GDATA["UI"]["first_frame"], text="說明", command=on_message
+)
+GDATA["UI"]["info_button"].pack(side=tk.RIGHT, padx=5)
+
+
+# 以下放到第二行
+# 第二列
+
+GDATA["UI"]["second_frame"] = tk.Frame(root)
+GDATA["UI"]["second_frame"].pack(padx=5, fill=tk.X)
+
+# 新增專案檔，按到會出現 prompt 讓使用者輸入專案檔名稱
+GDATA["UI"]["new_project_button"] = tk.Button(
+    GDATA["UI"]["second_frame"], text="新增專案檔", command=new_project
+)
+GDATA["UI"]["new_project_button"].pack(side=tk.LEFT, padx=5)
+
+# 下拉選單，選擇專案檔
+GDATA["UI"]["select_project_selected"] = tk.StringVar()
+GDATA["UI"]["select_project_selected"].set("選擇專案檔")
+GDATA["UI"]["select_project_selected_menu"] = tk.OptionMenu(
+    GDATA["UI"]["second_frame"], GDATA["UI"]["select_project_selected"], "選擇專案檔"
+)
+# 更新下拉選單，重新取得專案檔列表 並且設定選擇的專案檔
+GDATA["UI"]["select_project_selected_menu"]["menu"].delete(0, "end")
+GDATA["UI"]["select_project_selected"].set("選擇專案檔")
+for project in project_get_list_all():
+    GDATA["UI"]["select_project_selected_menu"]["menu"].add_command(
+        label=project,
+        command=tk._setit(GDATA["UI"]["select_project_selected"], project),
+    )
+    GDATA["UI"]["select_project_selected_menu"].pack(side=tk.LEFT, padx=5)
+    # GDATA["UI"]["select_area_button"].config(state=tk.NORMAL)
+GDATA["UI"]["select_project_selected_menu"].pack(side=tk.LEFT, padx=5)
+# 選到專案檔後，才能選擇拍照範圍
+GDATA["UI"]["select_project_selected"].trace("w", project_selected)
+
+GDATA["UI"]["execute_folder_button"] = tk.Button(
+    GDATA["UI"]["second_frame"],
+    text="編輯訓練檔",
+    command=browser_folder,
+    state=tk.DISABLED,
+)
+GDATA["UI"]["execute_folder_button"].pack(side=tk.LEFT, padx=5)
+
+GDATA["UI"]["open_folder_button"] = tk.Button(
+    GDATA["UI"]["second_frame"], text="資料夾", command=open_folder
+)
+GDATA["UI"]["open_folder_button"].pack(side=tk.LEFT, padx=5)
+
+
+# 第三列
+GDATA["UI"]["third_frame"] = tk.Frame(root)
+GDATA["UI"]["third_frame"].pack(padx=5, pady=10, fill=tk.X)
+
+
+# 選擇拍照範圍 必需有專案檔才能選擇
+GDATA["UI"]["select_area_button"] = tk.Button(
+    GDATA["UI"]["third_frame"],
+    text="選擇拍照範圍",
+    command=select_area,
+    state=tk.DISABLED,
+)
+GDATA["UI"]["select_area_button"].pack(side=tk.LEFT, padx=5)
+
+GDATA["UI"]["start_button"] = tk.Button(
+    GDATA["UI"]["third_frame"],
+    text="截圖(熱鍵)：CTRL + F2",
+    command=start_cut_screen,
+    state=tk.DISABLED,  # 選擇拍照範圍後才能截圖
+)
+GDATA["UI"]["start_button"].pack(side=tk.LEFT, padx=5)
+
+GDATA["UI"]["show_hide_rect_button"] = tk.Button(
+    GDATA["UI"]["third_frame"],
+    text="隱藏圖框",
+    command=method_show_hide_rect_button,
+    highlightthickness=1,
+    # fg="#ffffff",
+    highlightcolor="SystemButtonFace",  #'SystemButtonFace',
+    default="active",
+    state=tk.DISABLED,  # 選擇拍照範圍後才能截圖
+)
+GDATA["UI"]["show_hide_rect_button"].pack(side=tk.LEFT, padx=5)
+
+
+"""
+GDATA["UI"]["stop_button"] = tk.Button(
+    GDATA["UI"]["third_frame"],
+    text="停止錄影",
+    command=stop_recording,
+    state=tk.DISABLED,
+)
+GDATA["UI"]["stop_button"].pack(side=tk.LEFT, padx=5)
+"""
+
+# 第四列，模型相關
+GDATA["UI"]["fourth_frame"] = tk.Frame(root)
+GDATA["UI"]["fourth_frame"].pack(padx=5, pady=5, fill=tk.X)
+
+GDATA["UI"]["選擇模型檔"] = tk.Button(
+    GDATA["UI"]["fourth_frame"], text="選擇模型檔", command=run_choice_zip_pt
+)
+GDATA["UI"]["選擇模型檔"].pack(side=tk.LEFT, padx=5)
+
+GDATA["UI"]["btn_desktop_example_button"] = tk.Button(
+    GDATA["UI"]["fourth_frame"],
+    text="桌面辨識範例(已停止)",
+    command=run_desktop_example,
+)
+GDATA["UI"]["btn_desktop_example_button"].pack(side=tk.LEFT, padx=5)
+
+GDATA["UI"]["btn_auto_click"] = tk.Button(
+    GDATA["UI"]["fourth_frame"],
+    text="自動點擊(關)",
+    command=toggle_auto_click,
+)
+GDATA["UI"]["btn_auto_click"].pack(side=tk.LEFT, padx=5)
+
+# 第五列，信心度
+GDATA["UI"]["fifth_frame"] = tk.Frame(root)
+GDATA["UI"]["fifth_frame"].pack(padx=5, pady=5, fill=tk.X)
+# 可以調整信心度 0.1 ~ 1.0
+GDATA["UI"]["confidence_label"] = tk.Label(
+    GDATA["UI"]["fifth_frame"], text="信心度：%s" % (model_confidence), anchor=tk.W
+)
+GDATA["UI"]["confidence_label"].pack(side=tk.LEFT, padx=5)
+# 下方不要顯示數字
+GDATA["UI"]["confidence_scale"] = tk.Scale(
+    GDATA["UI"]["fifth_frame"],
+    from_=0.1,
+    to=1.0,
+    resolution=0.1,
+    orient=tk.HORIZONTAL,
+    length=250,
+    sliderlength=20,
+    showvalue=0,
+    tickinterval=0,
+    command=run_update_confidence,
+)
+GDATA["UI"]["confidence_scale"].set(model_confidence)
+GDATA["UI"]["confidence_scale"].pack(side=tk.LEFT, padx=5)
+
+# 第六列，Pose / Live2D
+GDATA["UI"]["pose_frame"] = tk.Frame(root)
+GDATA["UI"]["pose_frame"].pack(padx=5, pady=5, fill=tk.X)
+
+GDATA["UI"]["btn_pose_model"] = tk.Button(
+    GDATA["UI"]["pose_frame"],
+    text="選Pose模型",
+    command=run_choice_pose_pt,
+)
+GDATA["UI"]["btn_pose_model"].pack(side=tk.LEFT, padx=5)
+
+GDATA["UI"]["btn_youtube_pose"] = tk.Button(
+    GDATA["UI"]["pose_frame"],
+    text="YouTube Pose",
+    command=start_youtube_pose_recording,
+)
+GDATA["UI"]["btn_youtube_pose"].pack(side=tk.LEFT, padx=5)
+
+GDATA["UI"]["btn_screen_pose_record"] = tk.Button(
+    GDATA["UI"]["pose_frame"],
+    text="骨架錄製(開始)",
+    command=toggle_screen_pose_recording,
+)
+GDATA["UI"]["btn_screen_pose_record"].pack(side=tk.LEFT, padx=5)
+
+GDATA["UI"]["btn_live2d_dancer"] = tk.Button(
+    GDATA["UI"]["pose_frame"],
+    text="Live2D 人物",
+    command=lambda: open_live2d_dancer("live2d"),
+)
+GDATA["UI"]["btn_live2d_dancer"].pack(side=tk.LEFT, padx=5)
+
+GDATA["UI"]["btn_vrm_dancer"] = tk.Button(
+    GDATA["UI"]["pose_frame"],
+    text="3D VRM角色",
+    command=lambda: open_live2d_dancer("vrm"),
+)
+GDATA["UI"]["btn_vrm_dancer"].pack(side=tk.LEFT, padx=5)
+
+GDATA["UI"]["btn_cesium_world"] = tk.Button(
+    GDATA["UI"]["pose_frame"],
+    text="Cesium地球",
+    command=lambda: open_live2d_dancer("cesium"),
+)
+GDATA["UI"]["btn_cesium_world"].pack(side=tk.LEFT, padx=5)
+
+GDATA["UI"]["pose_status_label"] = tk.Label(GDATA["UI"]["pose_frame"], text="", anchor=tk.W)
+GDATA["UI"]["pose_status_label"].pack(side=tk.LEFT, padx=5)
+
+# 第七列，狀態列
+GDATA["UI"]["sixth_frame"] = tk.Frame(root)
+GDATA["UI"]["sixth_frame"].pack(padx=5, pady=5, fill=tk.X)
+
+GDATA["UI"]["status_label"] = tk.Label(GDATA["UI"]["sixth_frame"], text="")
+GDATA["UI"]["status_label"].pack(side=tk.LEFT, padx=5)
+
+
+root.protocol("WM_DELETE_WINDOW", on_closing)
+
+
+# 綁定標題欄的鼠標按下事件
+root.bind("<ButtonPress-1>", win_start_move)
+root.bind("<ButtonRelease-1>", win_stop_move)
+root.bind("<B1-Motion>", win_do_move)
+
+
+# 跑一個本地的 flask server port 9487
+# 這樣就可以在網頁上看到 www/index.html 的畫面
+# 程式開始
+# 用 thread 跑
+def _legacy_run_flask_unused():
+    app = Flask(__name__, template_folder="www", static_folder="www")
+
+    @app.route("/")
+    def home():
+        return render_template("index.html")
+
+    # data 目錄也要分享
+    @app.route("/data/<path:filename>")
+    def data(filename):
+        _PD = os.getcwd()
+        DATA_FOLDER = os.path.join(_PD, "data")
+        return send_from_directory(DATA_FOLDER, filename)
+
+    @app.route("/api", methods=["GET", "POST"])
+    def api():
+        GETS = request.args
+        POSTS = request.form
+        if "mode" in GETS:
+            mode = GETS["mode"]
+            if mode == "project_list":
+                _PD = os.getcwd()
+                projects = my.glob_dirs(os.path.join(_PD, "data", "projects", "*"))
+                projects = [os.path.basename(p) for p in projects]
+                return jsonify({"status": "OK", "data": projects})
+            if mode == "project_add_action":
+
+                if "project_name" not in request.form:
+                    return (
+                        jsonify({"status": "NO", "reason": "Missing project_name"}),
+                        400,
+                    )
+                project_name = request.form["project_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                if my.is_dir(_PROJECT_FOLDER):
+                    return jsonify(
+                        {"status": "NO", "reason": "專案已存在，請重新命名專案名稱"}
+                    )
+
+                my.mkdir(_PROJECT_FOLDER)
+                os.chmod(_PROJECT_FOLDER, 0o777)  # 0o777
+                OUTPUT = {"status": "OK", "data": {}, "project_name": project_name}
+                reload_projects(project_name)  # 重新載入專案列表
+                return jsonify(OUTPUT)
+            if mode == "project_edit_action":
+                # 編輯專案名稱
+                # orin_project_name 是 POST orin_project_name
+                # new_project_name 是 POST new_project_name
+                if (
+                    "orin_project_name" not in request.form
+                    or "new_project_name" not in request.form
+                ):
+                    return (
+                        jsonify({"status": "NO", "reason": "輸入異常"}),
+                        400,
+                    )
+                _PD = os.getcwd()
+                orin_project_name = request.form["orin_project_name"]
+                new_project_name = request.form["new_project_name"]
+
+                _ORIN_PROJECT_FOLDER = os.path.join(
+                    _PD, "data", "projects", orin_project_name
+                )
+                _NEW_PROJECT_FOLDER = os.path.join(
+                    _PD, "data", "projects", new_project_name
+                )
+
+                if not my.is_dir(_ORIN_PROJECT_FOLDER):
+                    return jsonify(
+                        {"status": "NO", "reason": "原專案不存在，請重新命名專案名稱"}
+                    )
+                if my.is_dir(_NEW_PROJECT_FOLDER):
+                    return jsonify(
+                        {"status": "NO", "reason": "新專案已存在，請重新命名專案名稱"}
+                    )
+                # 將原專案目錄重新命名為新專案目錄
+                os.rename(_ORIN_PROJECT_FOLDER, _NEW_PROJECT_FOLDER)
+                os.chmod(_NEW_PROJECT_FOLDER, 0o777)  # 0o777
+                OUTPUT = {
+                    "status": "OK",
+                    "data": {},
+                    "new_project_name": new_project_name,
+                }
+                reload_projects(new_project_name)  # 重新載入專案列表
+                return jsonify(OUTPUT)
+            if mode == "choice_project":
+                project_name = request.form["project_name"]
+                reload_projects(project_name)  # 重新載入專案列表
+                OUTPUT = {"status": "OK", "data": {}, "project_name": project_name}
+                reload_projects(project_name)  # 重新載入專案列表
+                return jsonify(OUTPUT)
+            if mode == "getKindList":
+                # 從 my_dataset 資料夾取得所有的類別
+                # project_name 是 POST project_name
+
+                if "project_name" not in request.form:
+                    return (
+                        jsonify({"status": "NO", "reason": "Missing project_name"}),
+                        400,
+                    )
+                project_name = request.form["project_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KINDS = my.glob_dirs(os.path.join(_MY_DATASET_FOLDER, "*"))
+                OUTPUT = {"status": "OK", "data": {}}
+
+                # 重要
+                # 排序方向，依目錄的建立時間舊到新
+                _KINDS = sorted(_KINDS, key=os.path.getctime)
+
+                for kind in _KINDS:
+                    _KIND = os.path.basename(kind)
+                    _KIND_FILES = len(my.glob(os.path.join(kind, "*.jpg")))
+                    OUTPUT["data"][_KIND] = {"數量": _KIND_FILES}
+
+                return jsonify(OUTPUT)
+            if mode == "addKind":
+                # 新增類別
+                # project_name 是 POST project_name
+                # kind 是 POST kind
+                if "project_name" not in request.form:
+                    return (
+                        jsonify({"status": "NO", "reason": "Missing project_name"}),
+                        400,
+                    )
+                if "kind_name" not in request.form:
+                    return jsonify({"status": "NO", "reason": "請輸入類別名稱"})
+                project_name = request.form["project_name"]
+                kind_name = request.form["kind_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
+                my.mkdir(_KIND_FOLDER)
+                os.chmod(_KIND_FOLDER, 0o777)  # 0o777
+                if my.is_dir(_KIND_FOLDER):
+                    return jsonify({"status": "OK"})
+                else:
+                    return jsonify(
+                        {"status": "NO", "reason": "目錄不存在，未建立成功..."}
+                    )
+            if mode == "delKind":
+                if "project_name" not in request.form:
+                    return (
+                        jsonify({"status": "NO", "reason": "Missing project_name"}),
+                        400,
+                    )
+                if "kind_name" not in request.form:
+                    return jsonify({"status": "NO", "reason": "請輸入類別名稱"})
+                project_name = request.form["project_name"]
+                kind_name = my.basename(request.form["kind_name"])
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
+                print("Del path: %s" % (_KIND_FOLDER))
+                # if my.is_dir(_KIND_FOLDER):
+                my.delete_directory_contents(_KIND_FOLDER)
+                return jsonify({"status": "OK"})
+            if mode == "editKind":
+                if "project_name" not in request.form:
+                    return (
+                        jsonify({"status": "NO", "reason": "Missing project_name"}),
+                        400,
+                    )
+                if "kind_name" not in request.form:
+                    return jsonify({"status": "NO", "reason": "請輸入類別名稱"})
+                if "new_kind_name" not in request.form:
+                    return jsonify({"status": "NO", "reason": "請輸入新類別名稱"})
+                project_name = request.form["project_name"]
+                kind_name = my.basename(request.form["kind_name"])
+                new_kind_name = my.basename(request.form["new_kind_name"])
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
+                _NEW_KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, new_kind_name)
+                if (
+                    my.is_dir(_KIND_FOLDER) == True
+                    and my.is_dir(_NEW_KIND_FOLDER) == False
+                ):
+                    os.rename(_KIND_FOLDER, _NEW_KIND_FOLDER)
+                elif my.is_dir(_KIND_FOLDER) == False:
+                    return jsonify({"status": "NO", "reason": "類別不存在"})
+                elif my.is_dir(_NEW_KIND_FOLDER) == True:
+                    return jsonify({"status": "NO", "reason": "新類別已存在"})
+                return jsonify({"status": "OK"})
+            if mode == "getPhotoList":
+                # 取得 project_name 目錄下的圖片，因為是未分類的
+                project_name = request.form["project_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                fp = my.glob(os.path.join(_PROJECT_FOLDER, "*.jpg"))
+                fp = [{"photo_name": my.basename(f)} for f in fp]
+                return jsonify({"status": "OK", "data": fp})
+            # 刪照片
+            if mode == "delPhoto":
+                if "project_name" not in request.form:
+                    return (
+                        jsonify({"status": "NO", "reason": "沒有這個專案..."}),
+                        400,
+                    )
+                if "photo_name" not in request.form:
+                    return jsonify({"status": "NO", "reason": "圖片名稱未填..."})
+                project_name = request.form["project_name"]
+                photo_name = my.basename(request.form["photo_name"])
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _PHOTO_FILE = os.path.join(_PROJECT_FOLDER, photo_name)
+                if my.is_file(_PHOTO_FILE):
+                    os.remove(_PHOTO_FILE)
+                    return jsonify({"status": "OK"})
+                else:
+                    return jsonify({"status": "NO", "reason": "圖片不存在"})
+            if mode == "setPhotoToKind":
+                # 把圖片放到類別裡
+
+                project_name = request.form["project_name"]
+                kind_name = request.form["kind_name"]
+                photo_name = my.basename(request.form["photo_name"])
+                if "project_name" not in request.form:
+                    return (
+                        jsonify({"status": "NO", "reason": "沒有這個專案..."}),
+                        400,
+                    )
+                if "photo_name" not in request.form:
+                    return jsonify({"status": "NO", "reason": "圖片名稱未填..."})
+                if "kind_name" not in request.form:
+                    return jsonify({"status": "NO", "reason": "類別名稱未填..."})
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
+                _PHOTO_FILE = os.path.join(_PROJECT_FOLDER, photo_name)
+                _NEW_PHOTO_FILE = os.path.join(_KIND_FOLDER, photo_name)
+                if my.is_file(_PHOTO_FILE) == False:
+                    return jsonify({"status": "NO", "reason": "圖片不存在"})
+                if my.is_dir(_KIND_FOLDER) == False:
+                    my.mkdir(_KIND_FOLDER)
+                    os.chmod(_KIND_FOLDER, 0o777)
+                if my.is_file(_NEW_PHOTO_FILE) == True:
+                    my.unlink(_NEW_PHOTO_FILE)
+                shutil.move(_PHOTO_FILE, _NEW_PHOTO_FILE)
+                # 有移成功嗎
+                if my.is_file(_NEW_PHOTO_FILE):
+                    return jsonify({"status": "OK"})
+                else:
+                    return jsonify({"status": "NO", "reason": "移動失敗"})
+            if mode == "getDoMarkKindList":
+                # 取得 project_name 目錄下的圖片，已分類的照片數量、未處理的照片數量
+                # 取得照片分類
+                project_name = request.form["project_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KINDS = my.glob_dirs(os.path.join(_MY_DATASET_FOLDER, "*"))
+                _data = []
+                for kind in _KINDS:
+                    _KIND = os.path.basename(kind)
+                    _KIND_FILES = len(my.glob(os.path.join(kind, "*.jpg")))
+                    _TXT_FILES = len(my.glob(os.path.join(kind, "*.txt")))
+                    _data.append(
+                        {
+                            "kind_name": _KIND,
+                            "total_pics": _KIND_FILES,
+                            "need_process_counts": _KIND_FILES - _TXT_FILES,
+                        }
+                    )
+                return jsonify({"status": "OK", "data": _data})
+            if mode == "getMY_DATASETSPhotos":
+                # 取得 project_name 目錄下的圖片、txt 檔案
+                # 合併圖片與 txt 檔案，txt 檔案名稱與圖片名稱相同
+                # txt 可能不存在，給空字串
+                # 取得照片分類
+                project_name = POSTS["project_name"]  # 如三國迷因
+                kind_name = POSTS["kind_name"]  # 如 劉備
+                show_kind = POSTS["show_kind"]  # needProcessOnly、showAll
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
+                fpJpgs = my.glob(os.path.join(_KIND_FOLDER, "*.jpg"))
+                # 定義輸出資料結構
+                OUTPUT = {
+                    "status": "OK",
+                    "data": [],
+                    "project_name": project_name,
+                    "kind_name": kind_name,
+                    "show_kind": show_kind,
+                }
+                if show_kind == "needProcessOnly":
+                    # 只顯示需要處理的圖片
+                    for jpg in fpJpgs:
+                        _jpg = my.basename(jpg)
+                        _txt = os.path.splitext(_jpg)[0] + ".txt"
+                        _txt_path = os.path.join(_KIND_FOLDER, _txt)
+                        if my.is_file(_txt_path) == False:
+                            OUTPUT["data"].append(
+                                {"photo_name": _jpg, "txt_name": "", "txt_data": ""}
+                            )
+                elif show_kind == "showAll":
+                    # 顯示所有圖片，包含已處理的圖片
+                    for jpg in fpJpgs:
+                        _jpg = my.basename(jpg)
+                        _txt = os.path.splitext(_jpg)[0] + ".txt"
+                        _txt_path = os.path.join(_KIND_FOLDER, _txt)
+                        if my.is_file(_txt_path) == False:
+                            OUTPUT["data"].append(
+                                {"photo_name": _jpg, "txt_name": "", "txt_data": ""}
+                            )
+                        else:
+                            OUTPUT["data"].append(
+                                {
+                                    "photo_name": _jpg,
+                                    "txt_name": _txt,
+                                    "txt_data": my.file_get_contents(_txt_path),
+                                }
+                            )
+                # 返回結果
+                return jsonify(OUTPUT)
+            if mode == "resetPhotoKind":
+                # 重置圖片分類，將圖片移到未分類的資料夾
+                project_name = POSTS["project_name"]
+                kind_name = POSTS["kind_name"]
+                mn = POSTS["mn"]  # 圖片名稱
+                _PD = os.getcwd()
+                orin_photo_path = os.path.join(
+                    _PD,
+                    "data",
+                    "projects",
+                    project_name,
+                    "my_dataset",
+                    kind_name,
+                    mn + ".jpg",
+                )
+                orin_txt_path = os.path.join(
+                    _PD,
+                    "data",
+                    "projects",
+                    project_name,
+                    "my_dataset",
+                    kind_name,
+                    mn + ".txt",
+                )
+                # 如果 orin_txt_path 存在，則刪除
+                if my.is_file(orin_txt_path):
+                    os.remove(orin_txt_path)
+                if my.is_file(orin_photo_path):
+                    # 將圖片移到未分類的資料夾
+                    _UNCLASSIFIED_FOLDER = os.path.join(
+                        _PD, "data", "projects", project_name
+                    )
+                    _UNCLASSIFIED_PHOTO_PATH = os.path.join(
+                        _UNCLASSIFIED_FOLDER, mn + ".jpg"
+                    )
+                    shutil.move(orin_photo_path, _UNCLASSIFIED_PHOTO_PATH)
+                return jsonify({"status": "OK"})
+            if mode == "saveTxt":
+                # 框選的圖片，儲存標註的 txt 檔案
+                # project_name 是 POST project_name
+                # kind_name 是 POST kind_name
+                # imgbn 是 POST imgbn
+                # txt 是 POST txt
+                _PD = os.getcwd()
+                project_name = POSTS["project_name"]
+                kind_name = POSTS["kind_name"]
+                mn = my.mainname(POSTS["imgbn"])
+                txt = POSTS["txt"]
+                txt_filepath = os.path.join(
+                    _PD,
+                    "data",
+                    "projects",
+                    project_name,
+                    "my_dataset",
+                    kind_name,
+                    mn + ".txt",
+                )
+                my.file_put_contents(txt_filepath, txt)
+                os.chmod(txt_filepath, 0o777)
+                return jsonify({"status": "OK"})
+            if mode == "train_add":
+                # 開始訓練
+                # project_name 是 POST project_name
+                # kinds 是 POST kinds
+                # train_val 是 POST train_val (100/10)
+                # 建立目錄結構
+                # data/projects/{project_name}/train/{task_1,task_2,...}
+                # 寫入 data/projects/{project_name}/train/{task_1}/job.txt
+                project_name = POSTS["project_name"]
+                kinds = POSTS["kinds"]
+                train_val = POSTS["train_val"]
+                epoch = POSTS["epoch"]
+                imgz = POSTS["imgz"]  # 圖片尺寸
+                batch = POSTS["batch"]  # 批次大小
+                learning_rate = POSTS["learning_rate"]  # 學習率
+                optimizer = POSTS["optimizer"]  # 優化器
+                _model = POSTS["model"]  # 模型名稱
+                use_early_stopping = POSTS["use_early_stopping"]  # 是否使用早停法
+                patience = POSTS["patience"]  # 早停法的耐心值
+
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _TRAIN_FOLDER = os.path.join(_PROJECT_FOLDER, "train_project")
+                if not my.is_dir(_TRAIN_FOLDER):
+                    my.mkdir(_TRAIN_FOLDER)
+                    os.chmod(_TRAIN_FOLDER, 0o777)
+                # 檢查 kinds 是否為空
+                if not kinds:
+                    return jsonify({"status": "NO", "reason": "請選擇至少一個類別"})
+                # 檢查 train_val 是否為空
+                if not train_val:
+                    return jsonify({"status": "NO", "reason": "請輸入訓練與驗證比例"})
+                # o 要寫存入 job.txt
+                # 任務的資料夾
+                dt_datetime = str(my.time()) # 取得當前時間戳
+                task_folder = "task_" + dt_datetime
+                o = {
+                    "project_name": project_name,
+                    "task_name": task_folder,  # 任務名稱"
+                    "kinds": kinds,
+                    "m_kinds": my.explode("|||3WA|||", kinds),  # |||3WA|||分隔的類別
+                    "train_percent": my.explode("/", train_val)[0],
+                    "val_percent": my.explode("/", train_val)[1],
+                    "epoch": epoch,
+                    "imgz": imgz,
+                    "batch": batch,
+                    "learning_rate": learning_rate,
+                    "optimizer": optimizer,
+                    "model": _model,
+                    "use_early_stopping": use_early_stopping,
+                    "patience": patience,
+                    "create_datetime": my.date("Y-m-d H:i:s",dt_datetime)
+                }
+
+                _TASK_FOLDER = os.path.join(_TRAIN_FOLDER, task_folder)
+                if not my.is_dir(_TASK_FOLDER):
+                    my.mkdir(_TASK_FOLDER)
+                    os.chmod(_TASK_FOLDER, 0o777)
+                # 寫入 job.txt
+                job_txt_path = os.path.join(_TASK_FOLDER, "job.txt")
+                my.file_put_contents(job_txt_path, my.json_encode_utf8(o))
+                os.chmod(job_txt_path, 0o777)
+
+                # 寫入待處理 status.txt 內容 0
+                status_txt_path = os.path.join(_TASK_FOLDER, "status.txt")
+                my.file_put_contents(status_txt_path, "0")
+                return jsonify({"status": "OK"})
+            if mode == "train_lists":
+                # 取得所有的訓練任務列表
+                project_name = POSTS["project_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _TRAIN_FOLDER = os.path.join(_PROJECT_FOLDER, "train_project")
+                if not my.is_dir(_TRAIN_FOLDER):
+                    return jsonify({"status": "OK", "data": []})
+                # 取得所有的任務資料夾
+                m_data = []
+
+                tasks = my.glob_dirs(os.path.join(_TRAIN_FOLDER, "*"))
+                if not tasks:
+                    return jsonify({"status": "OK", "data": []})
+                # 取得每個任務的資料夾名稱
+                for task in tasks:
+                    task_name = os.path.basename(task)
+                    job_txt_path = os.path.join(task, "job.txt")
+                    status_txt_path = os.path.join(task, "status.txt")
+                    if my.is_file(job_txt_path) and my.is_file(status_txt_path):
+                        # 讀取 job.txt
+                        job_data = str(my.file_get_contents(job_txt_path))
+                        # 讀取 status.txt
+                        status_data = str(my.file_get_contents(status_txt_path))
+                        m_data.append(
+                            {
+                                "task_name": task_name,
+                                "job_data": job_data,
+                                "status": status_data,
+                            }
+                        )
+                    else:
+                        # 如果任務資料夾沒有 job.txt 或 status.txt，則跳過
+                        continue
+                return jsonify({"status": "OK", "data": m_data})
+            if mode == "train_get_task_status":
+                # 取得任務的狀態
+                project_name = POSTS["project_name"]
+                task_name = POSTS["task_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _TASK_FOLDER = os.path.join(_PROJECT_FOLDER, "train_project", task_name)
+                status_txt_path = os.path.join(_TASK_FOLDER, "status.txt")
+                status_log_txt_path = os.path.join(_TASK_FOLDER, "status_log.txt")
+                status_progress_txt_path = os.path.join(
+                    _TASK_FOLDER, "status_progress.txt"
+                )
+                status_yolo_log_path = os.path.join(_TASK_FOLDER, "train.txt")
+                if not my.is_file(status_txt_path):
+                    return jsonify({"status": "NO", "reason": "任務不存在"})
+
+                # 讀取 status.txt
+                o = {
+                    "status": str(my.file_get_contents(status_txt_path)),
+                    "status_log": str(my.file_get_contents(status_log_txt_path)),
+                    "status_progress": str(
+                        my.file_get_contents(status_progress_txt_path)
+                    ),
+                    "status_yolo_log": str(my.file_get_contents(status_yolo_log_path)),
+                    "train_results": "",
+                    "job": "",
+                    "imgs": [],
+                }
+                # 如果有 runs/train/output/results.csv 則讀取
+                train_results_filepath = os.path.join(
+                    _TASK_FOLDER, "runs", "train", "output", "results.csv"
+                )
+                if my.is_file(train_results_filepath):
+                    o["train_results"] = my.file_get_contents(train_results_filepath)
+
+                # 取 job.txt
+                job_txt_path = os.path.join(_TASK_FOLDER, "job.txt")
+                if my.is_file(job_txt_path):
+                    o["job"] = str(my.file_get_contents(job_txt_path))
+
+                # 取 runs\train\output 資料夾下的圖片 jpg、png
+                output_images_folder = os.path.join(
+                    _TASK_FOLDER, "runs", "train", "output"
+                )
+                if my.is_dir(output_images_folder):
+                    output_images = my.glob(os.path.join(output_images_folder, "*.*"))
+                    output_images = [
+                        {"name": my.basename(img), "path": img}
+                        for img in output_images
+                        if img.lower().endswith((".jpg", ".png"))
+                    ]
+                    o["imgs"] = output_images
+                o["end_datetime"] = ""
+                # 如果有結束時間，則取結束時間
+                sdt = my.explode("_",my.basename(_TASK_FOLDER))[1]
+                o["start_datetime"] = my.date("Y-m-d H:i:s",int(sdt))
+                o["during_time"] = int(my.time())-int(sdt)
+                if my.is_file(status_log_txt_path):
+                    o["end_datetime"] = my.date("Y-m-d H:i:s",my.filemtime(status_log_txt_path))
+                    o["during_time"] = int(my.strtotime(o["end_datetime"])) - int(sdt)
+                return jsonify(
+                    {
+                        "status": "OK",
+                        "data": o,
+                        "project_name": project_name,
+                        "task_name": task_name,
+                    }
+                )
+            if mode == "train_retrain":
+                # 重新訓練任務
+                project_name = POSTS["project_name"]
+                task_name = POSTS["task_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _TASK_FOLDER = os.path.join(_PROJECT_FOLDER, "train_project", task_name)
+
+                # 已存在 runs/train 的話，重建
+                runs_train_folder = os.path.join(_TASK_FOLDER, "runs", "train")
+                if my.is_dir(runs_train_folder):
+                    # 刪除資料夾
+                    my.deltree(runs_train_folder)
+                # 建立新的任務資料夾
+                # if my.is_dir(runs_train_folder) == False:
+                #    my.mkdir(_TASK_FOLDER)
+                #    os.chmod(_TASK_FOLDER, 0o777)  # 0o777
+
+                status_txt_path = os.path.join(_TASK_FOLDER, "status.txt")
+                if not my.is_file(status_txt_path):
+                    return jsonify({"status": "NO", "reason": "任務不存在"})
+                # 將 status.txt 改為 0
+                my.file_put_contents(status_txt_path, "0")
+                # 清空 status_log.txt
+                status_log_txt_path = os.path.join(_TASK_FOLDER, "status_log.txt")
+                my.file_put_contents(status_log_txt_path, "")
+                # 清空 status_progress.txt
+                status_progress_txt_path = os.path.join(
+                    _TASK_FOLDER, "status_progress.txt"
+                )
+                my.file_put_contents(status_progress_txt_path, "0")
+                # 返回 OK
+                return jsonify({"status": "OK"})
+        return jsonify({"status": "OK"})
+
+    @app.route("/datetime", methods=["GET", "POST"])
+    def datetime():
+        return my.date("Y-m-d H:i:s")
+
+    @app.route("/test", methods=["GET", "POST"])
+    def test():
+        # 獲取 GET 或 POST 請求中的數據
+        string_fields = request.args  # 對於 GET 請求
+        if request.method == "POST":
+            string_fields = request.form  # 對於 POST 請求
+
+        output = {}
+        for key in string_fields:
+            output[key] = string_fields[key]
+
+        return output
+
+    app.run(debug=True, host="127.0.0.1", port=9487, threaded=True, use_reloader=False)
+
+
+def create_fastapi_app():
+    app = FastAPI()
+    app.add_middleware(GZipMiddleware, minimum_size=500)
+    www_folder = os.path.join(os.getcwd(), "www")
+
+    # HTML 不允許瀏覽器快取，確保修改立即生效
+    from starlette.middleware.base import BaseHTTPMiddleware
+    class NoCacheHTMLMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request, call_next):
+            response = await call_next(request)
+            path = request.url.path
+            if path.endswith(".html") or path == "/" or not "." in path.split("/")[-1]:
+                response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+                response.headers["Pragma"] = "no-cache"
+                response.headers["Expires"] = "0"
+            return response
+    app.add_middleware(NoCacheHTMLMiddleware)
+
+    app.mount("/www", StaticFiles(directory=www_folder), name="www")
+
+    def api_json(payload, status_code=200):
+        return JSONResponse(content=payload, status_code=status_code)
+
+    async def read_form_payload(request: Request):
+        try:
+            return dict(await request.form())
+        except AssertionError:
+            body = (await request.body()).decode("utf-8")
+            parsed = parse_qs(body, keep_blank_values=True)
+            return {key: values[-1] if values else "" for key, values in parsed.items()}
+
+    @app.get("/")
+    def home():
+        return FileResponse(os.path.join(www_folder, "index.html"))
+
+    @app.get("/data/{filename:path}")
+    def data(filename: str):
+        _PD = os.getcwd()
+        data_folder = os.path.join(_PD, "data")
+        filepath = os.path.realpath(os.path.join(data_folder, filename))
+        if not filepath.startswith(os.path.realpath(data_folder)):
+            return api_json({"status": "NO", "reason": "Invalid path"}, 400)
+        if not os.path.isfile(filepath):
+            return api_json({"status": "NO", "reason": "File not found"}, 404)
+        media_type = mimetypes.guess_type(filepath)[0] or "application/octet-stream"
+        return FileResponse(filepath, media_type=media_type)
+
+    @app.api_route("/api", methods=["GET", "POST"])
+    async def api(request: Request):
+        GETS = dict(request.query_params)
+        POSTS = {}
+        if request.method == "POST":
+            POSTS = await read_form_payload(request)
+
+        if "mode" in GETS:
+            mode = GETS["mode"]
+            if mode == "project_list":
+                _PD = os.getcwd()
+                projects = my.glob_dirs(os.path.join(_PD, "data", "projects", "*"))
+                projects = [os.path.basename(p) for p in projects]
+                return api_json({"status": "OK", "data": projects})
+            if mode == "project_add_action":
+                if "project_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "Missing project_name"}, 400)
+                project_name = POSTS["project_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                if my.is_dir(_PROJECT_FOLDER):
+                    return api_json({"status": "NO", "reason": "專案已存在"})
+
+                my.mkdir(_PROJECT_FOLDER)
+                os.chmod(_PROJECT_FOLDER, 0o777)
+                OUTPUT = {"status": "OK", "data": {}, "project_name": project_name}
+                reload_projects(project_name)
+                return api_json(OUTPUT)
+            if mode == "project_edit_action":
+                if "orin_project_name" not in POSTS or "new_project_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "輸入異常"}, 400)
+                _PD = os.getcwd()
+                orin_project_name = POSTS["orin_project_name"]
+                new_project_name = POSTS["new_project_name"]
+
+                _ORIN_PROJECT_FOLDER = os.path.join(_PD, "data", "projects", orin_project_name)
+                _NEW_PROJECT_FOLDER = os.path.join(_PD, "data", "projects", new_project_name)
+
+                if not my.is_dir(_ORIN_PROJECT_FOLDER):
+                    return api_json({"status": "NO", "reason": "原專案不存在"})
+                if my.is_dir(_NEW_PROJECT_FOLDER):
+                    return api_json({"status": "NO", "reason": "新專案已存在"})
+                os.rename(_ORIN_PROJECT_FOLDER, _NEW_PROJECT_FOLDER)
+                os.chmod(_NEW_PROJECT_FOLDER, 0o777)
+                OUTPUT = {
+                    "status": "OK",
+                    "data": {},
+                    "new_project_name": new_project_name,
+                }
+                reload_projects(new_project_name)
+                return api_json(OUTPUT)
+            if mode == "choice_project":
+                project_name = POSTS["project_name"]
+                reload_projects(project_name)
+                OUTPUT = {"status": "OK", "data": {}, "project_name": project_name}
+                reload_projects(project_name)
+                return api_json(OUTPUT)
+            if mode == "getKindList":
+                if "project_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "Missing project_name"}, 400)
+                project_name = POSTS["project_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KINDS = my.glob_dirs(os.path.join(_MY_DATASET_FOLDER, "*"))
+                OUTPUT = {"status": "OK", "data": {}}
+                _KINDS = sorted(_KINDS, key=os.path.getctime)
+
+                _data = []
+                for kind in _KINDS:
+                    _KIND = os.path.basename(kind)
+                    _KIND_FILES = len(my.glob(os.path.join(kind, "*.jpg")))
+                    _data.append({"kind_name": _KIND, "total_pics": _KIND_FILES})
+                OUTPUT["data"] = _data
+
+                return api_json(OUTPUT)
+            if mode == "addKind":
+                if "project_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "Missing project_name"}, 400)
+                if "kind_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "請輸入類別名稱"})
+                project_name = POSTS["project_name"]
+                kind_name = POSTS["kind_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
+                my.mkdir(_KIND_FOLDER)
+                os.chmod(_KIND_FOLDER, 0o777)
+                if my.is_dir(_KIND_FOLDER):
+                    return api_json({"status": "OK"})
+                return api_json({"status": "NO", "reason": "建立類別失敗"})
+            if mode == "delKind":
+                if "project_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "Missing project_name"}, 400)
+                if "kind_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "請輸入類別名稱"})
+                project_name = POSTS["project_name"]
+                kind_name = my.basename(POSTS["kind_name"])
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
+                print("Del path: %s" % (_KIND_FOLDER))
+                my.delete_directory_contents(_KIND_FOLDER)
+                return api_json({"status": "OK"})
+            if mode == "editKind":
+                if "project_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "Missing project_name"}, 400)
+                if "kind_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "請輸入類別名稱"})
+                if "new_kind_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "請輸入新類別名稱"})
+                project_name = POSTS["project_name"]
+                kind_name = my.basename(POSTS["kind_name"])
+                new_kind_name = my.basename(POSTS["new_kind_name"])
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
+                _NEW_KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, new_kind_name)
+                if my.is_dir(_KIND_FOLDER) and my.is_dir(_NEW_KIND_FOLDER) == False:
+                    os.rename(_KIND_FOLDER, _NEW_KIND_FOLDER)
+                elif my.is_dir(_KIND_FOLDER) == False:
+                    return api_json({"status": "NO", "reason": "類別不存在"})
+                elif my.is_dir(_NEW_KIND_FOLDER):
+                    return api_json({"status": "NO", "reason": "新類別已存在"})
+                return api_json({"status": "OK"})
+            if mode == "getPhotoList":
+                project_name = POSTS["project_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                fp = my.glob(os.path.join(_PROJECT_FOLDER, "*.jpg"))
+                fp = [{"photo_name": my.basename(f)} for f in fp]
+                return api_json({"status": "OK", "data": fp})
+            if mode == "delPhoto":
+                if "project_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "沒有這個專案..."}, 400)
+                if "photo_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "圖片名稱未填..."})
+                project_name = POSTS["project_name"]
+                photo_name = my.basename(POSTS["photo_name"])
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _PHOTO_FILE = os.path.join(_PROJECT_FOLDER, photo_name)
+                if my.is_file(_PHOTO_FILE):
+                    os.remove(_PHOTO_FILE)
+                    return api_json({"status": "OK"})
+                return api_json({"status": "NO", "reason": "圖片不存在"})
+            if mode == "setPhotoToKind":
+                project_name = POSTS["project_name"]
+                kind_name = POSTS["kind_name"]
+                photo_name = my.basename(POSTS["photo_name"])
+                if "project_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "沒有這個專案..."}, 400)
+                if "photo_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "圖片名稱未填..."})
+                if "kind_name" not in POSTS:
+                    return api_json({"status": "NO", "reason": "類別名稱未填..."})
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
+                _PHOTO_FILE = os.path.join(_PROJECT_FOLDER, photo_name)
+                _NEW_PHOTO_FILE = os.path.join(_KIND_FOLDER, photo_name)
+                if my.is_file(_PHOTO_FILE) == False:
+                    return api_json({"status": "NO", "reason": "圖片不存在"})
+                if my.is_dir(_KIND_FOLDER) == False:
+                    my.mkdir(_KIND_FOLDER)
+                    os.chmod(_KIND_FOLDER, 0o777)
+                if my.is_file(_NEW_PHOTO_FILE) == True:
+                    my.unlink(_NEW_PHOTO_FILE)
+                shutil.move(_PHOTO_FILE, _NEW_PHOTO_FILE)
+                if my.is_file(_NEW_PHOTO_FILE):
+                    return api_json({"status": "OK"})
+                return api_json({"status": "NO", "reason": "移動失敗"})
+            if mode == "getDoMarkKindList":
+                project_name = POSTS["project_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KINDS = my.glob_dirs(os.path.join(_MY_DATASET_FOLDER, "*"))
+                _data = []
+                for kind in _KINDS:
+                    _KIND = os.path.basename(kind)
+                    _KIND_FILES = len(my.glob(os.path.join(kind, "*.jpg")))
+                    _TXT_FILES = len(my.glob(os.path.join(kind, "*.txt")))
+                    _data.append(
+                        {
+                            "kind_name": _KIND,
+                            "total_pics": _KIND_FILES,
+                            "need_process_counts": _KIND_FILES - _TXT_FILES,
+                        }
+                    )
+                return api_json({"status": "OK", "data": _data})
+            if mode == "getMY_DATASETSPhotos":
+                project_name = POSTS["project_name"]
+                kind_name = POSTS["kind_name"]
+                show_kind = POSTS["show_kind"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _MY_DATASET_FOLDER = os.path.join(_PROJECT_FOLDER, "my_dataset")
+                _KIND_FOLDER = os.path.join(_MY_DATASET_FOLDER, kind_name)
+                fpJpgs = my.glob(os.path.join(_KIND_FOLDER, "*.jpg"))
+                OUTPUT = {
+                    "status": "OK",
+                    "data": [],
+                    "project_name": project_name,
+                    "kind_name": kind_name,
+                    "show_kind": show_kind,
+                }
+                if show_kind == "needProcessOnly":
+                    for jpg in fpJpgs:
+                        _jpg = my.basename(jpg)
+                        _txt = os.path.splitext(_jpg)[0] + ".txt"
+                        _txt_path = os.path.join(_KIND_FOLDER, _txt)
+                        if my.is_file(_txt_path) == False:
+                            OUTPUT["data"].append({"photo_name": _jpg, "txt_name": "", "txt_data": ""})
+                elif show_kind == "showAll":
+                    for jpg in fpJpgs:
+                        _jpg = my.basename(jpg)
+                        _txt = os.path.splitext(_jpg)[0] + ".txt"
+                        _txt_path = os.path.join(_KIND_FOLDER, _txt)
+                        if my.is_file(_txt_path) == False:
+                            OUTPUT["data"].append({"photo_name": _jpg, "txt_name": "", "txt_data": ""})
+                        else:
+                            OUTPUT["data"].append(
+                                {
+                                    "photo_name": _jpg,
+                                    "txt_name": _txt,
+                                    "txt_data": my.file_get_contents(_txt_path),
+                                }
+                            )
+                return api_json(OUTPUT)
+            if mode == "resetPhotoKind":
+                project_name = POSTS["project_name"]
+                kind_name = POSTS["kind_name"]
+                mn = POSTS["mn"]
+                _PD = os.getcwd()
+                orin_photo_path = os.path.join(_PD, "data", "projects", project_name, "my_dataset", kind_name, mn + ".jpg")
+                orin_txt_path = os.path.join(_PD, "data", "projects", project_name, "my_dataset", kind_name, mn + ".txt")
+                if my.is_file(orin_txt_path):
+                    os.remove(orin_txt_path)
+                if my.is_file(orin_photo_path):
+                    _UNCLASSIFIED_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                    _UNCLASSIFIED_PHOTO_PATH = os.path.join(_UNCLASSIFIED_FOLDER, mn + ".jpg")
+                    shutil.move(orin_photo_path, _UNCLASSIFIED_PHOTO_PATH)
+                return api_json({"status": "OK"})
+            if mode == "saveTxt":
+                _PD = os.getcwd()
+                project_name = POSTS["project_name"]
+                kind_name = POSTS["kind_name"]
+                mn = my.mainname(POSTS["imgbn"])
+                txt = POSTS["txt"]
+                txt_filepath = os.path.join(_PD, "data", "projects", project_name, "my_dataset", kind_name, mn + ".txt")
+                my.file_put_contents(txt_filepath, txt)
+                os.chmod(txt_filepath, 0o777)
+                return api_json({"status": "OK"})
+            if mode == "train_add":
+                project_name = POSTS["project_name"]
+                kinds = POSTS["kinds"]
+                train_val = POSTS["train_val"]
+                epoch = POSTS["epoch"]
+                imgz = POSTS["imgz"]
+                batch = POSTS["batch"]
+                learning_rate = POSTS["learning_rate"]
+                optimizer = POSTS["optimizer"]
+                _model = POSTS["model"]
+                use_early_stopping = POSTS["use_early_stopping"]
+                patience = POSTS["patience"]
+                cache = POSTS.get("cache", "1")
+                amp = POSTS.get("amp", "1")
+                cos_lr = POSTS.get("cos_lr", "1")
+                close_mosaic = POSTS.get("close_mosaic", "10")
+
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _TRAIN_FOLDER = os.path.join(_PROJECT_FOLDER, "train_project")
+                if not my.is_dir(_TRAIN_FOLDER):
+                    my.mkdir(_TRAIN_FOLDER)
+                    os.chmod(_TRAIN_FOLDER, 0o777)
+                if not kinds:
+                    return api_json({"status": "NO", "reason": "請選擇至少一個類別"})
+                if not train_val:
+                    return api_json({"status": "NO", "reason": "請輸入訓練與驗證比例"})
+                dt_datetime = str(my.time())
+                task_folder = "task_" + dt_datetime
+                o = {
+                    "project_name": project_name,
+                    "task_name": task_folder,
+                    "kinds": kinds,
+                    "m_kinds": my.explode("|||3WA|||", kinds),
+                    "train_percent": my.explode("/", train_val)[0],
+                    "val_percent": my.explode("/", train_val)[1],
+                    "epoch": epoch,
+                    "imgz": imgz,
+                    "batch": batch,
+                    "learning_rate": learning_rate,
+                    "optimizer": optimizer,
+                    "model": _model,
+                    "use_early_stopping": use_early_stopping,
+                    "patience": patience,
+                    "cache": cache,
+                    "amp": amp,
+                    "cos_lr": cos_lr,
+                    "close_mosaic": close_mosaic,
+                    "create_datetime": my.date("Y-m-d H:i:s", dt_datetime),
+                }
+
+                _TASK_FOLDER = os.path.join(_TRAIN_FOLDER, task_folder)
+                if not my.is_dir(_TASK_FOLDER):
+                    my.mkdir(_TASK_FOLDER)
+                    os.chmod(_TASK_FOLDER, 0o777)
+                job_txt_path = os.path.join(_TASK_FOLDER, "job.txt")
+                my.file_put_contents(job_txt_path, my.json_encode_utf8(o))
+                os.chmod(job_txt_path, 0o777)
+
+                status_txt_path = os.path.join(_TASK_FOLDER, "status.txt")
+                my.file_put_contents(status_txt_path, "0")
+                return api_json({"status": "OK"})
+            if mode == "train_lists":
+                project_name = POSTS["project_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _TRAIN_FOLDER = os.path.join(_PROJECT_FOLDER, "train_project")
+                if not my.is_dir(_TRAIN_FOLDER):
+                    return api_json({"status": "OK", "data": []})
+                m_data = []
+
+                tasks = my.glob_dirs(os.path.join(_TRAIN_FOLDER, "*"))
+                if not tasks:
+                    return api_json({"status": "OK", "data": []})
+                for task in tasks:
+                    task_name = os.path.basename(task)
+                    job_txt_path = os.path.join(task, "job.txt")
+                    status_txt_path = os.path.join(task, "status.txt")
+                    if my.is_file(job_txt_path) and my.is_file(status_txt_path):
+                        job_data = str(my.file_get_contents(job_txt_path))
+                        status_data = str(my.file_get_contents(status_txt_path))
+                        m_data.append(
+                            {
+                                "task_name": task_name,
+                                "job_data": job_data,
+                                "status": status_data,
+                            }
+                        )
+                return api_json({"status": "OK", "data": m_data})
+            if mode == "train_get_task_status":
+                project_name = POSTS["project_name"]
+                task_name = POSTS["task_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _TASK_FOLDER = os.path.join(_PROJECT_FOLDER, "train_project", task_name)
+                status_txt_path = os.path.join(_TASK_FOLDER, "status.txt")
+                status_log_txt_path = os.path.join(_TASK_FOLDER, "status_log.txt")
+                status_progress_txt_path = os.path.join(_TASK_FOLDER, "status_progress.txt")
+                status_yolo_log_path = os.path.join(_TASK_FOLDER, "train.txt")
+                if not my.is_file(status_txt_path):
+                    return api_json({"status": "NO", "reason": "任務不存在"})
+
+                # 並行讀取多個狀態檔，避免阻塞 event loop
+                (
+                    _status,
+                    _status_log,
+                    _status_progress,
+                    _status_yolo_log,
+                ) = await asyncio.gather(
+                    asyncio.to_thread(my.file_get_contents, status_txt_path),
+                    asyncio.to_thread(my.file_get_contents, status_log_txt_path),
+                    asyncio.to_thread(my.file_get_contents, status_progress_txt_path),
+                    asyncio.to_thread(my.file_get_contents, status_yolo_log_path),
+                )
+                o = {
+                    "status": str(_status),
+                    "status_log": str(_status_log),
+                    "status_progress": str(_status_progress),
+                    "status_yolo_log": str(_status_yolo_log),
+                    "train_results": "",
+                    "job": "",
+                    "imgs": [],
+                }
+                train_results_filepath = os.path.join(_TASK_FOLDER, "runs", "train", "output", "results.csv")
+                if my.is_file(train_results_filepath):
+                    o["train_results"] = await asyncio.to_thread(my.file_get_contents, train_results_filepath)
+
+                job_txt_path = os.path.join(_TASK_FOLDER, "job.txt")
+                if my.is_file(job_txt_path):
+                    o["job"] = str(await asyncio.to_thread(my.file_get_contents, job_txt_path))
+
+                output_images_folder = os.path.join(_TASK_FOLDER, "runs", "train", "output")
+                if my.is_dir(output_images_folder):
+                    output_images = my.glob(os.path.join(output_images_folder, "*.*"))
+                    output_images = [
+                        {"name": my.basename(img), "path": img}
+                        for img in output_images
+                        if img.lower().endswith((".jpg", ".png"))
+                    ]
+                    o["imgs"] = output_images
+                o["end_datetime"] = ""
+                sdt = my.explode("_", my.basename(_TASK_FOLDER))[1]
+                o["start_datetime"] = my.date("Y-m-d H:i:s", int(sdt))
+                o["during_time"] = int(my.time()) - int(sdt)
+                if my.is_file(status_log_txt_path):
+                    o["end_datetime"] = my.date("Y-m-d H:i:s", my.filemtime(status_log_txt_path))
+                    o["during_time"] = int(my.strtotime(o["end_datetime"])) - int(sdt)
+                return api_json(
+                    {
+                        "status": "OK",
+                        "data": o,
+                        "project_name": project_name,
+                        "task_name": task_name,
+                    }
+                )
+            if mode == "train_retrain":
+                project_name = POSTS["project_name"]
+                task_name = POSTS["task_name"]
+                _PD = os.getcwd()
+                _PROJECT_FOLDER = os.path.join(_PD, "data", "projects", project_name)
+                _TASK_FOLDER = os.path.join(_PROJECT_FOLDER, "train_project", task_name)
+
+                runs_train_folder = os.path.join(_TASK_FOLDER, "runs", "train")
+                if my.is_dir(runs_train_folder):
+                    my.deltree(runs_train_folder)
+
+                status_txt_path = os.path.join(_TASK_FOLDER, "status.txt")
+                if not my.is_file(status_txt_path):
+                    return api_json({"status": "NO", "reason": "任務不存在"})
+                my.file_put_contents(status_txt_path, "0")
+                status_log_txt_path = os.path.join(_TASK_FOLDER, "status_log.txt")
+                my.file_put_contents(status_log_txt_path, "")
+                status_progress_txt_path = os.path.join(_TASK_FOLDER, "status_progress.txt")
+                my.file_put_contents(status_progress_txt_path, "0")
+                return api_json({"status": "OK"})
+        return api_json({"status": "OK"})
+
+    @app.api_route("/datetime", methods=["GET", "POST"])
+    def datetime():
+        return PlainTextResponse(my.date("Y-m-d H:i:s"))
+
+    @app.api_route("/test", methods=["GET", "POST"])
+    async def test(request: Request):
+        string_fields = dict(request.query_params)
+        if request.method == "POST":
+            string_fields = await read_form_payload(request)
+
+        output = {}
+        for key in string_fields:
+            output[key] = string_fields[key]
+
+        return output
+
+    return app
+
+
+def run_fastapi():
+    config = uvicorn.Config(
+        create_fastapi_app(),
+        host="127.0.0.1",
+        port=9487,
+        log_level="warning",
+        timeout_keep_alive=30,
+    )
+    server = uvicorn.Server(config)
+    server.run()
+
+
+threading.Thread(target=run_fastapi, daemon=True).start()
+
+# 註冊熱鍵 CTRL + ALT + ` 或 CTRL + ALT + ~，或 CTRL + ALT + F1
+# keyboard.add_hotkey("ctrl+alt+~", start_cut_screen)  # 設置螢幕熱鍵
+keyboard.add_hotkey("ctrl+f2", start_cut_screen)  # 設置螢幕熱鍵
+keyboard.add_hotkey("ctrl+f3", toggle_auto_click)  # 切換自動點擊
+# keyboard.add_hotkey('ctrl+alt+~', start_cut_screen)  # 設置螢幕熱鍵
+# 創建 OverlayWindow 實例
+overlay_window = OverlayWindow(root)
+
+
+# 程式重啟時，如果 train_project 資料夾的 status 仍是 1 ，改成 0，可能是程式異常關閉
+def reset_train_project_status():
+    _PD = os.getcwd()
+    _TRAIN_FOLDER = os.path.join(_PD, "data", "projects")
+    # 檢查所有專案的 train_project 資料夾
+    for project in my.glob_dirs(os.path.join(_TRAIN_FOLDER, "*")):
+        _TRAIN_PROJECT_FOLDER = os.path.join(project, "train_project")
+        my.mkdir(_TRAIN_PROJECT_FOLDER, mode=0o777, recursive=True)
+        for _TASK_FOLDER in my.glob_dirs(os.path.join(project, "train_project", "*")):
+            # 建目錄
+            # 檢查 status.txt 是否存在
+            _STATUS_FILE = os.path.join(_TASK_FOLDER, "status.txt")
+            if my.is_file(_STATUS_FILE):
+                # 讀取 status.txt
+                status = str(my.file_get_contents(_STATUS_FILE))
+                if status == "1":
+                    # 如果是 1，則改成 0
+                    my.file_put_contents(_STATUS_FILE, "0")
+                    print("Reset status.txt to 0 for project: %s" % (project))
+
+                    # 已存在 runs/train 的話，重建
+                    runs_train_folder = os.path.join(_TASK_FOLDER, "runs", "train")
+                    if my.is_dir(runs_train_folder):
+                        # 刪除資料夾
+                        my.deltree(runs_train_folder)
+                    # 建立新的任務資料夾
+                    # if my.is_dir(runs_train_folder) == False:
+                    #    my.mkdir(_TASK_FOLDER, mode=0o777, recursive=True)
+                    #    #os.chmod(_TASK_FOLDER, 0o777)  # 0o777
+
+
+# 重置狀態為 1 → 0
+reset_train_project_status()
+
+
+# 背景工作，可以轉檔 yolo 格式，或處理圖片等
+def background_worker():
+    while True:
+        # 檢查 train_project 資料夾是否有待處理的任務
+        _PD = os.getcwd()
+        _TRAIN_FOLDER = os.path.join(_PD, "data", "projects")
+        for project in my.glob_dirs(os.path.join(_TRAIN_FOLDER, "*")):
+            # print(project); #C:\Users\johnho\Desktop\my_yolo_train_tool\data\projects\三國迷因
+            # return
+            for _TASK_FOLDER in my.glob_dirs(
+                os.path.join(project, "train_project", "*")
+            ):
+                if my.is_dir(_TASK_FOLDER):
+                    # 檢查 status.txt 是否存在
+                    _STATUS_FILE = os.path.join(_TASK_FOLDER, "status.txt")
+                    _STATUS_FILE_LOG = os.path.join(_TASK_FOLDER, "status_log.txt")
+                    _STATUS_FILE_PROGRESS = os.path.join(
+                        _TASK_FOLDER, "status_progress.txt"
+                    )
+                    _STATUS_FILE_YOLO_LOG = os.path.join(_TASK_FOLDER, "train.txt")
+                    if my.is_file(_STATUS_FILE):
+                        # 讀取 status.txt
+                        status = str(my.file_get_contents(_STATUS_FILE))
+                        if status == "0":
+                            # 如果是 0，則開始處理任務
+                            my.file_put_contents(_STATUS_FILE_LOG, "")
+                            my.file_put_contents(_STATUS_FILE_PROGRESS, "0")
+                            my.file_put_contents(_STATUS_FILE_YOLO_LOG, "")
+                            print("Processing project: %s" % (project))
+                            # 處理中，將 status 改為 1
+                            my.file_put_contents(_STATUS_FILE, "1")
+                            # 在這裡添加處理任務的代碼
+                            my.file_put_contents(
+                                _STATUS_FILE_LOG, "轉檔開始中...\r\n", True
+                            )
+                            my.file_put_contents(
+                                _STATUS_FILE_PROGRESS,
+                                str(my.rand(0, 5) / 10.0),
+                            )
+                            # 程式開始-------------------------------------------------------------Start
+                            # 建立訓練圖片、驗證圖片資料夾
+
+                            _TRAIN_IMAGES_FOLDER = os.path.join(
+                                _TASK_FOLDER,
+                                "datasets",
+                                "my_dataset",
+                                "images",
+                                "train",
+                            )
+                            _VAL_IMAGES_FOLDER = os.path.join(
+                                _TASK_FOLDER, "datasets", "my_dataset", "images", "val"
+                            )
+                            _TRAIN_LABELS_FOLDER = os.path.join(
+                                _TASK_FOLDER,
+                                "datasets",
+                                "my_dataset",
+                                "labels",
+                                "train",
+                            )
+                            _VAL_LABELS_FOLDER = os.path.join(
+                                _TASK_FOLDER, "datasets", "my_dataset", "labels", "val"
+                            )
+                            my.mkdir(_TRAIN_IMAGES_FOLDER, mode=0o777, recursive=True)
+                            my.mkdir(_VAL_IMAGES_FOLDER, mode=0o777, recursive=True)
+                            my.mkdir(_TRAIN_LABELS_FOLDER, mode=0o777, recursive=True)
+                            my.mkdir(_VAL_LABELS_FOLDER, mode=0o777, recursive=True)
+                            my.file_put_contents(
+                                _STATUS_FILE_LOG,
+                                "建立訓練和驗證資料夾完成...\r\n",
+                                True,
+                            )
+                            my.file_put_contents(
+                                _STATUS_FILE_PROGRESS,
+                                str(my.rand(5, 9) / 10.0),
+                            )
+                            # 依 train_percent、val_percent 複製 m_kinds 圖片到訓練資料夾和驗證資料夾
+                            # 檔名照 m_kinds index 0_xxxxxx 1_xxxxxx ... 文字檔也是
+                            # 取得 job.txt 的內容
+                            job_txt_path = os.path.join(_TASK_FOLDER, "job.txt")
+                            if not my.is_file(job_txt_path):
+                                my.file_put_contents(
+                                    _STATUS_FILE_LOG,
+                                    "找不到 job.txt，請確認任務是否正確設定\r\n",
+                                    True,
+                                )
+                                my.file_put_contents(_STATUS_FILE, "3")  # 異常結束
+                                my.file_put_contents(_STATUS_FILE_PROGRESS, str(100.0))
+                                continue
+                            job_data = str(my.file_get_contents(job_txt_path))
+                            o = my.json_decode(job_data)
+                            o["m_kinds"] = my.explode("|||3WA|||", o["kinds"])
+                            for index, kind in enumerate(o["m_kinds"]):
+                                # 原始類別資料夾
+                                _KIND_FOLDER = os.path.join(project, "my_dataset", kind)
+                                # 訓練資料夾、驗證資料夾
+                                # _TRAIN_IMAGES_FOLDER
+                                # _VAL_IMAGES_FOLDER
+                                # 同時有圖片和標註檔案才能複製，隨時挑選 train_percent 百分比的圖片
+                                # 取得所有圖片檔案
+                                _IMAGES = my.glob(os.path.join(_KIND_FOLDER, "*.jpg"))
+                                _IMAGES = sorted(_IMAGES, key=os.path.getctime)
+                                _LABELS = my.glob(os.path.join(_KIND_FOLDER, "*.txt"))
+                                _LABELS = sorted(_LABELS, key=os.path.getctime)
+                                # 檢查圖片和標註檔案是否一一對應，不是的從陣列中移除
+                                _IMAGES = [
+                                    img
+                                    for img in _IMAGES
+                                    if os.path.splitext(img)[0] + ".txt" in _LABELS
+                                ]
+                                _LABELS = [
+                                    lbl
+                                    for lbl in _LABELS
+                                    if os.path.splitext(lbl)[0] + ".jpg" in _IMAGES
+                                ]
+                                # 計算訓練和驗證的數量
+                                total_count = len(_IMAGES)
+                                train_count = int(
+                                    total_count * (int(o["train_percent"]) / 100)
+                                )
+                                val_count = total_count - train_count
+                                # 複製圖片和標註檔案到訓練資料夾和驗證資料夾
+                                # 打亂圖片
+                                random.shuffle(_IMAGES)
+                                # 訓練資料夾
+                                my.file_put_contents(
+                                    _STATUS_FILE_LOG,
+                                    f"處理類別 {kind} ({index + 1}/{len(o['m_kinds'])})...\r\n",
+                                    True,
+                                )
+                                for i in range(train_count):
+                                    img = _IMAGES[i]
+                                    lbl = os.path.splitext(img)[0] + ".txt"
+                                    # 複製圖片
+                                    shutil.copy(img, _TRAIN_IMAGES_FOLDER)
+                                    # 複製標註檔案
+                                    if os.path.isfile(lbl):
+                                        shutil.copy(lbl, _TRAIN_LABELS_FOLDER)
+                                    # 重命名檔案
+                                    new_img_name = f"{index}_{os.path.basename(img)}"
+                                    new_lbl_name = f"{index}_{os.path.basename(lbl)}"
+
+                                    # 強制複蓋
+                                    if os.path.isfile(
+                                        os.path.join(_TRAIN_IMAGES_FOLDER, new_img_name)
+                                    ):
+                                        os.remove(
+                                            os.path.join(
+                                                _TRAIN_IMAGES_FOLDER, new_img_name
+                                            )
+                                        )
+
+                                    os.rename(
+                                        os.path.join(
+                                            _TRAIN_IMAGES_FOLDER, os.path.basename(img)
+                                        ),
+                                        os.path.join(
+                                            _TRAIN_IMAGES_FOLDER, new_img_name
+                                        ),
+                                    )
+                                    if os.path.isfile(
+                                        os.path.join(
+                                            _TRAIN_LABELS_FOLDER, os.path.basename(lbl)
+                                        )
+                                    ):
+
+                                        if os.path.isfile(
+                                            os.path.join(
+                                                _TRAIN_LABELS_FOLDER, new_lbl_name
+                                            )
+                                        ):
+                                            os.remove(
+                                                os.path.join(
+                                                    _TRAIN_LABELS_FOLDER, new_lbl_name
+                                                )
+                                            )
+
+                                        os.rename(
+                                            os.path.join(
+                                                _TRAIN_LABELS_FOLDER,
+                                                os.path.basename(lbl),
+                                            ),
+                                            os.path.join(
+                                                _TRAIN_LABELS_FOLDER, new_lbl_name
+                                            ),
+                                        )
+                                    # 編輯 label 檔，每行加上 kind 的 index（多框支援）
+                                    data = my.file_get_contents(
+                                        os.path.join(_TRAIN_LABELS_FOLDER, new_lbl_name)
+                                    )
+                                    lines = [l.strip() for l in str(data).splitlines() if l.strip()]
+                                    data = "\n".join(f"{index} {l}" for l in lines)
+                                    my.file_put_contents(
+                                        os.path.join(
+                                            _TRAIN_LABELS_FOLDER, new_lbl_name
+                                        ),
+                                        data,
+                                    )
+                                    # 更新進度
+                                    my.file_put_contents(
+                                        _STATUS_FILE_PROGRESS,
+                                        str(10.0 + (index * 35.0 / len(o["m_kinds"]))),
+                                    )
+                                # 驗證資料夾
+                                my.file_put_contents(
+                                    _STATUS_FILE_LOG,
+                                    f"處理類別 {kind} ({index + 1}/{len(o['m_kinds'])}) 完成，開始處理驗證資料...\r\n",
+                                    True,
+                                )
+                                for i in range(train_count, total_count):
+                                    img = _IMAGES[i]
+                                    lbl = os.path.splitext(img)[0] + ".txt"
+                                    # 複製圖片
+                                    shutil.copy(img, _VAL_IMAGES_FOLDER)
+                                    # 複製標註檔案
+                                    if os.path.isfile(lbl):
+                                        shutil.copy(lbl, _VAL_LABELS_FOLDER)
+                                    # 重命名檔案
+                                    new_img_name = f"{index}_{os.path.basename(img)}"
+                                    new_lbl_name = f"{index}_{os.path.basename(lbl)}"
+
+                                    # 強制複蓋
+                                    if os.path.isfile(
+                                        os.path.join(_VAL_IMAGES_FOLDER, new_img_name)
+                                    ):
+                                        os.remove(
+                                            os.path.join(
+                                                _VAL_IMAGES_FOLDER, new_img_name
+                                            )
+                                        )
+
+                                    os.rename(
+                                        os.path.join(
+                                            _VAL_IMAGES_FOLDER, os.path.basename(img)
+                                        ),
+                                        os.path.join(_VAL_IMAGES_FOLDER, new_img_name),
+                                    )
+                                    if os.path.isfile(
+                                        os.path.join(
+                                            _VAL_LABELS_FOLDER, os.path.basename(lbl)
+                                        )
+                                    ):
+                                        if os.path.isfile(
+                                            os.path.join(
+                                                _VAL_LABELS_FOLDER, new_lbl_name
+                                            )
+                                        ):
+                                            os.remove(
+                                                os.path.join(
+                                                    _VAL_LABELS_FOLDER, new_lbl_name
+                                                )
+                                            )
+
+                                        os.rename(
+                                            os.path.join(
+                                                _VAL_LABELS_FOLDER,
+                                                os.path.basename(lbl),
+                                            ),
+                                            os.path.join(
+                                                _VAL_LABELS_FOLDER, new_lbl_name
+                                            ),
+                                        )
+                                    # 編輯 label 檔，每行加上 kind 的 index（多框支援）
+                                    data = my.file_get_contents(
+                                        os.path.join(_VAL_LABELS_FOLDER, new_lbl_name)
+                                    )
+                                    lines = [l.strip() for l in str(data).splitlines() if l.strip()]
+                                    data = "\n".join(f"{index} {l}" for l in lines)
+                                    my.file_put_contents(
+                                        os.path.join(_VAL_LABELS_FOLDER, new_lbl_name),
+                                        data,
+                                    )
+                                    my.file_put_contents(
+                                        _STATUS_FILE_PROGRESS,
+                                        str(
+                                            10.0
+                                            + (index * 35.0 / len(o["m_kinds"]))
+                                            + (35.0 * train_count / total_count)
+                                        ),
+                                    )
+                            # 開始轉檔 Yolo 訓練，產出 yaml 檔案
+                            yaml_tpl = """
+path: {my_dataset_path}
+train: {images_train}
+val: {images_val}
+nc: {nc}
+names: {m_names}
+names_cht: {m_names_cht}
+"""
+                            # 如果是 100 / 0 把 val 那行變成 val: {images_train}
+                            if o["train_percent"] == "100" and o["val_percent"] == "0":
+                                yaml_tpl = yaml_tpl.replace(
+                                    "val: {images_val}", "val: {images_train}"
+                                )
+
+                            m_names = o["m_kinds"]  # 類別名稱列表
+                            m_indexs = [str(i) for i in range(len(m_names))]
+                            yaml_content = yaml_tpl.format(
+                                my_dataset_path=os.path.join(
+                                    _TASK_FOLDER, "datasets", "my_dataset"
+                                ),
+                                images_train=os.path.join(
+                                    _TASK_FOLDER,
+                                    "datasets",
+                                    "my_dataset",
+                                    "images",
+                                    "train",
+                                ),
+                                images_val=os.path.join(
+                                    _TASK_FOLDER,
+                                    "datasets",
+                                    "my_dataset",
+                                    "images",
+                                    "val",
+                                ),
+                                nc=len(m_names),
+                                m_names=m_indexs,  # 類別索引列表
+                                m_names_cht=m_names,  # 中文名稱列表
+                            )
+
+                            yaml_file_path = os.path.join(_TASK_FOLDER, "data.yaml")
+
+                            # print("Debug: YAML Path: ", yaml_file_path)
+
+                            my.file_put_contents(yaml_file_path, yaml_content)
+
+                            # 建立 data_dict.json
+                            """ 長這樣
+{
+"40311": {
+    "Chinese_Name": "長尾鼠耳蝠",
+    "Scientific_Name": "Myotis frater"
+},
+...
+}
+"""
+                            data_dict = {}
+                            for i, name in enumerate(m_names):
+                                data_dict[str(i)] = {
+                                    "Chinese_Name": name,
+                                    "Scientific_Name": name,
+                                }
+                            data_dict_file_path = os.path.join(
+                                _TASK_FOLDER, "data_dict.json"
+                            )
+                            my.file_put_contents(
+                                data_dict_file_path, my.json_encode(data_dict)
+                            )
+
+                            # 產出 train_config.json
+                            _PD = os.getcwd()
+                            train_config = {
+                                "data_yaml": yaml_file_path,  # "data.yaml",
+                                "model_arch": os.path.join(
+                                    _PD, "example_pt", "yolov8n.pt"
+                                ),  # 預設模型
+                                "opt_epoch_times": 10,  # 預設訓練次數
+                                "opt_batch_size": 10,  # 預設批次大小
+                                "opt_learning_rate": 0.001,  # 預設學習率
+                                "opt_optimizer": "Adam",  # 預設優化器
+                                "opt_use_augment": 1,  # 是否使用增強，1 是，0 否
+                                "opt_use_early_stopping": 1,  # 是否使用早停，1 是，0 否
+                                "opt_imgsz": 640,  # 圖片大小
+                                "opt_patience": 10,  # 早停的耐心次數
+                                "opt_weight_decay": 0.0005,
+                                "opt_imgsz_rect": False,  # 是否使用矩形圖片大小
+                                "opt_cache": True,        # 圖片快取到 RAM
+                                "opt_amp": True,          # 自動混合精度
+                                "opt_cos_lr": True,       # cosine LR schedule
+                                "opt_close_mosaic": 10,   # 最後 N epoch 關閉 mosaic
+                            }
+
+                            # 從 job.txt 讀取設定
+                            # model
+                            if "model" in o:
+                                if o["model"] == "None":
+                                    train_config["model_arch"] = None
+                                else:
+                                    train_config["model_arch"] = str(o["model"])
+
+                            if "epoch" in o:
+                                train_config["opt_epoch_times"] = int(o["epoch"])
+                            if "imgz" in o:
+                                train_config["opt_imgsz"] = int(o["imgz"])
+                            if "batch" in o:
+                                train_config["opt_batch_size"] = int(o["batch"])
+                            if "learning_rate" in o:
+                                train_config["opt_learning_rate"] = float(
+                                    o["learning_rate"]
+                                )
+                            if "optimizer" in o:
+                                train_config["opt_optimizer"] = str(o["optimizer"])
+                            if "use_augment" in o:
+                                train_config["opt_use_augment"] = int(o["use_augment"])
+                            if "use_early_stopping" in o:
+                                train_config["opt_use_early_stopping"] = int(
+                                    o["use_early_stopping"]
+                                )
+                            if "patience" in o:
+                                train_config["opt_patience"] = int(o["patience"])
+                            if "cache" in o:
+                                train_config["opt_cache"] = str(o["cache"]) == "1"
+                            if "amp" in o:
+                                train_config["opt_amp"] = str(o["amp"]) == "1"
+                            if "cos_lr" in o:
+                                train_config["opt_cos_lr"] = str(o["cos_lr"]) == "1"
+                            if "close_mosaic" in o:
+                                train_config["opt_close_mosaic"] = int(o["close_mosaic"])
+
+                            train_config_file_path = os.path.join(
+                                _TASK_FOLDER, "train_config.json"
+                            )
+                            my.file_put_contents(
+                                train_config_file_path,
+                                my.json_encode(train_config),
+                            )
+                            model = YOLO(train_config["model_arch"])
+                            cfg = ""
+                            with open(
+                                train_config_file_path, "r", encoding="utf-8"
+                            ) as f:
+                                cfg = json.load(f)
+                            # 組合訓練參數
+                            train_args = {
+                                "workers": 0,
+                                "device": 0,  # 使用第一個 GPU
+                                "model": cfg["model_arch"],
+                                "data": cfg["data_yaml"],
+                                "epochs": cfg["opt_epoch_times"],
+                                "batch": cfg.get("opt_batch_size", 8),
+                                "imgsz": cfg.get("opt_imgsz", 640),
+                                "lr0": cfg.get("opt_learning_rate", 0.01),
+                                "optimizer": cfg.get("opt_optimizer", "Adam"),
+                                "augment": bool(cfg.get("opt_use_augment", 1)),
+                                "patience": cfg.get("opt_patience", 10),
+                                "project": os.path.join(_TASK_FOLDER, "runs/train"),
+                                "name": "output",
+                                "verbose": True,
+                                "pretrained": True,
+                                "rect": cfg.get(
+                                    "opt_imgsz_rect", False
+                                ),  # 是否使用矩形圖片大小
+                                "cache": cfg.get("opt_cache", True),
+                                "amp": cfg.get("opt_amp", True),
+                                "cos_lr": cfg.get("opt_cos_lr", True),
+                                "close_mosaic": cfg.get("opt_close_mosaic", 10),
+                                "flipud": 0.0,  # 打地鼠場景不需要垂直翻轉
+                                #"save_period": 5,  # 每個 epoch 保存一次
+                            }
+                            # 如果有 early_stopping，則 patience 改 0
+                            if str(cfg.get("opt_use_early_stopping", 1)) == "0":
+                                train_args["patience"] = 0
+
+                            print("🔧 訓練參數：", flush=True)
+                            for key, value in train_args.items():
+                                print(f"  {key}: {value}", flush=True)
+
+                            print("🚀 開始訓練 YOLO 模型...", flush=True)
+
+                            # 訓練過程中將訓練狀態寫入 log 檔案
+                            # sys.stdout = open(
+                            #    _STATUS_FILE_YOLO_LOG, "a", encoding="utf-8"
+                            # )  # 重定向輸出至檔案
+                            # 建立 logger
+                            logging.basicConfig(
+                                filename=_STATUS_FILE_YOLO_LOG,
+                                filemode="a",
+                                level=logging.INFO,
+                                format="%(asctime)s %(message)s",
+                                datefmt="%Y-%m-%d %H:%M:%S",
+                                encoding="utf-8",
+                            )
+
+                            # 選擇性同步 stdout 到 log
+                            class StreamToLogger:
+                                def __init__(self, logger_func, also_stdout=True):
+                                    self.logger_func = logger_func
+                                    self.stdout = (
+                                        sys.__stdout__ if also_stdout else None
+                                    )
+
+                                def write(self, message):
+                                    if message.strip():
+                                        self.logger_func(message.strip())
+                                        # 直接寫我的
+                                        my.file_put_contents(
+                                            _STATUS_FILE_LOG,
+                                            message.strip() + "\r\n",
+                                            True,
+                                        )
+                                    if self.stdout:
+                                        self.stdout.write(message)
+                                        self.stdout.flush()
+
+                                def flush(self):
+                                    if self.stdout:
+                                        self.stdout.flush()
+
+                            # 印出訓練參數到 stdout
+                            print("訓練參數：", flush=True)
+                            for key, value in train_args.items():
+                                print(f"  {key}: {value}", flush=True)
+
+                            sys.stdout = StreamToLogger(logging.info)
+                            sys.stderr = StreamToLogger(logging.error)
+
+                            # 寫入執行參數到 log
+                            my.file_put_contents(
+                                _STATUS_FILE_LOG,
+                                "訓練參數：\r\n" + my.json_encode(train_args) + "\r\n",
+                                True,
+                            )
+
+                            model.train(**train_args)
+                            print("✅ 訓練完成。", flush=True)
+                            # sys.stdout.close()  # 關閉檔案
+                            # 恢復標準輸出
+                            sys.stdout = sys.__stdout__
+                            sys.stderr = sys.__stderr__
+                            my.file_put_contents(
+                                _STATUS_FILE_LOG, "訓練完成，產生模型檔案...\r\n", True
+                            )
+                            my.file_put_contents(_STATUS_FILE_PROGRESS, str(95.0))
+                            # 將訓練好的模型移動到專案資料夾
+                            # 將 best.pt 複製到 task 資料夾
+                            # 然後與 data_dict.json 一起打包成 zip 檔案
+                            # 命名為 project_name_task_name.zip
+                            # zip 最後放到 project_name 資料夾下
+                            best_model_path = os.path.join(
+                                _TASK_FOLDER,
+                                "runs",
+                                "train",
+                                "output",
+                                "weights",
+                                "best.pt",
+                            )
+                            if my.is_file(best_model_path):
+                                shutil.copy(
+                                    best_model_path,
+                                    os.path.join(_TASK_FOLDER, "best.pt"),
+                                )
+                            else:
+                                my.file_put_contents(
+                                    _STATUS_FILE_LOG,
+                                    "找不到 best.pt，請確認訓練是否成功。\r\n",
+                                    True,
+                                )
+                                my.file_put_contents(_STATUS_FILE, "3")
+                                my.file_put_contents(_STATUS_FILE_PROGRESS, str(100.0))
+                                # 失敗跳下一筆
+                                continue
+                            my.file_put_contents(_STATUS_FILE_PROGRESS, str("96.0"))
+                            my.file_put_contents(
+                                _STATUS_FILE_LOG,
+                                "將訓練模型 best.pt 與 data_dict.json 合併壓縮\r\n",
+                                True,
+                            )
+                            # 壓縮
+                            zip_filename = (
+                                f"{o['project_name']}_{o['task_name']}_"
+                                + my.date("Y_m_d_H_i")
+                                + ".zip"
+                            )
+                            zip_filepath = os.path.join(_TASK_FOLDER, zip_filename)
+                            with zipfile.ZipFile(zip_filepath, "w") as zipf:
+                                # 將 best.pt 和 data_dict.json 壓縮
+                                zipf.write(
+                                    os.path.join(_TASK_FOLDER, "best.pt"),
+                                    arcname="best.pt",
+                                )
+                                zipf.write(
+                                    data_dict_file_path, arcname="data_dict.json"
+                                )
+
+                            # 將壓縮檔移動到專案資料夾\訓練結果
+                            project_zip_folder = os.path.join(project, "train_results")
+                            my.mkdir(project_zip_folder, mode=0o777, recursive=True)
+
+                            project_zip_path = os.path.join(
+                                project, "train_results", zip_filename
+                            )
+                            shutil.move(zip_filepath, project_zip_path)
+
+                            my.file_put_contents(
+                                _STATUS_FILE_LOG,
+                                f"壓縮完成，檔案已儲存至 {project_zip_path}\r\n",
+                                True,
+                            )
+
+                            # 製作 pt -> tflite 的轉檔
+                            # _model = YOLO(os.path.join(_TASK_FOLDER, "best.pt"))
+                            # my.file_put_contents(
+                            #    _STATUS_FILE_LOG, "開始轉檔 best.pt 為 tflite\r\n", True
+                            # )
+                            # my.file_put_contents(_STATUS_FILE_PROGRESS, str(98.87))
+                            # 轉檔為 tflite
+                            # _model.export(
+                            #    format="tflite",
+                            #    # dynamic=True,  # 動態輸入大小
+                            #    simplify=True,  # 簡化模型
+                            #    optimize=True,  # 優化模型
+                            #    opset=8,  # 使用的 opset 版本
+                            # )
+
+                            # 程式結束-------------------------------------------------------------End
+
+                            # 處理完畢後，將 status 改為 2
+                            my.file_put_contents(_STATUS_FILE_PROGRESS, str("100.0"))
+                            my.file_put_contents(_STATUS_FILE, "2")
+                            print("Finished processing project: %s" % (project))
+                            my.file_put_contents(_STATUS_FILE_LOG, "轉檔完成\r\n", True)
+        time.sleep(1)  # 每秒檢查一次
+
+
+# 啟動背景執行緒
+worker_thread = threading.Thread(target=background_worker, daemon=True)
+worker_thread.start()
+
+root.mainloop()
+

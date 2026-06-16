@@ -1,0 +1,245 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>我的 yolo 訓練機</title>
+
+    <script src="/www/js/jquery.min.js"></script>
+    <script src="/www/js/myphp.js"></script>
+    <script src="/www/js/mybox.js"></script>
+    <script src="/www/js/include.js"></script>
+    <link rel="stylesheet" href="/www/css/reset.css" />
+    <script src="/www/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+    <link href="/www/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/www/css/style.css" />
+</head>
+<body class="container mt-5">
+    <!-- 右上，新增專案 -->
+    <div class="d-flex justify-content-end">
+        <button type="button" reqc="btnAddProject" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProjectModal">
+            新增專案
+        </button>
+        <button type="button" reqc="btnEditProject" class="btn btn-primary none marginleft15px" data-bs-toggle="modal" data-bs-target="#editProjectModal">
+            編輯專案
+        </button>
+    </div>
+
+    <div class="form-group">
+        <label for="project_name">選擇專案：</label>
+        <select id="project_name" class="form-control">
+            <option value="">請選擇</option>
+            <!-- 這裡可以動態填充選項 -->
+        </select>
+    </div>
+    <div id="divTop" class="d-flex justify-content-left align-items-center d-none" style="height: 55px; background-color: #f0f0f0;">
+        <!-- 可以放功能列-->
+        <a href="javascript:;" reqk="a功能按鈕" reqc="a物件清單" class="btn btn-secondary mx-2">物件清單</a>
+        <a href="javascript:;" reqk="a功能按鈕" reqc="a待分類照片" class="btn btn-secondary mx-2">待分類照片</a>
+        <a href="javascript:;" reqk="a功能按鈕" reqc="a圖框設定" class="btn btn-secondary mx-2">圖框設定</a>
+        <a href="javascript:;" reqk="a功能按鈕" reqc="a模型訓練" class="btn btn-secondary mx-2">模型訓練</a>
+    </div>
+    <hr class="my-4" style="border-color: red;" />
+    <div id="divMain">
+        <!-- 這裡可以放主要內容 -->
+    </div>
+</body>
+<script nonce="gg">
+    var GETS = getGET();
+    if (GETS["project_name"] == undefined || GETS["project_name"] == "") {
+        GETS["project_name"] = "";
+        $("#divTop").removeClass('d-none');
+        $("#divTop").addClass('d-none');
+    }
+    else {
+        $("#divTop").removeClass('d-none');
+        $("button[reqc='btnEditProject']").removeClass('none');
+        setMemory("project_name", GETS["project_name"]);
+
+        // 原 yolo 畫面，選到專案
+        var o = {
+            "project_name": GETS["project_name"]
+        };
+        myAjax_async_json("/api?mode=choice_project", o, function (jd) {
+            if (jd['status'] == 'OK') {
+            }
+        });
+
+        // 按編輯
+        $("button[reqc='btnEditProject']").off().click(function () {
+            var project_name = GETS["project_name"].toString();
+            var new_project_name = prompt("編輯專案", project_name);
+            var o = {
+                "orin_project_name": project_name.trim(),
+                "new_project_name": new_project_name.trim()
+            };
+            if (o["orin_project_name"] == "" || o["new_project_name"] == "") {
+                smallComment("輸入不可為空值...", 2000, false, {});
+                return;
+            }
+            myAjax_async_json("/api?mode=project_edit_action", o, function (jd) {
+                if (jd['status'] == 'OK') {
+                    smallComment('編輯成功...', 2000, false, {});
+                    console.log(jd);
+                    (function (_jd) {
+                        setTimeout(function () {
+                            console.log(_jd);
+                            location.href = "/www/index.html?project_name=" + encodeURIComponent(_jd['new_project_name']);
+                        }, 500);
+                    })(jd);
+                }
+                else {
+                    smallComment(jd['reason'], 2000, false, {});
+                }
+            });
+        });
+    }
+    var APP = {
+        method: {
+            "ui_init": function () {
+                //列出專案
+                APP.method.projects.project_list();
+                //新增專案
+                $("button[reqc='btnAddProject']").off().click(function () {
+                    //dialogMyBoxOn("請稍候", true, function () { });
+                    var project_name = prompt("新增專案", "請輸入專案名稱");
+                    //alert(project_name);
+                    var o = {
+                        "project_name": project_name
+                    };
+                    if (o["project_name"] == "請輸入專案名稱") {
+                        smallComment('請輸入專案名稱...', 2000, false, {});
+                        return;
+                    }
+                    myAjax_async_json("/api?mode=project_add_action", o, function (jd) {
+                        if (jd['status'] == 'OK') {
+                            smallComment('新增成功...', 2000, false, {});
+                            setTimeout(function () {
+                                location.href = "/index.html?project_name=" + encodeURIComponent(jd['project_name']);
+                            }, 500);
+                        }
+                        else {
+                            smallComment(jd['reason'], 2000, false, {});
+                        }
+
+                    });
+                });
+                // 定義按鈕
+                $("a[reqc='a物件清單']").off().click(function () {
+                    //改變按鈕樣式
+                    $("a[reqk='a功能按鈕']").removeClass("btn-secondary");
+                    $("a[reqk='a功能按鈕']").removeClass("btn-primary");
+                    $("a[reqk='a功能按鈕']").addClass("btn-secondary");
+                    $(this).removeClass("btn-secondary");
+                    $(this).addClass("btn-primary");
+                    $("#divMain").html(`
+                        <iframe src="/www/kind_setting.html" class="iframe_class"></iframe>
+                    `);
+                    function adjustIframeHeight() {
+                        const iframe = document.getElementById("iframeId");
+                        if (iframe) {
+                            iframe.style.height = (iframe.contentWindow.document.body.scrollHeight + 80) + "px";
+                        }
+                    }
+                    // 監聽 iframe 的載入事件
+                    $("#divMain iframe")[0].addEventListener("load", adjustIframeHeight);
+                });
+                // 按到 待分類照片
+                $("a[reqc='a待分類照片']").off().click(function () {
+                    //改變按鈕樣式
+                    $("a[reqk='a功能按鈕']").removeClass("btn-secondary");
+                    $("a[reqk='a功能按鈕']").removeClass("btn-primary");
+                    $("a[reqk='a功能按鈕']").addClass("btn-secondary");
+                    $(this).removeClass("btn-secondary");
+                    $(this).addClass("btn-primary");
+                    var uPROJECT_NAME = encodeURIComponent(getMemory("project_name"));
+                    $("#divMain").html(`
+                        <iframe src="/www/photo_kind.html?project_name=${uPROJECT_NAME}" class="iframe_class"></iframe>
+                    `);
+                    function adjustIframeHeight() {
+                        const iframe = document.getElementById("iframeId");
+                        if (iframe) {
+                            iframe.style.height = (iframe.contentWindow.document.body.scrollHeight + 800) + "px";
+                        }
+                    }
+                    // 監聽 iframe 的載入事件
+                    $("#divMain iframe")[0].addEventListener("load", adjustIframeHeight);
+                });
+
+                // 按到 圖框設定
+                $("a[reqc='a圖框設定']").off().click(function () {
+                    //改變按鈕樣式
+                    $("a[reqk='a功能按鈕']").removeClass("btn-secondary");
+                    $("a[reqk='a功能按鈕']").removeClass("btn-primary");
+                    $("a[reqk='a功能按鈕']").addClass("btn-secondary");
+                    $(this).removeClass("btn-secondary");
+                    $(this).addClass("btn-primary");
+                    var uPROJECT_NAME = encodeURIComponent(getMemory("project_name"));
+                    $("#divMain").html(`
+                        <iframe src="/www/domark.html?project_name=${uPROJECT_NAME}" class="iframe_class"></iframe>
+                    `);
+                    function adjustIframeHeight() {
+                        const iframe = document.getElementById("iframeId");
+                        if (iframe) {
+                            iframe.style.height = (iframe.contentWindow.document.body.scrollHeight + 80) + "px";
+                        }
+                    }
+                    // 監聽 iframe 的載入事件
+                    $("#divMain iframe")[0].addEventListener("load", adjustIframeHeight);
+                });
+
+                // 按到 模型訓練
+                $("a[reqc='a模型訓練']").off().click(function () {
+                    //改變按鈕樣式
+                    $("a[reqk='a功能按鈕']").removeClass("btn-secondary");
+                    $("a[reqk='a功能按鈕']").removeClass("btn-primary");
+                    $("a[reqk='a功能按鈕']").addClass("btn-secondary");
+                    $(this).removeClass("btn-secondary");
+                    $(this).addClass("btn-primary");
+                    var uPROJECT_NAME = encodeURIComponent(getMemory("project_name"));
+                    $("#divMain").html(`
+                        <iframe src="/www/train.html?project_name=${uPROJECT_NAME}" class="iframe_class"></iframe>
+                    `);
+                    function adjustIframeHeight() {
+                        const iframe = document.getElementById("iframeId");
+                        if (iframe) {
+                            iframe.style.height = (iframe.contentWindow.document.body.scrollHeight + 80) + "px";
+                        }
+                    }
+                    // 監聽 iframe 的載入事件
+                    $("#divMain iframe")[0].addEventListener("load", adjustIframeHeight);
+                });
+
+            },
+            "projects": {
+                "project_list": function () {
+                    // 列出專案
+                    myAjax_async_json("/api?mode=project_list", "", function (jd) {
+                        var m = [];
+                        var d = `<option value="">請選擇</option>`;
+                        m.push(d);
+                        jd.data.map(function (v) {
+                            var d = `<option value="${v}">${v}</option>`;
+                            m.push(d);
+                        });
+                        $("#project_name").html(m.join(""));
+                        $("#project_name").val(GETS["project_name"]);
+                        $("#project_name").off().change(function () {
+                            var project_name = $(this).val();
+                            if (project_name == "") {
+                                //return;
+                            }
+                            setMemory("project_name", project_name);
+                            project_name = encodeURIComponent(project_name);
+                            location.href = `/www/index.html?project_name=${project_name}`;
+                        });
+                    });
+                }
+            },
+            "init": function () {
+                APP.method.ui_init();
+            }
+        }
+    };
+    APP.method.init();
+</script>
+</html>

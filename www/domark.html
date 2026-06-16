@@ -1,0 +1,260 @@
+<!--
+    圖片標記
+-->
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>我的 yolo 訓練機</title>
+    <script src="/www/js/jquery.min.js"></script>
+    <script src="/www/js/myphp.js"></script>
+    <script src="/www/js/mybox.js"></script>
+    <script src="/www/js/include.js"></script>
+    <link rel="stylesheet" href="/www/css/reset.css" />
+    <script src="/www/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+    <link href="/www/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/www/css/style.css" />
+    <script src="/www/js/jQuery-Plugin-For-Selecting-Multiple-Areas-of-An-Image-Select-Areas/jquery.selectareas.js"></script>
+    <script src="/www/js/jQuery-Plugin-For-Selecting-Multiple-Areas-of-An-Image-Select-Areas/jquery.selectareas.js"></script>
+    <link rel="stylesheet" href="/www/js/jQuery-Plugin-For-Selecting-Multiple-Areas-of-An-Image-Select-Areas/resources/jquery.selectareas.css" />
+    <script src="/www/js/jquery-image-lazy-loading/js/jquery.lazyload.min.js"></script>
+    <style nonce="gg">
+        .thetable {
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="container mt-5">
+    <div reqc="kindLists">
+        <!-- 這裡列出類別 -->
+        <!-- 用 select 列 -->
+        待處理項目與張數：<select reqc="selKindname"></select>
+        <div style="text-align:right;">
+            <select reqc="selShowkind">
+                <option value="needProcessOnly" selected>只顯示待處理</option>
+                <option value="showAll">顯示全部</option>
+            </select>
+        </div>
+    </div>
+    <hr class="my-4" style="border-color: red;" />
+    <div id="divMain">
+
+    </div>
+</body>
+</html>
+<script nonce="gg">
+    function initImageArea(jdDom) {
+        // 處理原本 onload 的事
+
+        var imgName = jdDom.attr('req_bn');
+        var $img = jdDom;
+        var imgWidth = jdDom.width();
+        var imgHeight = jdDom.height();
+
+        // lazyload 回呼時圖片高度可能還沒算出來，延遲重試
+        if (imgHeight <= 0 || imgWidth <= 0) {
+            setTimeout(function () { initImageArea(jdDom); }, 80);
+            return;
+        }
+        var project_name = jdDom.attr('req_project_name');
+
+        var kind_name = jdDom.attr('req_kind_name');
+        var bn = jdDom.attr('req_bn');
+        var area_arr = [];
+
+        var rectRaw = jdDom.attr('req_rect_data');
+        if (rectRaw && rectRaw != "" && rectRaw != "null") {
+            // 多框：以 ||| 分隔（template 已將換行替換成 |||）
+            var lines = rectRaw.split("|||");
+            lines.map(function(line) {
+                line = $.trim(line);
+                if (!line) return;
+                var m = explode(" ", line);
+                if (m.length < 4) return;
+                var xc = parseFloat(m[0]);
+                var yc = parseFloat(m[1]);
+                var w  = parseFloat(m[2]);
+                var h  = parseFloat(m[3]);
+                area_arr.push({
+                    'x':      (xc - w / 2) * imgWidth,
+                    'y':      (yc - h / 2) * imgHeight,
+                    'width':  w * imgWidth,
+                    'height': h * imgHeight
+                });
+            });
+        }
+
+        window['areaDom_' + kind_name + '_' + imgName] = jdDom.selectAreas({
+            areas: area_arr,
+            maxAreas: 100, // 允許多個框（打地鼠場景同時有多隻目標）
+            overlayOpacity: 0.15, // 降低遮罩透明度，方便看清背景繼續框第二隻
+            onChanging: function (event, id, areas) {
+                /*console.log('Currently event:', event);
+                console.log('Currently focused area ID:', id);
+                console.log('Focused area details:', areas[id]);
+                console.log(this);
+                */
+            },
+            onChanged: function (event, id, areas) {
+                var bn = basename($(jdDom).attr('data-original'));
+                var areas = $(jdDom).selectAreas('areas');
+
+                var m_tmp = [];
+                areas.map(function (selection) {
+                    //console.log("selection: ");
+                    //console.log(json_encode(selection));
+                    var txt_template = "{x_center} {y_center} {width} {height}";
+                    // 假設 selection 是選擇框的邊界物件，計算 x_center 和 y_center 來映射到 0-100 的範圍
+                    var x_center = (parseFloat(selection['x']) + parseFloat(selection['width']) / 2.0);
+                    var y_center = (parseFloat(selection['y']) + parseFloat(selection['height']) / 2.0);
+                    var width = parseFloat(selection['width']);
+                    var height = parseFloat(selection['height']);
+
+
+                    // 映射 x_center, y_center, width, height 到 0-100 的範圍
+                    txt_template = str_replace("{x_center}", arduino_map(x_center, 0, imgWidth, 0, 100.0) / 100.0, txt_template);
+                    txt_template = str_replace("{y_center}", arduino_map(y_center, 0, imgHeight, 0, 100.0) / 100.0, txt_template);
+                    txt_template = str_replace("{width}", arduino_map(width, 0, imgWidth, 0, 100.0) / 100.0, txt_template);
+                    txt_template = str_replace("{height}", arduino_map(height, 0, imgHeight, 0, 100.0) / 100.0, txt_template);
+
+                    //console.log(txt_template);
+                    m_tmp.push(txt_template);
+                });
+                //框完寫入 txt
+                var txt = implode("\n", m_tmp);
+                //console.log(txt);
+                var areas = $(jdDom).selectAreas('areas');
+                var o = {
+                    "project_name": project_name,
+                    "kind_name": kind_name,
+                    "imgbn": bn,
+                    "txt": txt
+                };
+                //console.log(o);
+                //return;
+                myAjax_async_json("/api?mode=saveTxt", o, function (jjd) {
+                    if (jjd['status'] == 'OK') {
+                        smallComment("儲存了...", 1500, false, {});
+                        // 多框模式：不自動消失，讓使用者按「完成此圖」才收起
+                    }
+                });
+            }
+        });
+
+
+    }
+    function showImgLists() {
+        var kind_name = $("select[reqc='selKindname']").val();
+        var show_kind = $("select[reqc='selShowkind']").val();
+        myAjax_async_json("/api?mode=getMY_DATASETSPhotos", {
+            "project_name": PROJECT_NAME,
+            "kind_name": kind_name,
+            "show_kind": show_kind
+        },
+            function (jd) {
+                if (jd.status == 'OK') {
+                    var m = [];
+                    var project_name = jd['project_name'];
+                    var kind_name = jd['kind_name'];
+                    jd.data.map(function (v) {
+                        // photo_name: "1752472132885.jpg", txt_name="", txt_data=null
+                        v.photo_path = `/data/projects/${project_name}/my_dataset/${kind_name}/${v.photo_name}`;
+                        v.mn = mainname(v.photo_name);
+                        var d = {
+                            "img": `
+                            <img
+                                data-original="${v.photo_path}"
+                                src="/www/js/jquery-image-lazy-loading/images/grey.gif",
+                                style="width: 100%;"
+                                reqc="theimg"
+                                req_mn="${v.mn}"
+                                req_bn="${v.photo_name}"
+                                req_project_name="${project_name}"
+                                req_kind_name="${kind_name}"
+                                req_rect_data="${v.txt_data ? String(v.txt_data).replace(/\r?\n/g, '|||') : ''}"
+                            />`,
+                            "options": `
+                                <input type="button" reqc="btnReset" class="btn btn-danger" req_mn="${mainname(v.photo_name)}" req_project_name="${project_name}" req_kind_name="${kind_name}" value="重新分類">
+                            `
+                        };
+                        m.push(d);
+                    });
+                    var table = print_table(m, "img,options", "框選圖片,功能", "thetable");
+                    $("#divMain").html(table);
+
+                    // lazyload
+                    $("img[reqc='theimg']").lazyload({
+                        //effect: "fadeIn",
+                        placeholder: "/www/js/jquery-image-lazy-loading/images/grey.gif",
+                        load: function (element) {
+                            // 如果需要處理 onload 事件
+                            //console.log("GGGGGGGGGGGGG");
+                            initImageArea($(this));
+                        }
+                    });
+
+
+                    // 完成此圖：手動收起（不再自動消失）
+                    $("input[reqc='btnDone']").off().click(function () {
+                        if ($("select[reqc='selShowkind']").val() == "needProcessOnly") {
+                            $(this).closest("tr").fadeOut(function () {
+                                $("body").trigger("scroll");
+                            });
+                        } else {
+                            smallComment("已完成標注", 1500, false, {});
+                        }
+                    });
+
+                    // 重新分類
+                    $("input[reqc='btnReset']").off().click(function () {
+                        var o = {
+                            "project_name": $(this).attr('req_project_name'),
+                            "kind_name": $(this).attr('req_kind_name'),
+                            "mn": $(this).attr('req_mn')
+                        };
+                        console.log(o);
+                        myAjax_async_json("/api?mode=resetPhotoKind", o, function (jd) {
+                            console.log(o);
+                            if (jd['status'] == 'OK') {
+                                $(`img[reqc='theimg'][req_mn='${o.mn}']`).closest("tr").fadeOut();
+                            }
+                        });
+                    });
+                }
+            });
+    }
+    // 取得照片分類
+    var GETS = getGET();
+    var PROJECT_NAME = GETS["project_name"];
+    console.log(PROJECT_NAME);
+    // 取得照片分類
+    window['kind_lists'] = [];
+    myAjax_async_json("/api?mode=getDoMarkKindList", { "project_name": PROJECT_NAME }, function (jd) {
+        if (jd.status == 'OK') {
+            window['kind_lists'] = $.extend([], true, jd.data);
+            var m = [];
+            for (var i = 0; i < jd.data.length; i++) {
+                var kind = jd.data[i];
+                var isSelected = (i == 0) ? "selected" : "";
+                // 是否有待處理的照片
+                //var isNeedProcess = (kind.need_process == 1) ? ` (總數: ${kind.total_pics} 張, 待處理: ${kind.need_process_counts} 張)`: ` (總數: ${kind.total_pics} 張)`;
+                var o = {
+                    "總數": kind.total_pics,
+                    "待處理": kind.need_process_counts
+                };
+                var isNeedProcessStr = (kind.need_process_counts > 0) ? " - 待處理" : "";
+                var d = `<option value="${kind.kind_name}" ${isSelected}>${kind.kind_name} (${o['待處理']} / ${o['總數']})${isNeedProcessStr}</option>`;
+                m.push(d);
+            }
+            $("select[reqc='selKindname']").html(m.join(''));
+            $("select[reqc='selKindname']").off().change(function () {
+                showImgLists();
+            }).trigger("change"); // 觸發一次
+
+            // 選到 selShowkind
+            $("select[reqc='selShowkind']").off().change(function () {
+                showImgLists();
+            });
+        }
+    });
+</script>

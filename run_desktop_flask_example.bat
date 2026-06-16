@@ -1,0 +1,1 @@
+conda activate ./yolo-env && python my_yolo_flask.py

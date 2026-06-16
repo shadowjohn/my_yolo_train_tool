@@ -1,0 +1,394 @@
+{
+    "40311": {
+        "Chinese_Name": "長尾鼠耳蝠",
+        "Scientific_Name": "Myotis frater"
+    },
+    "40312": {
+        "Chinese_Name": "徘鼠耳蝠",
+        "Scientific_Name": "Myotis formosus"
+    },
+    "40417": {
+        "Chinese_Name": "臺灣長耳蝠",
+        "Scientific_Name": "Plecotus taivanus"
+    },
+    "40432": {
+        "Chinese_Name": "高頭蝠",
+        "Scientific_Name": "Scotophilus kuhlii"
+    },
+    "40599": {
+        "Chinese_Name": "臺灣管鼻蝠",
+        "Scientific_Name": "Murina puta"
+    },
+    "40627": {
+        "Chinese_Name": "毛翼管鼻蝠",
+        "Scientific_Name": "Harpiocephalus harpia"
+    },
+    "40717": {
+        "Chinese_Name": "大蹄蝠",
+        "Scientific_Name": "Hipposideros armiger"
+    },
+    "40887": {
+        "Chinese_Name": "琉球狐蝠",
+        "Scientific_Name": "Pteropus dasymallus"
+    },
+    "41414": {
+        "Chinese_Name": "銀杏齒中喙鯨",
+        "Scientific_Name": "Mesoplodon ginkgodens"
+    },
+    "41428": {
+        "Chinese_Name": "柯氏喙鯨",
+        "Scientific_Name": "Ziphius cavirostris"
+    },
+    "41450": {
+        "Chinese_Name": "印太江豚",
+        "Scientific_Name": "Neophocaena phocaenoides"
+    },
+    "41464": {
+        "Chinese_Name": "小抹香鯨",
+        "Scientific_Name": "Kogia breviceps"
+    },
+    "41465": {
+        "Chinese_Name": "侏儒抹香鯨",
+        "Scientific_Name": "Kogia sima"
+    },
+    "41481": {
+        "Chinese_Name": "印太瓶鼻海豚",
+        "Scientific_Name": "Tursiops aduncus"
+    },
+    "41482": {
+        "Chinese_Name": "瓶鼻海豚",
+        "Scientific_Name": "Tursiops truncatus"
+    },
+    "41488": {
+        "Chinese_Name": "中華白海豚",
+        "Scientific_Name": "Sousa chinensis"
+    },
+    "41496": {
+        "Chinese_Name": "長吻飛旋海豚",
+        "Scientific_Name": "Stenella longirostris"
+    },
+    "41500": {
+        "Chinese_Name": "熱帶斑海豚",
+        "Scientific_Name": "Stenella attenuata"
+    },
+    "41523": {
+        "Chinese_Name": "弗氏海豚",
+        "Scientific_Name": "Lagenodelphis hosei"
+    },
+    "41526": {
+        "Chinese_Name": "真海豚",
+        "Scientific_Name": "Delphinus delphis"
+    },
+    "41532": {
+        "Chinese_Name": "短肢領航鯨",
+        "Scientific_Name": "Globicephala macrorhynchus"
+    },
+    "41534": {
+        "Chinese_Name": "小虎鯨",
+        "Scientific_Name": "Feresa attenuata"
+    },
+    "41539": {
+        "Chinese_Name": "偽虎鯨",
+        "Scientific_Name": "Pseudorca crassidens"
+    },
+    "41541": {
+        "Chinese_Name": "瑞氏海豚",
+        "Scientific_Name": "Grampus griseus"
+    },
+    "41553": {
+        "Chinese_Name": "藍鯨",
+        "Scientific_Name": "Balaenoptera musculus"
+    },
+    "41566": {
+        "Chinese_Name": "大翅鯨",
+        "Scientific_Name": "Megaptera novaeangliae"
+    },
+    "41618": {
+        "Chinese_Name": "小靈貓",
+        "Scientific_Name": "Viverricula indica"
+    },
+    "41625": {
+        "Chinese_Name": "果子狸",
+        "Scientific_Name": "Paguma larvata"
+    },
+    "41647": {
+        "Chinese_Name": "亞洲黑熊",
+        "Scientific_Name": "Ursus thibetanus"
+    },
+    "41791": {
+        "Chinese_Name": "黃喉貂",
+        "Scientific_Name": "Martes flavigula"
+    },
+    "41813": {
+        "Chinese_Name": "黃鼬",
+        "Scientific_Name": "Mustela sibirica"
+    },
+    "42134": {
+        "Chinese_Name": "野豬",
+        "Scientific_Name": "Sus scrofa"
+    },
+    "42187": {
+        "Chinese_Name": "山羌",
+        "Scientific_Name": "Muntiacus reevesi"
+    },
+    "42210": {
+        "Chinese_Name": "梅花鹿",
+        "Scientific_Name": "Cervus nippon"
+    },
+    "43142": {
+        "Chinese_Name": "華南兔",
+        "Scientific_Name": "Lepus sinensis"
+    },
+    "43151": {
+        "Chinese_Name": "穴兔",
+        "Scientific_Name": "Oryctolagus cuniculus"
+    },
+    "43366": {
+        "Chinese_Name": "穿山甲",
+        "Scientific_Name": "Manis pentadactyla"
+    },
+    "43450": {
+        "Chinese_Name": "臺灣獼猴",
+        "Scientific_Name": "Macaca cyclopis"
+    },
+    "44546": {
+        "Chinese_Name": "亞洲家鼠",
+        "Scientific_Name": "Rattus tanezumi"
+    },
+    "44576": {
+        "Chinese_Name": "褐家鼠",
+        "Scientific_Name": "Rattus norvegicus"
+    },
+    "44587": {
+        "Chinese_Name": "小黃腹鼠",
+        "Scientific_Name": "Rattus losea"
+    },
+    "44697": {
+        "Chinese_Name": "田鼷鼠",
+        "Scientific_Name": "Mus caroli"
+    },
+    "45066": {
+        "Chinese_Name": "黑腹絨鼠",
+        "Scientific_Name": "Eothenomys melanogaster"
+    },
+    "45176": {
+        "Chinese_Name": "高山白腹鼠",
+        "Scientific_Name": "Niviventer culturatus"
+    },
+    "45316": {
+        "Chinese_Name": "巢鼠",
+        "Scientific_Name": "Micromys minutus"
+    },
+    "45549": {
+        "Chinese_Name": "臺灣森鼠",
+        "Scientific_Name": "Apodemus semotus"
+    },
+    "45568": {
+        "Chinese_Name": "赤背條鼠",
+        "Scientific_Name": "Apodemus agrarius"
+    },
+    "45664": {
+        "Chinese_Name": "鬼鼠",
+        "Scientific_Name": "Bandicota indica"
+    },
+    "45952": {
+        "Chinese_Name": "赤腹松鼠",
+        "Scientific_Name": "Callosciurus erythraeus"
+    },
+    "46168": {
+        "Chinese_Name": "條紋松鼠",
+        "Scientific_Name": "Tamiops maritimus"
+    },
+    "46170": {
+        "Chinese_Name": "長吻松鼠",
+        "Scientific_Name": "Dremomys pernyi"
+    },
+    "46245": {
+        "Chinese_Name": "小鼯鼠",
+        "Scientific_Name": "Belomys pearsonii"
+    },
+    "46531": {
+        "Chinese_Name": "臭鼩",
+        "Scientific_Name": "Suncus murinus"
+    },
+    "46607": {
+        "Chinese_Name": "灰麝鼩",
+        "Scientific_Name": "Crocidura attenuata"
+    },
+    "46692": {
+        "Chinese_Name": "長尾麝鼩",
+        "Scientific_Name": "Crocidura rapax"
+    },
+    "46699": {
+        "Chinese_Name": "臺灣灰麝鼩",
+        "Scientific_Name": "Crocidura tanakae"
+    },
+    "47144": {
+        "Chinese_Name": "犬",
+        "Scientific_Name": "Canis familiaris"
+    },
+    "74113": {
+        "Chinese_Name": "家牛",
+        "Scientific_Name": "Bos taurus"
+    },
+    "74144": {
+        "Chinese_Name": "臺灣野山羊",
+        "Scientific_Name": "Capricornis swinhoei"
+    },
+    "74197": {
+        "Chinese_Name": "無尾葉鼻蝠",
+        "Scientific_Name": "Coelops frithii"
+    },
+    "74409": {
+        "Chinese_Name": "金芒管鼻蝠",
+        "Scientific_Name": "Harpiola isodon"
+    },
+    "74620": {
+        "Chinese_Name": "東亞摺翅蝠",
+        "Scientific_Name": "Miniopterus fuliginosus"
+    },
+    "74706": {
+        "Chinese_Name": "毛腿鼠耳蝠",
+        "Scientific_Name": "Myotis fimbriatus"
+    },
+    "74710": {
+        "Chinese_Name": "華南水鼠耳蝠",
+        "Scientific_Name": "Myotis laniger"
+    },
+    "74776": {
+        "Chinese_Name": "刺鼠",
+        "Scientific_Name": "Niviventer coninga"
+    },
+    "74787": {
+        "Chinese_Name": "絨山蝠",
+        "Scientific_Name": "Nyctalus plancyi"
+    },
+    "74890": {
+        "Chinese_Name": "抹香鯨",
+        "Scientific_Name": "Physeter macrocephalus"
+    },
+    "74892": {
+        "Chinese_Name": "東亞家蝠",
+        "Scientific_Name": "Pipistrellus abramus"
+    },
+    "75013": {
+        "Chinese_Name": "臺灣大蹄鼻蝠",
+        "Scientific_Name": "Rhinolophus formosae"
+    },
+    "75053": {
+        "Chinese_Name": "水鹿",
+        "Scientific_Name": "Rusa unicolor"
+    },
+    "75126": {
+        "Chinese_Name": "東亞游離尾蝠",
+        "Scientific_Name": "Tadarida insignis"
+    },
+    "81925": {
+        "Chinese_Name": "水牛",
+        "Scientific_Name": "Bubalus bubalis"
+    },
+    "118552": {
+        "Chinese_Name": "家貓",
+        "Scientific_Name": "Felis catus"
+    },
+    "123070": {
+        "Chinese_Name": "山羊",
+        "Scientific_Name": "Capra hircus"
+    },
+    "144409": {
+        "Chinese_Name": "食蟹獴",
+        "Scientific_Name": "Urva urva"
+    },
+    "569428": {
+        "Chinese_Name": "小鼬鼠",
+        "Scientific_Name": "Mustela nivalis"
+    },
+    "706551": {
+        "Chinese_Name": "鹿野氏鼴鼠",
+        "Scientific_Name": "Mogera kanoana"
+    },
+    "765460": {
+        "Chinese_Name": "黃胸管鼻蝠",
+        "Scientific_Name": "Murina bicolor"
+    },
+    "765461": {
+        "Chinese_Name": "姬管鼻蝠",
+        "Scientific_Name": "Murina gracilis"
+    },
+    "765464": {
+        "Chinese_Name": "隱姬管鼻蝠",
+        "Scientific_Name": "Murina recondita"
+    },
+    "765471": {
+        "Chinese_Name": "長趾鼠耳蝠",
+        "Scientific_Name": "Myotis secundus"
+    },
+    "765472": {
+        "Chinese_Name": "紅棕鼠耳蝠",
+        "Scientific_Name": "Myotis soror"
+    },
+    "765499": {
+        "Chinese_Name": "寬吻鼠耳蝠",
+        "Scientific_Name": "Submyotodon latirostris"
+    },
+    "778480": {
+        "Chinese_Name": "東方寬耳蝠",
+        "Scientific_Name": "Barbastella darjelingensis"
+    },
+    "785254": {
+        "Chinese_Name": "臺灣小蹄鼻蝠",
+        "Scientific_Name": "Rhinolophus monoceros"
+    },
+    "885018": {
+        "Chinese_Name": "小缺齒鼴",
+        "Scientific_Name": "Mogera insularis"
+    },
+    "887384": {
+        "Chinese_Name": "台灣高山田鼠",
+        "Scientific_Name": "Alexandromys kikuchii"
+    },
+    "897943": {
+        "Chinese_Name": "玄彩蝠",
+        "Scientific_Name": "Kerivoula furva"
+    },
+    "897944": {
+        "Chinese_Name": "赤黑鼠耳蝠",
+        "Scientific_Name": "Myotis rufoniger"
+    },
+    "922738": {
+        "Chinese_Name": "石虎",
+        "Scientific_Name": "Prionailurus bengalensis"
+    },
+    "1264418": {
+        "Chinese_Name": "台灣鼬貛",
+        "Scientific_Name": "Melogale subaurantiaca"
+    },
+    "1279886": {
+        "Chinese_Name": "臺灣大赤鼯鼠",
+        "Scientific_Name": "Petaurista grandis"
+    },
+    "1279890": {
+        "Chinese_Name": "台灣白面鼯鼠",
+        "Scientific_Name": "Petaurista lena"
+    },
+    "1351388": {
+        "Chinese_Name": "灰伏翼",
+        "Scientific_Name": "Hypsugo pulveratus"
+    },
+    "1370694": {
+        "Chinese_Name": "臺灣長尾鼩",
+        "Scientific_Name": "Pseudosoriculus fumidus"
+    },
+    "1370867": {
+        "Chinese_Name": "堀川氏棕蝠",
+        "Scientific_Name": "Eptesicus pachyomus"
+    },
+    "1419841": {
+        "Chinese_Name": "黃頸蝠",
+        "Scientific_Name": "Thainycteris torquata"
+    },
+    "1578442": {
+        "Chinese_Name": "家鼷鼠",
+        "Scientific_Name": "Mus musculus"
+    }
+}

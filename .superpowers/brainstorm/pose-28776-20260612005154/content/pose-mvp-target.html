@@ -1,0 +1,62 @@
+<h2>YOLO Pose -> Skeleton Motion -> Live2D/Live4D</h2>
+<p class="subtitle">先鎖定第一版 MVP 的產物深度。截圖這種走廊舞步場景可做，但人物追蹤、遮擋、手腕腳踝抖動會是主要風險。</p>
+
+<div class="mockup">
+  <div class="mockup-header">Pipeline Sketch</div>
+  <div class="mockup-body">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;align-items:stretch">
+      <div style="padding:14px;border:1px solid #d0d7de;border-radius:8px;background:#fff">
+        <div class="label">Capture</div>
+        <h3>mss ROI</h3>
+        <p>框選螢幕區域，按開始/結束，保留 frame timestamp。</p>
+      </div>
+      <div style="padding:14px;border:1px solid #d0d7de;border-radius:8px;background:#fff">
+        <div class="label">Pose</div>
+        <h3>YOLO Pose</h3>
+        <p>每 frame 取 17 keypoints：肩、肘、腕、髖、膝、踝等。</p>
+      </div>
+      <div style="padding:14px;border:1px solid #d0d7de;border-radius:8px;background:#fff">
+        <div class="label">Clean</div>
+        <h3>Smooth + Track</h3>
+        <p>選主舞者、補點、平滑，降低抖動與後方人物干擾。</p>
+      </div>
+      <div style="padding:14px;border:1px solid #d0d7de;border-radius:8px;background:#fff">
+        <div class="label">Motion</div>
+        <h3>Angles + Tempo</h3>
+        <p>轉成身體重心、頭肩髖角度、四肢關節角速度。</p>
+      </div>
+      <div style="padding:14px;border:1px solid #d0d7de;border-radius:8px;background:#fff">
+        <div class="label">Avatar</div>
+        <h3>Retarget</h3>
+        <p>輸出 Live2D 參數曲線或 Live4D/3D 骨架動作。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>第一版你想做到哪一層？</h3>
+  <div class="options">
+    <div class="option" data-choice="a" onclick="toggleSelect(this)">
+      <div class="letter">A</div>
+      <div class="content">
+        <h3>骨架錄製器</h3>
+        <p>只錄 ROI 內主舞者 pose 時間序列，輸出 JSON/CSV + 骨架預覽。最快可驗證 YOLO pose 品質。</p>
+      </div>
+    </div>
+    <div class="option" data-choice="b" onclick="toggleSelect(this)">
+      <div class="letter">B</div>
+      <div class="content">
+        <h3>Live2D 參數草稿</h3>
+        <p>把骨架轉成 ParamAngleX/Y/Z、BodyAngle、手腳擺動等曲線。可用但需要手動微調模型映射。</p>
+      </div>
+    </div>
+    <div class="option" data-choice="c" onclick="toggleSelect(this)">
+      <div class="letter">C</div>
+      <div class="content">
+        <h3>Live4D/3D Retarget</h3>
+        <p>建立骨架 retarget 與動作檔，較接近完整舞步重現。效果最好，但要處理 2D 到 3D 深度推測。</p>
+      </div>
+    </div>
+  </div>
+</div>
