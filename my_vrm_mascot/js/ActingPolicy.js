@@ -1,5 +1,6 @@
 import { ExpressionProfiles } from './ExpressionProfiles.js';
 import { MotionClips } from './MotionClips.js';
+import { pickSemanticMotion } from './SemanticMotionPicker.js';
 
 export const ALLOWED_GAZE_MODES = Object.freeze(['mouse', 'point', 'none']);
 export const ALLOWED_MOTION_NAMES = Object.freeze([
@@ -87,6 +88,13 @@ const ACTING_POLICIES = Object.freeze({
   },
 });
 
+let semanticMotionLibrary = null;
+
+export function configureSemanticMotionLibrary(library) {
+  semanticMotionLibrary = library && Array.isArray(library.motions) ? library : null;
+  return Boolean(semanticMotionLibrary);
+}
+
 function clonePolicy(policy, meta = {}) {
   if (!policy) return null;
   return {
@@ -100,6 +108,7 @@ function clonePolicy(policy, meta = {}) {
           data: policy.gaze.data ? { ...policy.gaze.data } : undefined,
         }
       : undefined,
+    semanticMotionId: policy.semanticMotionId,
     meta: { ...meta },
   };
 }
@@ -114,8 +123,84 @@ function normalizeStateName(state) {
   return ACTING_POLICIES[value] ? value : 'idle';
 }
 
+function mapStateToSemanticIntent(state) {
+  if (state === 'blocked' || state === 'warning') return 'warning';
+  if (state === 'pending' || state === 'thinking' || state === 'running') return 'thinking';
+  if (state === 'done' || state === 'success') return 'success';
+  if (state === 'failed' || state === 'error') return 'surprised';
+  return state;
+}
+
+function semanticTriggerForState(state, meta = {}) {
+  if (meta.reason) return meta.reason;
+  if (state === 'blocked') return '政策阻擋';
+  if (state === 'warning') return '警告';
+  if (state === 'running') return '查詢中';
+  if (state === 'pending' || state === 'thinking') return '查詢中';
+  if (state === 'done' || state === 'success') return '完成';
+  if (state === 'failed' || state === 'error') return '意外結果';
+  return meta.trigger || state;
+}
+
+function toolStatusForState(state, meta = {}) {
+  if (meta.status) return meta.status;
+  if (state === 'blocked') return 'blocked';
+  if (state === 'running') return 'running';
+  if (state === 'pending' || state === 'thinking') return 'pending';
+  if (state === 'done' || state === 'success') return 'done';
+  if (state === 'failed' || state === 'error') return 'failed';
+  return undefined;
+}
+
+function buildSemanticPickerRequest(policy, meta = {}) {
+  const state = policy?.state || 'idle';
+  const request = {
+    intent: mapStateToSemanticIntent(state),
+    trigger: semanticTriggerForState(state, meta),
+    context: {
+      toolStatus: toolStatusForState(state, meta),
+      action: meta.action,
+      tool: meta.tool,
+      reason: meta.reason,
+      selectedFeature: meta.selectedFeature,
+    },
+  };
+  return request;
+}
+
+function recordPickedSemanticMotion(meta = {}, pickedSemanticMotion) {
+  if (!pickedSemanticMotion) return;
+  const intentObj = meta.intent || meta.intentObj;
+  if (intentObj && typeof intentObj === 'object') {
+    intentObj.pickedSemanticMotion = { ...pickedSemanticMotion };
+  }
+}
+
+function enrichPolicyWithSemanticMotion(policy, meta = {}) {
+  if (!policy || !semanticMotionLibrary) return policy;
+  if (policy.state === 'idle' || policy.state === 'speaking') return policy;
+
+  const pickedSemanticMotion = pickSemanticMotion(
+    buildSemanticPickerRequest(policy, meta),
+    semanticMotionLibrary
+  );
+  if (!pickedSemanticMotion) return policy;
+
+  const nextPolicy = {
+    ...policy,
+    semanticMotionId: pickedSemanticMotion.motionId,
+    meta: {
+      ...(policy.meta || {}),
+      pickedSemanticMotion,
+    },
+  };
+  recordPickedSemanticMotion(meta, pickedSemanticMotion);
+  return nextPolicy;
+}
+
 export function resolveActingPolicyForState(state, meta = {}) {
-  return clonePolicy(ACTING_POLICIES[normalizeStateName(state)] || ACTING_POLICIES.idle, meta);
+  const policy = clonePolicy(ACTING_POLICIES[normalizeStateName(state)] || ACTING_POLICIES.idle, meta);
+  return enrichPolicyWithSemanticMotion(policy, meta);
 }
 
 export function resolveActingPolicyForTrace(step, patch = {}, intentObj = {}) {
@@ -129,6 +214,7 @@ export function resolveActingPolicyForTrace(step, patch = {}, intentObj = {}) {
       reason: patch.reason,
       action: intentObj.action,
       tool: intentObj.tool,
+      intentObj,
     });
   }
 
@@ -142,6 +228,7 @@ export function resolveActingPolicyForTrace(step, patch = {}, intentObj = {}) {
       status,
       action: intentObj.action,
       tool: intentObj.tool,
+      intentObj,
     });
   }
   if (status === 'running') {
@@ -150,6 +237,7 @@ export function resolveActingPolicyForTrace(step, patch = {}, intentObj = {}) {
       status,
       action: intentObj.action,
       tool: intentObj.tool,
+      intentObj,
     });
   }
   if (status === 'done') {
@@ -158,6 +246,7 @@ export function resolveActingPolicyForTrace(step, patch = {}, intentObj = {}) {
       status,
       action: intentObj.action,
       tool: intentObj.tool,
+      intentObj,
     });
   }
   if (status === 'failed') {
@@ -167,6 +256,7 @@ export function resolveActingPolicyForTrace(step, patch = {}, intentObj = {}) {
       reason: patch.reason,
       action: intentObj.action,
       tool: intentObj.tool,
+      intentObj,
     });
   }
 

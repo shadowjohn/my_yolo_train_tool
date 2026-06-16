@@ -183,6 +183,46 @@ M6 Conversation Acting Bridge 讓 `ActingBridge.js` 接收 tool trace 與 talkin
 
 M6.7 Motion Template Importer 提供獨立開發工具 `motion_template_lab.html`：載入 Alicia 與本機 `.vrma`，取樣第一幀或指定時間點的 upper-body humanoid rotation，匯出可貼回 Character Inspector 的 NaturalPose preset JSON。這個 lab 不進 production runtime、不改 Agent、不寫 `contextDigest`。
 
+M6.7.5～M6.13 讓 `motion_template_lab.html` 從 importer 升級成 Alicia Motion Mine：
+
+- Motion-first 採礦：先定義整支 VRMA 的主分類，再釘選值得保留的 moment。
+- Description-first 資料：人工撰寫「動作描述 / 用途描述 / Agent 用途」，分類可留給後續 LLM 或規則分析。
+- Text Mining Classifier：由文字描述產出 `motion_text_reclass_report.json`，不改原始資料。
+- Pose Style Recipe Generator：由描述萃取 `pose_style_recipes.json` 與 `pose_style_recipe_report.md`。
+- Semantic Motion Library：整理出 `semantic_motion_library.json`，目前有 10 組 semantic motion 種子。
+- Semantic Motion Picker / Registry / Variant Selector：可從 intent/trigger 選出 semantic motion，再找 preferred variant。
+- Semantic Motion Preview Bridge：只在 Lab 內安全預覽 variant 對應的 VRMA，不接正式 Acting runtime。
+
+目前資料集狀態：
+
+| 項目 | 數量 |
+|------|------|
+| VRMA 樣本 | 172 |
+| motion profiles | 172 |
+| 已有人類描述 profiles | 172 |
+| mining log entries | 173 |
+| pose style recipes | 10 |
+| semantic motions | 10 |
+
+資料位置：
+
+```text
+examples/m6_7_vrma_samples/
+  SOURCES.md                       # VRMA 來源與授權狀態總表
+  README.md                        # 內建 demo sample 來源
+  external/**/source_manifest.json # 外部礦區批次 manifest
+  review/
+    motion_profiles.json           # 172 筆人工描述與主分類
+    mining_log.json                 # 採礦紀錄
+    motion_text_reclass_report.json
+    pose_style_recipes.json
+    pose_style_recipe_report.md
+    semantic_motion_library.json
+    semantic_motion_library_report.md
+    semantic_motion_registry.json
+    semantic_motion_registry_report.md
+```
+
 Base pose preset 會依模型載入：
 
 - `models/mascot.vrm` -> `motions/poses/alicia_solid.json`

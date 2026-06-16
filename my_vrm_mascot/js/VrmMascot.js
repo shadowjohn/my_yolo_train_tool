@@ -36,6 +36,9 @@ import { DomContext }           from './DomContext.js';
 import { PolicyGate }           from './PolicyGate.js';
 import { PoseDirector }         from './PoseDirector.js';
 import { ActingBridge }         from './ActingBridge.js';
+import { configureSemanticMotionLibrary } from './ActingPolicy.js';
+
+const SEMANTIC_MOTION_LIBRARY_URL = 'examples/m6_7_vrma_samples/review/semantic_motion_library.json';
 
 /**
  * 意圖對照 Preset表，定義各種高階意圖所對應的底層指令序列與預設值
@@ -299,6 +302,7 @@ export class VrmMascot {
   #policyGate = null;
   #poseDirector = null;
   #actingBridge = null;
+  #semanticMotionLibraryStatus = 'pending';
 
   // 狀態監控
   #isUserInteracting = false;
@@ -366,6 +370,7 @@ export class VrmMascot {
     this.#init3D(options);
     this.#startLoop();
     this.#bindResize();
+    this.#loadSemanticMotionLibrary(options.semanticMotionLibraryUrl ?? SEMANTIC_MOTION_LIBRARY_URL);
 
     // 初始發送一次 update
     this.#emitIntentUpdate();
@@ -718,11 +723,15 @@ export class VrmMascot {
         target: this.#actionIntent.target,
         confidence: this.#actionIntent.confidence,
         status: this.#actionIntent.status,
+        pickedSemanticMotion: this.#actionIntent.pickedSemanticMotion
+          ? { ...this.#actionIntent.pickedSemanticMotion }
+          : null,
         trace: Array.isArray(this.#actionIntent.trace)
           ? this.#actionIntent.trace.map(item => ({ ...item }))
           : []
       },
-      suggestedActions: this.buildSuggestedActions()
+      suggestedActions: this.buildSuggestedActions(),
+      semanticMotionLibraryStatus: this.#semanticMotionLibraryStatus
     };
   }
 
@@ -927,6 +936,30 @@ export class VrmMascot {
 
   emitIntentUpdate() {
     this.#emitIntentUpdate();
+  }
+
+  async #loadSemanticMotionLibrary(url) {
+    if (!url) {
+      configureSemanticMotionLibrary(null);
+      this.#semanticMotionLibraryStatus = 'disabled';
+      return;
+    }
+
+    this.#semanticMotionLibraryStatus = 'loading';
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) {
+        throw new Error(`${res.status} ${res.statusText}`);
+      }
+      const library = await res.json();
+      configureSemanticMotionLibrary(library);
+      this.#semanticMotionLibraryStatus = 'loaded';
+      this.#emitIntentUpdate();
+    } catch (err) {
+      configureSemanticMotionLibrary(null);
+      this.#semanticMotionLibraryStatus = 'unavailable';
+      console.warn('[VrmMascot] semantic motion library unavailable:', err);
+    }
   }
 
   /**

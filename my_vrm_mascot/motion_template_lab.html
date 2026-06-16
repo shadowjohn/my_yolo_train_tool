@@ -1144,6 +1144,28 @@
       line-height: 1.55;
     }
 
+    .semantic-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .semantic-variant-decision {
+      min-height: 112px;
+      max-height: 220px;
+      overflow: auto;
+      margin: 12px 0 0;
+      padding: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 8px;
+      background: rgba(5, 10, 18, 0.72);
+      color: #cbd5e1;
+      font: 12px/1.5 Consolas, "Cascadia Mono", monospace;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
     .miner-stat-list {
       display: grid;
       gap: 10px;
@@ -1496,6 +1518,35 @@
         <ul id="suggestionAlternatives"></ul>
       </section>
 
+      <section class="miner-card semantic-preview-card">
+        <h2>語意動作預覽 Semantic Motion Preview</h2>
+        <p>只在 Lab 預覽 Variant 對應的 VRMA，不接正式 Acting runtime。</p>
+        <label class="lab-field">
+          <span>語意動作</span>
+          <select id="semanticMotionSelect"></select>
+        </label>
+        <div class="semantic-preview-grid">
+          <label class="lab-field">
+            <span>Style</span>
+            <select id="semanticMotionStyle">
+              <option value="default">default</option>
+              <option value="cute">cute</option>
+              <option value="strong">strong</option>
+            </select>
+          </label>
+          <label class="lab-field">
+            <span>Intensity</span>
+            <select id="semanticMotionIntensity">
+              <option value="medium">medium</option>
+              <option value="low">low</option>
+              <option value="high">high</option>
+            </select>
+          </label>
+        </div>
+        <button id="btnPreviewSemanticVariant" type="button">預覽 Variant</button>
+        <pre id="semanticVariantDecision" class="semantic-variant-decision">尚未載入 semantic_motion_registry.json</pre>
+      </section>
+
       <section class="miner-card">
         <h2>快速提示</h2>
         <p>只顯示必要資訊：目前 VRMA、已釘選數、推薦，讓你專注於找礦。</p>
@@ -1538,11 +1589,11 @@
             <legend>Preview Mode</legend>
             <div class="lab-preview-options">
               <label>
-                <input id="previewModeOriginal" type="radio" name="previewMode" value="original">
+                <input id="previewModeOriginal" type="radio" name="previewMode" value="original" checked>
                 <span>原始 VRMA</span>
               </label>
               <label>
-                <input id="previewModeAgent" type="radio" name="previewMode" value="agent" checked>
+                <input id="previewModeAgent" type="radio" name="previewMode" value="agent">
                 <span>Agent Pose</span>
               </label>
             </div>
@@ -1551,8 +1602,8 @@
           <dl class="lab-summary">
             <div><dt>來源檔案</dt><dd id="sourceFile">未載入</dd></div>
             <div><dt>動畫長度</dt><dd id="durationLabel">0.000s</dd></div>
-            <div><dt>骨架範圍</dt><dd>Upper Body</dd></div>
-            <div><dt>預覽模式</dt><dd id="previewModeLabel">Agent Pose / 鎖定下半身</dd></div>
+            <div><dt>骨架範圍</dt><dd>播放 Full Body / 匯出 Upper Body</dd></div>
+            <div><dt>預覽模式</dt><dd id="previewModeLabel">Original VRMA / 全身原地預覽</dd></div>
             <div><dt>匯出骨骼</dt><dd id="exportedBoneCount">0</dd></div>
           </dl>
 
@@ -1685,11 +1736,14 @@
       stableStringifyMiningLog,
       stableStringifyPreset,
     } from './js/MotionTemplateImporter.js';
+    import { selectSemanticMotionVariant } from './js/SemanticMotionVariantSelector.js';
+    import { buildSemanticMotionPreviewRequest } from './js/SemanticMotionPreviewBridge.js';
 
     const EXAMPLE_VRMA_BASE = 'examples/m6_7_vrma_samples/';
     const VRMA_SAMPLE_API_URL = '/api/vrma-samples';
     const MOTION_PROFILE_API_URL = '/api/motion-profiles';
     const MOTION_MINING_LOG_API_URL = '/api/motion-mining-log';
+    const SEMANTIC_MOTION_REGISTRY_URL = 'examples/m6_7_vrma_samples/review/semantic_motion_registry.json';
     const EXAMPLE_VRMA_DURATIONS = Object.freeze({
       'Angry.vrma': 3.933,
       'Blush.vrma': 3.933,
@@ -1775,6 +1829,8 @@
     const DEG = Math.PI / 180;
     const PREVIEW_CAMERA_POSITION = Object.freeze({ x: 0, y: 1.35, z: -3.3 });
     const PREVIEW_CAMERA_TARGET = Object.freeze({ x: 0, y: 1.25, z: 0 });
+    const ORIGINAL_PREVIEW_ROOT_MOTION_SCALE = Object.freeze({ x: 0, y: 1, z: 0 });
+    const ORIGINAL_PREVIEW_VERTICAL_DELTA_LIMIT = 0.75;
 
     const els = {
       viewport: document.getElementById('labViewport'),
@@ -1794,6 +1850,11 @@
       suggestionConfidence: document.getElementById('suggestionConfidence'),
       suggestionReason: document.getElementById('suggestionReason'),
       suggestionAlternatives: document.getElementById('suggestionAlternatives'),
+      semanticMotionSelect: document.getElementById('semanticMotionSelect'),
+      semanticMotionStyle: document.getElementById('semanticMotionStyle'),
+      semanticMotionIntensity: document.getElementById('semanticMotionIntensity'),
+      btnPreviewSemanticVariant: document.getElementById('btnPreviewSemanticVariant'),
+      semanticVariantDecision: document.getElementById('semanticVariantDecision'),
       btnMinerPrevious: document.getElementById('btnMinerPrevious'),
       btnMinerNext: document.getElementById('btnMinerNext'),
       btnPinMoment: document.getElementById('btnPinMoment'),
@@ -1866,10 +1927,11 @@
     let clip;
     let basePreset;
     let hipsBaseY = 0;
+    let sourceHipsAnchor = null;
     let sourceFileName = '';
     let latestPreset = null;
     let isPlaying = false;
-    let previewMode = 'agent';
+    let previewMode = 'original';
     let sourceWarnings = [];
     let descriptionSourceState = 'human';
     let latestDescriptionSuggestion = null;
@@ -1882,6 +1944,8 @@
     const savedMotionProfileSources = new Set();
     const savedMotionProfileCategories = new Map();
     const vrmaSampleCatalog = new Map();
+    let semanticMotionRegistry = null;
+    let latestSemanticVariantDecision = null;
     let selectedReviewQueueId = '';
 
     init().catch((err) => {
@@ -1911,6 +1975,7 @@
       await loadBasePreset();
       await loadVrmaSamplesFromServer();
       await loadMotionProfilesFromServer();
+      await loadSemanticMotionRegistry();
       await loadAlicia();
 
       window.addEventListener('resize', resize);
@@ -1992,6 +2057,7 @@
 
     async function loadVrmaFromUrl(url, fileName) {
       stopPlayback({ resetPose: false, silent: true });
+      sourceHipsAnchor = null;
 
       const loader = new GLTFLoader();
       loader.register((parser) => new VRMAnimationLoaderPlugin(parser));
@@ -2018,6 +2084,8 @@
       updateTimeLabel(0);
       setStatus('已載入 VRMA');
       resetPreviewCamera();
+      setPreviewMode('original', { refresh: false, silent: true });
+      captureSourceHipsAnchor();
       sampleAt(0);
       renderMotionCategoryControls();
       renderMineList();
@@ -2111,9 +2179,49 @@
       }
     }
 
+    function captureSourceHipsAnchor() {
+      if (!mixer || !action || !clip) {
+        sourceHipsAnchor = null;
+        return;
+      }
+
+      const hips = getHumanoidBoneNode('hips');
+      if (!hips) {
+        sourceHipsAnchor = null;
+        return;
+      }
+
+      action.enabled = true;
+      action.paused = false;
+      action.timeScale = 1;
+      action.time = 0;
+      action.play();
+      mixer.setTime(0);
+      mixer.update(0);
+      sourceHipsAnchor = hips.position.clone();
+    }
+
+    function applyOriginalPreviewStabilizer() {
+      const hips = getHumanoidBoneNode('hips');
+      if (!hips || !sourceHipsAnchor) return;
+
+      const hipsPose = basePreset?.basePose?.position?.hips || {};
+      const rawX = hips.position.x;
+      const rawY = hips.position.y;
+      const rawZ = hips.position.z;
+      const deltaX = (rawX - sourceHipsAnchor.x) * ORIGINAL_PREVIEW_ROOT_MOTION_SCALE.x;
+      const deltaY = clampDelta(rawY - sourceHipsAnchor.y, ORIGINAL_PREVIEW_VERTICAL_DELTA_LIMIT) * ORIGINAL_PREVIEW_ROOT_MOTION_SCALE.y;
+      const deltaZ = (rawZ - sourceHipsAnchor.z) * ORIGINAL_PREVIEW_ROOT_MOTION_SCALE.z;
+      hips.position.x = (hipsPose.x || 0) + deltaX;
+      hips.position.y = hipsBaseY + (hipsPose.y || 0) + deltaY;
+      hips.position.z = (hipsPose.z || 0) + deltaZ;
+    }
+
     function applyPreviewMode() {
       updatePreviewModeLabel();
-      if (previewMode === 'agent') {
+      if (previewMode === 'original') {
+        applyOriginalPreviewStabilizer();
+      } else if (previewMode === 'agent') {
         applyLowerBodyPreviewLock();
       }
     }
@@ -2138,15 +2246,23 @@
       return sampleTime;
     }
 
-    function setPreviewMode(mode) {
+    function setPreviewMode(mode, { refresh = true, silent = false } = {}) {
       previewMode = mode === 'original' ? 'original' : 'agent';
-      refreshCurrentFrame(Number(els.sampleTime.value || 0));
-      setStatus(previewMode === 'original' ? '預覽原始 VRMA' : '預覽 Agent Pose');
+      els.previewModeOriginal.checked = previewMode === 'original';
+      els.previewModeAgent.checked = previewMode === 'agent';
+      if (refresh) {
+        refreshCurrentFrame(Number(els.sampleTime.value || 0));
+      } else {
+        updatePreviewModeLabel();
+      }
+      if (!silent) {
+        setStatus(previewMode === 'original' ? '預覽原始 VRMA' : '預覽 Agent Pose');
+      }
     }
 
     function updatePreviewModeLabel() {
       els.previewModeLabel.textContent = previewMode === 'original'
-        ? 'Original VRMA / 完整動作'
+        ? 'Original VRMA / 全身原地預覽'
         : 'Agent Pose / 鎖定下半身';
     }
 
@@ -2569,6 +2685,111 @@
       } catch (err) {
         setMotionProfileSaveState('尚未連線存檔 API，主分類只會暫存在本頁');
         console.warn('[MotionMine] load motion_profiles.json failed', err);
+      }
+    }
+
+    async function loadSemanticMotionRegistry() {
+      setSemanticVariantDecisionText('正在讀取 semantic_motion_registry.json');
+      try {
+        const response = await fetch(SEMANTIC_MOTION_REGISTRY_URL, {
+          cache: 'no-store',
+          headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        semanticMotionRegistry = await response.json();
+        renderSemanticMotionOptions();
+        updateSemanticVariantDecision();
+      } catch (err) {
+        semanticMotionRegistry = null;
+        latestSemanticVariantDecision = null;
+        els.semanticMotionSelect.replaceChildren(new Option('無法載入 registry', ''));
+        els.btnPreviewSemanticVariant.disabled = true;
+        setSemanticVariantDecisionText(`無法載入 semantic_motion_registry.json\n${err?.message || err}`);
+        console.warn('[MotionMine] load semantic motion registry failed', err);
+      }
+    }
+
+    function renderSemanticMotionOptions() {
+      const motions = Object.values(semanticMotionRegistry?.motions || {})
+        .sort((a, b) => String(a.semanticMotionId || '').localeCompare(String(b.semanticMotionId || '')));
+
+      if (motions.length === 0) {
+        els.semanticMotionSelect.replaceChildren(new Option('尚無 semantic motion', ''));
+        els.btnPreviewSemanticVariant.disabled = true;
+        return;
+      }
+
+      els.semanticMotionSelect.replaceChildren(...motions.map((motion) => {
+        const id = motion.semanticMotionId || '';
+        const label = motion.displayName ? `${motion.displayName} (${id})` : id;
+        return new Option(label, id);
+      }));
+      els.btnPreviewSemanticVariant.disabled = false;
+    }
+
+    function getSemanticVariantRequest({ runtimePlaybackReadyOnly = false } = {}) {
+      return {
+        semanticMotionId: els.semanticMotionSelect.value,
+        style: els.semanticMotionStyle.value || 'default',
+        intensity: els.semanticMotionIntensity.value || 'medium',
+        constraints: {
+          upperBodyOnly: true,
+          avoidFaceCover: true,
+          runtimePlaybackReadyOnly,
+        },
+      };
+    }
+
+    function updateSemanticVariantDecision() {
+      if (!semanticMotionRegistry) {
+        latestSemanticVariantDecision = null;
+        els.btnPreviewSemanticVariant.disabled = true;
+        return null;
+      }
+
+      const decision = selectSemanticMotionVariant(getSemanticVariantRequest(), semanticMotionRegistry);
+      latestSemanticVariantDecision = decision;
+      if (!decision) {
+        els.btnPreviewSemanticVariant.disabled = true;
+        setSemanticVariantDecisionText('找不到可預覽的 semantic variant decision');
+        return null;
+      }
+
+      const preview = buildSemanticMotionPreviewRequest(decision);
+      els.btnPreviewSemanticVariant.disabled = !preview.ok;
+      setSemanticVariantDecisionText(JSON.stringify({
+        ...decision,
+        labPreview: preview.ok ? {
+          preferredMotion: preview.preferredMotion,
+          reason: preview.reason,
+        } : {
+          reason: preview.reason,
+        },
+      }, null, 2));
+      return decision;
+    }
+
+    async function previewSelectedSemanticMotionVariant() {
+      const decision = latestSemanticVariantDecision || updateSemanticVariantDecision();
+      const preview = buildSemanticMotionPreviewRequest(decision);
+      if (!preview.ok) {
+        setWarnings([`Semantic Motion Preview 無法預覽：${preview.reason}`]);
+        setSemanticVariantDecisionText(JSON.stringify(preview, null, 2));
+        return null;
+      }
+
+      await loadExampleVrma(preview.preferredMotion, { autoplay: true });
+      setStatus(`已預覽 ${preview.semanticMotionId} → ${preview.preferredMotion}`);
+      setSemanticVariantDecisionText(JSON.stringify({
+        ...decision,
+        labPreview: preview,
+      }, null, 2));
+      return preview;
+    }
+
+    function setSemanticVariantDecisionText(text) {
+      if (els.semanticVariantDecision) {
+        els.semanticVariantDecision.textContent = text;
       }
     }
 
@@ -4036,6 +4257,16 @@
       els.btnPinMoment.addEventListener('click', pinCurrentMoment);
       els.btnSuggestedPrevious.addEventListener('click', () => sampleAdjacentSuggestedTime(-1));
       els.btnSuggestedNext.addEventListener('click', () => sampleAdjacentSuggestedTime(1));
+      els.semanticMotionSelect.addEventListener('change', updateSemanticVariantDecision);
+      els.semanticMotionStyle.addEventListener('change', updateSemanticVariantDecision);
+      els.semanticMotionIntensity.addEventListener('change', updateSemanticVariantDecision);
+      els.btnPreviewSemanticVariant.addEventListener('click', () => {
+        previewSelectedSemanticMotionVariant().catch((err) => {
+          setStatus('無法預覽 Semantic Variant');
+          setWarnings([err?.message || String(err)]);
+          console.error(err);
+        });
+      });
       for (const button of els.motionCategoryButtons) {
         button.addEventListener('click', () => setMotionCategory(button.dataset.motionCategory));
       }
@@ -4144,6 +4375,12 @@
 
     function formatSeconds(value) {
       return Number(value || 0).toFixed(3);
+    }
+
+    function clampDelta(value, limit) {
+      const numericValue = Number(value || 0);
+      const numericLimit = Math.max(0, Number(limit || 0));
+      return Math.max(-numericLimit, Math.min(numericLimit, numericValue));
     }
   </script>
 </body>

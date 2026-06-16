@@ -348,6 +348,21 @@ function testLabIncludesMotionMiningWorkbenchControls() {
   assert.match(html, /id="previewModeOriginal"/);
   assert.match(html, /id="previewModeAgent"/);
   assert.match(html, /id="previewModeLabel"/);
+  assert.match(html, /id="previewModeOriginal"[^>]*checked/);
+  assert.doesNotMatch(html, /id="previewModeAgent"[^>]*checked/);
+  assert.match(html, /let previewMode = 'original';/);
+  assert.match(html, /Original VRMA \/ 全身原地預覽/);
+  assert.match(html, /ORIGINAL_PREVIEW_ROOT_MOTION_SCALE\s*=\s*Object\.freeze\(\{\s*x:\s*0,\s*y:\s*1,\s*z:\s*0\s*\}\)/);
+  assert.match(html, /ORIGINAL_PREVIEW_VERTICAL_DELTA_LIMIT\s*=\s*0\.75/);
+  assert.match(html, /setPreviewMode\('original',\s*\{\s*refresh:\s*false,\s*silent:\s*true\s*\}\);[\s\S]*sampleAt\(0\);/);
+  assert.match(html, /let sourceHipsAnchor = null;/);
+  assert.match(html, /function\s+captureSourceHipsAnchor\s*\(/);
+  assert.match(html, /function\s+applyOriginalPreviewStabilizer\s*\(/);
+  assert.match(html, /\(rawX - sourceHipsAnchor\.x\) \* ORIGINAL_PREVIEW_ROOT_MOTION_SCALE\.x/);
+  assert.match(html, /\(rawZ - sourceHipsAnchor\.z\) \* ORIGINAL_PREVIEW_ROOT_MOTION_SCALE\.z/);
+  assert.match(html, /clampDelta\(rawY - sourceHipsAnchor\.y,\s*ORIGINAL_PREVIEW_VERTICAL_DELTA_LIMIT\) \* ORIGINAL_PREVIEW_ROOT_MOTION_SCALE\.y/);
+  assert.match(html, /if\s*\(previewMode === 'original'\)\s*\{[\s\S]*applyOriginalPreviewStabilizer\(\);[\s\S]*\}\s*else\s+if\s*\(previewMode === 'agent'\)/);
+  assert.match(html, /captureSourceHipsAnchor\(\);[\s\S]*sampleAt\(0\);/);
   assert.match(html, /function\s+applyPreviewMode\s*\(/);
   assert.match(html, /function\s+refreshCurrentFrame\s*\(/);
   assert.match(html, /Alicia Motion Mine/);
@@ -669,6 +684,24 @@ function testLabUsesPinThenClassifyMiningFlow() {
   assert.match(html, /event\.key\.toUpperCase\(\)\s*===\s*'Z'/);
 }
 
+function testLabIncludesSemanticMotionPreviewBridge() {
+  const html = read(LAB_PATH);
+
+  assert.match(html, /Semantic Motion Preview/);
+  assert.match(html, /semanticMotionSelect/);
+  assert.match(html, /semanticMotionStyle/);
+  assert.match(html, /semanticMotionIntensity/);
+  assert.match(html, /btnPreviewSemanticVariant/);
+  assert.match(html, /semanticVariantDecision/);
+  assert.match(html, /semantic_motion_registry\.json/);
+  assert.match(html, /selectSemanticMotionVariant/);
+  assert.match(html, /buildSemanticMotionPreviewRequest/);
+  assert.match(html, /loadSemanticMotionRegistry/);
+  assert.match(html, /previewSelectedSemanticMotionVariant/);
+  assert.match(html, /loadExampleVrma\(preview\.preferredMotion,\s*\{\s*autoplay:\s*true\s*\}\)/);
+  assert.doesNotMatch(html, /performIntent\(/);
+}
+
 async function testBuildNaturalPosePresetMergesUpperBodyOnly() {
   const {
     buildNaturalPosePreset,
@@ -818,6 +851,7 @@ async function run() {
     testLabUsesAliciaMotionMineManagerUi,
     testLabIncludesRuleBasedMiningSuggestion,
     testLabUsesPinThenClassifyMiningFlow,
+    testLabIncludesSemanticMotionPreviewBridge,
     testMotionMiningLogHasSprintReviewedSamples,
     testMotionMiningReportMatchesLog,
     testBuildNaturalPosePresetMergesUpperBodyOnly,

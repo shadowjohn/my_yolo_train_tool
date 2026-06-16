@@ -4,6 +4,7 @@ import {
   ACTING_POLICY_STATES,
   ALLOWED_GAZE_MODES,
   ALLOWED_MOTION_NAMES,
+  configureSemanticMotionLibrary,
   resolveActingPolicyForState,
   resolveActingPolicyForTrace,
   validateActingPolicy,
@@ -13,6 +14,7 @@ import { MotionClips } from '../my_vrm_mascot/js/MotionClips.js';
 import { ActionQueue } from '../my_vrm_mascot/js/ActionQueue.js';
 import { MascotStateMachine } from '../my_vrm_mascot/js/MascotStateMachine.js';
 import { PoseDirector } from '../my_vrm_mascot/js/PoseDirector.js';
+import semanticMotionLibrary from '../my_vrm_mascot/examples/m6_7_vrma_samples/review/semantic_motion_library.json' with { type: 'json' };
 
 function createFakeControllers() {
   const calls = [];
@@ -119,6 +121,37 @@ function testTracePolicyMappingUsesRuntimeStatus() {
   assert.equal(resolveActingPolicyForTrace('normalize', { status: 'ok' }), null);
 }
 
+function testActingPolicyPicksSemanticMotionForTrace() {
+  configureSemanticMotionLibrary(semanticMotionLibrary);
+
+  const blockedIntent = { action: 'download_report', tool: 'download_report' };
+  const blockedPolicy = resolveActingPolicyForTrace(
+    'policy_check',
+    { status: 'blocked', reason: 'policy_blocked' },
+    blockedIntent
+  );
+  assert.equal(blockedPolicy.semanticMotionId, 'cross_no');
+  assert.equal(blockedPolicy.meta.pickedSemanticMotion.motionId, 'cross_no');
+  assert.equal(blockedIntent.pickedSemanticMotion.motionId, 'cross_no');
+
+  const runningIntent = { action: 'query_pipe', tool: 'query_pipe' };
+  const runningPolicy = resolveActingPolicyForTrace(
+    'execute_tool',
+    { status: 'running' },
+    runningIntent
+  );
+  assert.equal(runningPolicy.semanticMotionId, 'thinking_chin');
+  assert.equal(runningPolicy.meta.pickedSemanticMotion.motionId, 'thinking_chin');
+
+  const doneIntent = { action: 'download_report', tool: 'download_report' };
+  const donePolicy = resolveActingPolicyForTrace(
+    'execute_tool',
+    { status: 'done' },
+    doneIntent
+  );
+  assert.equal(donePolicy.semanticMotionId, 'victory_pose');
+}
+
 function testPolicyReferencesOnlyExistingExpressionClipAndGazeModes() {
   for (const state of ACTING_POLICY_STATES) {
     const policy = resolveActingPolicyForState(state);
@@ -137,6 +170,20 @@ function testPolicyReferencesOnlyExistingExpressionClipAndGazeModes() {
       assert.ok(ALLOWED_GAZE_MODES.includes(policy.gaze.mode), `${state} gaze exists`);
     }
   }
+}
+
+function testActingPolicyStillWorksWithoutSemanticLibrary() {
+  configureSemanticMotionLibrary(null);
+
+  const policy = resolveActingPolicyForTrace(
+    'policy_check',
+    { status: 'blocked', reason: 'policy_blocked' },
+    { action: 'download_report', tool: 'download_report' }
+  );
+
+  assert.equal(policy.clip.name, 'warning_nod');
+  assert.equal(policy.semanticMotionId, undefined);
+  assert.equal(policy.meta.pickedSemanticMotion, undefined);
 }
 
 function testPoseDirectorAppliesActingPolicyToControllers() {
@@ -359,8 +406,10 @@ function testVrmMascotExposesActApiWithoutContextDigestPollution() {
 
   assert.match(source, /act\(state,\s*meta\s*=\s*\{\}\)/);
   assert.match(source, /actForIntentResult\(status,\s*intentObj\s*=\s*\{\}\)/);
+  assert.match(source, /configureSemanticMotionLibrary/);
+  assert.match(source, /semantic_motion_library\.json/);
   assert.ok(digestMatch, 'buildContextDigest should remain present');
-  assert.doesNotMatch(digestMatch[0], /acting|expression|clip|gaze/i);
+  assert.doesNotMatch(digestMatch[0], /acting|expression|clip|gaze|semanticMotion/i);
 }
 
 const tests = [
@@ -371,7 +420,9 @@ const tests = [
   testSpeakingPolicyIsNoOpForBridge,
   testUnknownPolicyFallsBackToNeutralIdle,
   testTracePolicyMappingUsesRuntimeStatus,
+  testActingPolicyPicksSemanticMotionForTrace,
   testPolicyReferencesOnlyExistingExpressionClipAndGazeModes,
+  testActingPolicyStillWorksWithoutSemanticLibrary,
   testPoseDirectorAppliesActingPolicyToControllers,
   testTalkingStateIgnoresArbitraryActingStateAndNotifiesSpeaking,
   testPlainTalkingKeepsLegacyEmotionMotionAndNotifiesSpeaking,

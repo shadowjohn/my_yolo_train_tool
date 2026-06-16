@@ -135,6 +135,14 @@ c:\python312_64\scripts\pyinstaller -F --onefile --icon="pic\icon.ico" ...
 
 ## 目前未解決 / 待續事項
 
+- 2026-06-16：完成 Alicia Motion Mine / Semantic Motion 資料鏈 M6.7.6A～M6.13。
+  - Motion Mining 資料集已整理到 `my_vrm_mascot/examples/m6_7_vrma_samples/review/`：`motion_profiles.json` 172 筆全部有人類動作描述，`mining_log.json` 173 筆採礦紀錄。
+  - 新增文字採礦與語意資料層：`MotionTextClassifier.js`、`PoseStyleRecipeGenerator.js`、`SemanticMotionLibraryBuilder.js`、`SemanticMotionPicker.js`、`SemanticMotionRegistryBuilder.js`、`SemanticMotionVariantSelector.js`、`SemanticMotionPreviewBridge.js`。
+  - 產出衍生資料：`motion_text_reclass_report.json`、`pose_style_recipes.json`、`pose_style_recipe_report.md`、`semantic_motion_library.json`、`semantic_motion_library_report.md`、`semantic_motion_registry.json`、`semantic_motion_registry_report.md`。
+  - Semantic motion 種子目前 10 組：`come_here`、`point_target`、`cross_no`、`thinking_chin`、`angry_hands_waist`、`shy_head_touch`、`wave_goodbye`、`look_around`、`victory_pose`、`hands_up_surrender`。
+  - `motion_template_lab.html` 已新增 Semantic Motion Preview Bridge，可選 semanticMotionId，經 Variant Selector 找 preferred VRMA，僅在 Lab 預覽，不接正式 Acting runtime。
+  - VRMA 樣本來源已整理到 `my_vrm_mascot/examples/m6_7_vrma_samples/SOURCES.md`；目前樣本 172 支，其中 11 支來自 `tk256ailab/vrm-viewer` demo，152 支來自 `DavinciDreams/3dchat` 批次，9 支來自 `test157t/VRM-Assets-Pack-For-Silly-Tavern`。第三方來源維持 local mining only，正式散佈前需再次確認授權。
+  - 驗證：`node scratch/test_motion_text_classifier.mjs`、`node scratch/test_pose_style_recipe_generator.mjs`、`node scratch/test_semantic_motion_library.mjs`、`node scratch/test_semantic_motion_picker.mjs`、`node scratch/test_semantic_motion_registry.mjs`、`node scratch/test_semantic_motion_variant_selector.mjs`、`node scratch/test_semantic_motion_preview_bridge.mjs`、`node scratch/test_motion_template_importer.mjs`、`node scratch/test_acting_policy.mjs`、`python -m py_compile my_vrm_mascot/server.py` 通過。
 - 2026-06-12：修正桌面「新增專案檔」callback 例外。
   - 根因：`new_project()` 建立資料夾後尚未設定 `GDATA["project_folder"]`，就呼叫 `method_count_wait_process_files()` 統計 jpg，第一次建立專案會觸發 `KeyError: 'project_folder'`。
   - 修正：`new_project()` 改走既有 `reload_projects(project_name)` 流程；`reload_projects()` 只在有選定專案時設定 `project_folder` 並統計待處理檔案；`method_count_wait_process_files()` 對尚未選專案狀態回報 0。

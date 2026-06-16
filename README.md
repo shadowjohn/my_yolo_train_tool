@@ -2,6 +2,38 @@
 我的 yolo 訓練機，可以用 yolo 的範例直接在 windows desktop 看著畫面測試、訓練模型
 建立模型專案、要訓練的種類，收集圖片、標記、訓練、測試、部署，一條龍服務
 
+## my_vrm_mascot / Alicia Motion Studio
+
+本專案同時包含 `my_vrm_mascot`，目前已從 VRM 吉祥物展示頁擴充成 Alicia Motion Studio：
+
+- Agent Runtime：tool trace、self-healing、PolicyGate、Suggested Actions、ActingBridge。
+- Character Runtime：Natural Pose、Idle Micro Motion、Short Motion Clips、Expression Layer。
+- Motion Mining：`motion_template_lab.html` 可載入 VRMA、人工描述動作、產出 semantic motion 資料。
+- 已收集 VRMA 樣本：172 支。
+- 已人工描述 motion profile：172 筆。
+- 已累積 mining log：173 筆。
+- 已產出 semantic motion 種子：10 組，包括 `come_here`、`point_target`、`cross_no`、`thinking_chin`、`wave_goodbye` 等。
+
+快速啟動：
+
+```bat
+cd my_vrm_mascot
+run_server.bat
+```
+
+入口：
+
+```text
+http://127.0.0.1:8765/
+http://127.0.0.1:8765/motion_template_lab.html
+```
+
+VRMA 樣本來源與授權狀態記錄在：
+
+```text
+my_vrm_mascot/examples/m6_7_vrma_samples/SOURCES.md
+```
+
 ## 畫面截圖
 <img src="pic/screenshot/run.png">
 單機執行畫面
